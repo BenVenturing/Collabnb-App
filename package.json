@@ -1,0 +1,12 @@
+{
+  "name": "anything-app-2-root",
+  "private": true,
+  "scripts": {
+    "mobile": "npm run --prefix apps/mobile start",
+    "mobile:ios": "npm run --prefix apps/mobile ios",
+    "mobile:android": "npm run --prefix apps/mobile android",
+    "mobile:web": "npm run --prefix apps/mobile web",
+    "web": "npm run --prefix apps/web dev",
+    "dev": "sh ./scripts/dev-all.sh"
+  }
+}
