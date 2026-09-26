@@ -22,7 +22,9 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
-import ThemedBackground from "@/components/ThemedBackground";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import Glass from "@/components/Glass";
+import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
 
 const STORAGE_KEY = "@collabnb_proposals_v1";
 
@@ -97,47 +99,51 @@ async function exportContractPdf(proposal) {
   }
 }
 
+// Stage-pipeline colors need 5 visually distinct hues (grey/teal/gold/green/
+// purple); only #3C5759 and #959D90 have brand equivalents. The rest have no
+// token in the 9-color palette — left as literals per "don't add a new
+// color, ask" in STYLE-GUIDE.md. Flagged for design review.
 const STAGES = [
   {
     id: "invited",
     label: "Invited",
     emoji: "📨",
-    color: "#959D90",
-    bg: "rgba(149,157,144,0.15)",
+    color: colors.sage,
+    bg: "rgba(100,107,98,0.15)",
   },
   {
     id: "applied",
     label: "Applied",
     emoji: "✦",
-    color: "#3C5759",
+    color: colors.slate,
     bg: "rgba(60,87,89,0.12)",
   },
   {
     id: "negotiating",
     label: "Negotiating",
     emoji: "💬",
-    color: "#D4A843",
+    color: "#D4A843", // no brand token — semantic stage gold
     bg: "rgba(212,168,67,0.15)",
   },
   {
     id: "confirmed",
     label: "Confirmed",
     emoji: "✓",
-    color: "#4A9B7F",
+    color: "#4A9B7F", // no brand token — semantic stage green
     bg: "rgba(74,155,127,0.15)",
   },
   {
     id: "live",
     label: "Live",
     emoji: "🎬",
-    color: "#7B68C8",
+    color: "#7B68C8", // no brand token — semantic stage purple
     bg: "rgba(123,104,200,0.15)",
   },
   {
     id: "completed",
     label: "Completed",
     emoji: "⭐",
-    color: "#D4A843",
+    color: "#D4A843", // no brand token — semantic stage gold
     bg: "rgba(212,168,67,0.12)",
   },
 ];
@@ -145,10 +151,10 @@ const STAGES = [
 const ACTIVE_STAGES = STAGES.filter((s) => s.id !== "completed");
 
 const TIER_CONFIG = {
-  "UGC Beginner": { color: "#959D90", bg: "rgba(149,157,144,0.12)" },
-  "UGC Pro": { color: "#3C5759", bg: "rgba(60,87,89,0.12)" },
-  "Micro Influencer": { color: "#7B68C8", bg: "rgba(123,104,200,0.12)" },
-  Influencer: { color: "#C86868", bg: "rgba(200,104,104,0.12)" },
+  "UGC Beginner": { color: colors.sage, bg: "rgba(100,107,98,0.12)" },
+  "UGC Pro": { color: colors.slate, bg: "rgba(60,87,89,0.12)" },
+  "Micro Influencer": { color: "#7B68C8", bg: "rgba(123,104,200,0.12)" }, // no brand token — semantic tier purple
+  Influencer: { color: "#C86868", bg: "rgba(200,104,104,0.12)" }, // no brand token — semantic tier red
 };
 
 const SAMPLE_PROPOSALS = [
@@ -274,42 +280,44 @@ function TierBadge({ tier }) {
 function ProposalCard({ proposal, onPress }) {
   return (
     <TouchableOpacity
-      style={styles.proposalCard}
+      style={styles.proposalCardShadow}
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <View style={styles.cardTop}>
-        <Avatar name={proposal.creatorName} />
-        <View style={{ flex: 1, marginLeft: 9 }}>
-          <Text style={styles.cardName} numberOfLines={1}>
-            {proposal.creatorName}
-          </Text>
-          <Text style={styles.cardHandle}>{proposal.handle}</Text>
+      <Glass variant="small" contentStyle={styles.proposalCardContent}>
+        <View style={styles.cardTop}>
+          <Avatar name={proposal.creatorName} />
+          <View style={{ flex: 1, marginLeft: 9 }}>
+            <Text style={styles.cardName} numberOfLines={1}>
+              {proposal.creatorName}
+            </Text>
+            <Text style={styles.cardHandle}>{proposal.handle}</Text>
+          </View>
+          <Text style={styles.cardTime}>{proposal.lastUpdate}</Text>
         </View>
-        <Text style={styles.cardTime}>{proposal.lastUpdate}</Text>
-      </View>
-      <Text style={styles.cardListing} numberOfLines={2}>
-        {proposal.listing}
-      </Text>
-      <View style={styles.cardFooter}>
-        <TierBadge tier={proposal.tier} />
-        {proposal.isCounter && (
-          <View style={styles.counterBadge}>
-            <Text style={styles.counterBadgeText}>🔄 Counter</Text>
+        <Text style={styles.cardListing} numberOfLines={2}>
+          {proposal.listing}
+        </Text>
+        <View style={styles.cardFooter}>
+          <TierBadge tier={proposal.tier} />
+          {proposal.isCounter && (
+            <View style={styles.counterBadge}>
+              <Text style={styles.counterBadgeText}>🔄 Counter</Text>
+            </View>
+          )}
+          <Text style={styles.cardFollowers}>👥 {proposal.followers}</Text>
+        </View>
+        {!!proposal.note && (
+          <View style={styles.notePreview}>
+            <Text style={styles.notePreviewText} numberOfLines={2}>
+              📝 {proposal.note}
+            </Text>
           </View>
         )}
-        <Text style={styles.cardFollowers}>👥 {proposal.followers}</Text>
-      </View>
-      {!!proposal.note && (
-        <View style={styles.notePreview}>
-          <Text style={styles.notePreviewText} numberOfLines={2}>
-            📝 {proposal.note}
-          </Text>
-        </View>
-      )}
-      {!!proposal.stayDates && (
-        <Text style={styles.datesText}>📅 {proposal.stayDates}</Text>
-      )}
+        {!!proposal.stayDates && (
+          <Text style={styles.datesText}>📅 {proposal.stayDates}</Text>
+        )}
+      </Glass>
     </TouchableOpacity>
   );
 }
@@ -317,35 +325,37 @@ function ProposalCard({ proposal, onPress }) {
 function ArchiveCard({ proposal, onPress }) {
   return (
     <TouchableOpacity
-      style={styles.archiveCard}
+      style={styles.archiveCardShadow}
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <View style={styles.cardTop}>
-        <Avatar name={proposal.creatorName} size={34} />
-        <View style={{ flex: 1, marginLeft: 9 }}>
-          <Text style={styles.cardName}>{proposal.creatorName}</Text>
-          <Text style={styles.cardHandle}>{proposal.handle}</Text>
+      <Glass variant="small" contentStyle={styles.archiveCardContent}>
+        <View style={styles.cardTop}>
+          <Avatar name={proposal.creatorName} size={34} />
+          <View style={{ flex: 1, marginLeft: 9 }}>
+            <Text style={styles.cardName}>{proposal.creatorName}</Text>
+            <Text style={styles.cardHandle}>{proposal.handle}</Text>
+          </View>
+          {proposal.rating && (
+            <Text style={styles.rating}>{"★".repeat(proposal.rating)}</Text>
+          )}
         </View>
-        {proposal.rating && (
-          <Text style={styles.rating}>{"★".repeat(proposal.rating)}</Text>
-        )}
-      </View>
-      <Text style={styles.cardListing} numberOfLines={1}>
-        {proposal.listing}
-      </Text>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          marginTop: 6,
-        }}
-      >
-        <Text style={styles.archiveSub}>📅 {proposal.stayDates}</Text>
-        {!!proposal.contentUrl && (
-          <Text style={styles.archiveLink}>View Content ↗</Text>
-        )}
-      </View>
+        <Text style={styles.cardListing} numberOfLines={1}>
+          {proposal.listing}
+        </Text>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: 6,
+          }}
+        >
+          <Text style={styles.archiveSub}>📅 {proposal.stayDates}</Text>
+          {!!proposal.contentUrl && (
+            <Text style={styles.archiveLink}>View Content ↗</Text>
+          )}
+        </View>
+      </Glass>
     </TouchableOpacity>
   );
 }
@@ -442,7 +452,7 @@ function CounterOfferModal({ proposal, visible, onSend, onClose }) {
                     setFields((prev) => ({ ...prev, [f.key]: v }))
                   }
                   placeholder={f.placeholder}
-                  placeholderTextColor="#959D90"
+                  placeholderTextColor={colors.sage}
                 />
               </View>
             ))}
@@ -452,7 +462,7 @@ function CounterOfferModal({ proposal, visible, onSend, onClose }) {
               value={note}
               onChangeText={setNote}
               placeholder="Explain what changed and why..."
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
               multiline
               textAlignVertical="top"
             />
@@ -500,20 +510,22 @@ function SignContractModal({ proposal, visible, onSign, onClose }) {
               <Text style={styles.sheetCloseText}>✕</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.signTermsCard}>
-            <Text style={styles.modalLabel}>CONTRACT TERMS</Text>
-            {CONTRACT_FIELDS.filter((f) => fields[f.key]).map((f) => (
-              <View key={f.key} style={styles.signTermRow}>
-                <Text style={styles.signTermLabel}>{f.label}</Text>
-                <Text style={styles.signTermValue}>{fields[f.key]}</Text>
-              </View>
-            ))}
-            {roundCount > 0 && (
-              <Text style={styles.signRoundsNote}>
-                Terms finalized after {roundCount} negotiation round
-                {roundCount > 1 ? "s" : ""}.
-              </Text>
-            )}
+          <View style={styles.signTermsCardShadow}>
+            <Glass variant="small" contentStyle={styles.signTermsCardContent}>
+              <Text style={styles.modalLabel}>CONTRACT TERMS</Text>
+              {CONTRACT_FIELDS.filter((f) => fields[f.key]).map((f) => (
+                <View key={f.key} style={styles.signTermRow}>
+                  <Text style={styles.signTermLabel}>{f.label}</Text>
+                  <Text style={styles.signTermValue}>{fields[f.key]}</Text>
+                </View>
+              ))}
+              {roundCount > 0 && (
+                <Text style={styles.signRoundsNote}>
+                  Terms finalized after {roundCount} negotiation round
+                  {roundCount > 1 ? "s" : ""}.
+                </Text>
+              )}
+            </Glass>
           </View>
           <Text style={styles.signAgreementText}>
             By typing your name below, you agree to the terms above as a
@@ -525,7 +537,7 @@ function SignContractModal({ proposal, visible, onSign, onClose }) {
             value={name}
             onChangeText={setName}
             placeholder="Type your full name"
-            placeholderTextColor="#959D90"
+            placeholderTextColor={colors.sage}
           />
           <View style={styles.sheetActions}>
             <TouchableOpacity style={styles.sheetCancelBtn} onPress={onClose}>
@@ -615,22 +627,24 @@ function DetailModal({
           contentContainerStyle={styles.modalContent}
         >
           {/* Creator card */}
-          <View style={styles.modalCreatorCard}>
-            <Avatar name={proposal.creatorName} size={54} />
-            <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={styles.modalCreatorName}>
-                {proposal.creatorName}
-              </Text>
-              <Text style={styles.modalHandle}>{proposal.handle}</Text>
-              <View style={styles.modalBadges}>
-                <TierBadge tier={proposal.tier} />
-                <View style={styles.followerBadge}>
-                  <Text style={styles.followerText}>
-                    👥 {proposal.followers}
-                  </Text>
+          <View style={styles.modalCreatorCardShadow}>
+            <Glass variant="small" contentStyle={styles.modalCreatorCardContent}>
+              <Avatar name={proposal.creatorName} size={54} />
+              <View style={{ flex: 1, marginLeft: 14 }}>
+                <Text style={styles.modalCreatorName}>
+                  {proposal.creatorName}
+                </Text>
+                <Text style={styles.modalHandle}>{proposal.handle}</Text>
+                <View style={styles.modalBadges}>
+                  <TierBadge tier={proposal.tier} />
+                  <View style={styles.followerBadge}>
+                    <Text style={styles.followerText}>
+                      👥 {proposal.followers}
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </View>
+            </Glass>
           </View>
 
           {/* Listing */}
@@ -644,11 +658,12 @@ function DetailModal({
                 })
               }
               activeOpacity={0.8}
+              style={styles.infoCardShadow}
             >
-              <View style={styles.infoCard}>
+              <Glass variant="small" contentStyle={styles.infoCardContent}>
                 <Text style={{ fontSize: 18 }}>🏡</Text>
                 <Text style={styles.infoCardText}>{proposal.listing}</Text>
-              </View>
+              </Glass>
             </TouchableOpacity>
           </View>
 
@@ -698,24 +713,30 @@ function DetailModal({
             <ContractHistoryTimeline history={proposal.contractHistory} />
             <View style={styles.contractActionsRow}>
               <TouchableOpacity
-                style={styles.contractActionBtn}
+                style={styles.contractActionBtnShadow}
                 onPress={() => onOpenCounter(proposal)}
               >
-                <Text style={styles.contractActionText}>🔄 Negotiate</Text>
+                <Glass variant="small" contentStyle={styles.contractActionBtnContent}>
+                  <Text style={styles.contractActionText}>🔄 Negotiate</Text>
+                </Glass>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.contractActionBtn}
+                style={styles.contractActionBtnShadow}
                 onPress={() => onOpenSign(proposal)}
               >
-                <Text style={styles.contractActionText}>
-                  {proposal.signatures?.hostSignedAt ? "✓ Signed" : "✎ Sign"}
-                </Text>
+                <Glass variant="small" contentStyle={styles.contractActionBtnContent}>
+                  <Text style={styles.contractActionText}>
+                    {proposal.signatures?.hostSignedAt ? "✓ Signed" : "✎ Sign"}
+                  </Text>
+                </Glass>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.contractActionBtn}
+                style={styles.contractActionBtnShadow}
                 onPress={() => onExportPdf(proposal)}
               >
-                <Text style={styles.contractActionText}>⬇ PDF</Text>
+                <Glass variant="small" contentStyle={styles.contractActionBtnContent}>
+                  <Text style={styles.contractActionText}>⬇ PDF</Text>
+                </Glass>
               </TouchableOpacity>
             </View>
           </View>
@@ -723,44 +744,50 @@ function DetailModal({
           {/* Stay dates */}
           <View style={styles.modalSection}>
             <Text style={styles.modalLabel}>STAY DATES</Text>
-            <View style={styles.inputCard}>
-              <TextInput
-                style={styles.inputField}
-                value={stayDates}
-                onChangeText={setStayDates}
-                placeholder="e.g. June 14–16"
-                placeholderTextColor="#959D90"
-              />
+            <View style={styles.inputCardShadow}>
+              <Glass variant="small" contentStyle={styles.inputCardContent}>
+                <TextInput
+                  style={styles.inputField}
+                  value={stayDates}
+                  onChangeText={setStayDates}
+                  placeholder="e.g. June 14–16"
+                  placeholderTextColor={colors.sage}
+                />
+              </Glass>
             </View>
           </View>
 
           {/* Deliverables */}
           <View style={styles.modalSection}>
             <Text style={styles.modalLabel}>DELIVERABLES AGREED</Text>
-            <View style={styles.inputCard}>
-              <TextInput
-                style={styles.inputField}
-                value={deliverables}
-                onChangeText={setDeliverables}
-                placeholder="e.g. 2 Reels, 4 Stories, 1 TikTok"
-                placeholderTextColor="#959D90"
-              />
+            <View style={styles.inputCardShadow}>
+              <Glass variant="small" contentStyle={styles.inputCardContent}>
+                <TextInput
+                  style={styles.inputField}
+                  value={deliverables}
+                  onChangeText={setDeliverables}
+                  placeholder="e.g. 2 Reels, 4 Stories, 1 TikTok"
+                  placeholderTextColor={colors.sage}
+                />
+              </Glass>
             </View>
           </View>
 
           {/* Notes */}
           <View style={styles.modalSection}>
             <Text style={styles.modalLabel}>NEGOTIATION NOTES</Text>
-            <View style={styles.noteCard}>
-              <TextInput
-                style={styles.noteInput}
-                value={note}
-                onChangeText={setNote}
-                multiline
-                placeholder="Add notes, follow-ups, negotiation history..."
-                placeholderTextColor="#959D90"
-                textAlignVertical="top"
-              />
+            <View style={styles.noteCardShadow}>
+              <Glass variant="small" contentStyle={styles.noteCardContent}>
+                <TextInput
+                  style={styles.noteInput}
+                  value={note}
+                  onChangeText={setNote}
+                  multiline
+                  placeholder="Add notes, follow-ups, negotiation history..."
+                  placeholderTextColor={colors.sage}
+                  textAlignVertical="top"
+                />
+              </Glass>
             </View>
           </View>
 
@@ -920,7 +947,7 @@ export default function ProposalsScreen() {
   ];
 
   return (
-    <ThemedBackground>
+    <AtmosphericBackground>
       <SafeAreaView style={styles.safe}>
         <StatusBar barStyle="dark-content" />
 
@@ -1128,23 +1155,16 @@ export default function ProposalsScreen() {
           onClose={() => setSignTarget(null)}
         />
       </SafeAreaView>
-    </ThemedBackground>
+    </AtmosphericBackground>
   );
 }
 
 // ─── STYLES ──────────────────────────────────────────────────
-const GLASS = {
-  backgroundColor: "rgba(255,255,255,0.58)",
-  borderRadius: 16,
-  borderWidth: 1,
-  borderColor: "rgba(255,255,255,0.78)",
-  shadowColor: "#3C5759",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.07,
-  shadowRadius: 8,
-  elevation: 2,
-};
-
+// All GLASS-style surfaces in this file share one radius (16 = radii.md),
+// which is exactly glass.small's radius — every ...GLASS site below is
+// wrapped in <Glass variant="small"> with the shadow moved to an outer node
+// (Glass's own View sets overflow:"hidden", which would clip an RN shadow
+// drawn on the same layer).
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "transparent" },
 
@@ -1157,20 +1177,20 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   headerTitle: {
+    fontFamily: fonts.displayExtrabold,
     fontSize: 28,
-    fontWeight: "800",
-    color: "#192524",
-    letterSpacing: -0.5,
+    color: colors.ink,
+    letterSpacing: track(28, tracking.display),
   },
-  headerSub: { fontSize: 12, color: "#959D90", marginTop: 3 },
+  headerSub: { fontFamily: fonts.body, fontSize: 12, color: colors.sage, marginTop: 3 },
   inviteBtn: {
-    backgroundColor: "#3C5759",
+    backgroundColor: colors.slate,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginTop: 4,
   },
-  inviteBtnText: { fontSize: 13, fontWeight: "600", color: "#EFECE9" },
+  inviteBtnText: { fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.bone },
 
   viewToggle: {
     flexDirection: "row",
@@ -1188,9 +1208,9 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: "center",
   },
-  toggleBtnActive: { backgroundColor: "#3C5759" },
-  toggleBtnText: { fontSize: 13, fontWeight: "500", color: "#959D90" },
-  toggleBtnTextActive: { color: "#EFECE9", fontWeight: "600" },
+  toggleBtnActive: { backgroundColor: colors.slate },
+  toggleBtnText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.sage },
+  toggleBtnTextActive: { fontFamily: fonts.bodySemibold, color: colors.bone },
 
   filterRow: { maxHeight: 40, marginBottom: 6 },
   filterContent: { paddingHorizontal: 20, gap: 8, alignItems: "center" },
@@ -1202,9 +1222,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(60,87,89,0.15)",
   },
-  filterChipActive: { backgroundColor: "#3C5759", borderColor: "#3C5759" },
-  filterChipText: { fontSize: 12, fontWeight: "500", color: "#3C5759" },
-  filterChipTextActive: { color: "#EFECE9" },
+  filterChipActive: { backgroundColor: colors.slate, borderColor: colors.slate },
+  filterChipText: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.slate },
+  filterChipTextActive: { color: colors.bone },
 
   board: {
     paddingHorizontal: 16,
@@ -1222,7 +1242,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 10,
   },
-  colLabel: { fontSize: 12, fontWeight: "600", flex: 1 },
+  colLabel: { fontFamily: fonts.bodySemibold, fontSize: 12, flex: 1 },
   colCount: {
     width: 18,
     height: 18,
@@ -1230,22 +1250,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  colCountText: { fontSize: 10, fontWeight: "700", color: "#fff" },
+  colCountText: { fontFamily: fonts.bodySemibold, fontSize: 10, color: colors.surface },
   emptyColText: {
+    fontFamily: fonts.body,
     fontSize: 11,
-    color: "#D0D5CE",
+    color: colors.stone,
     textAlign: "center",
     paddingVertical: 20,
   },
 
-  proposalCard: { ...GLASS, padding: 13, marginBottom: 10 },
+  proposalCardShadow: { ...shadows.sm, borderRadius: radii.md, marginBottom: 10 },
+  proposalCardContent: { padding: 13 },
   cardTop: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-  cardName: { fontSize: 13, fontWeight: "600", color: "#192524" },
-  cardHandle: { fontSize: 11, color: "#959D90" },
-  cardTime: { fontSize: 10, color: "#D0D5CE" },
+  cardName: { fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink },
+  cardHandle: { fontFamily: fonts.body, fontSize: 11, color: colors.sage },
+  cardTime: { fontFamily: fonts.body, fontSize: 10, color: colors.stone },
   cardListing: {
+    fontFamily: fonts.body,
     fontSize: 11,
-    color: "#3C5759",
+    color: colors.slate,
     marginBottom: 8,
     lineHeight: 16,
   },
@@ -1254,46 +1277,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  cardFollowers: { fontSize: 11, color: "#959D90" },
+  cardFollowers: { fontFamily: fonts.body, fontSize: 11, color: colors.sage },
   notePreview: {
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: "rgba(60,87,89,0.07)",
   },
-  notePreviewText: { fontSize: 11, color: "#959D90", lineHeight: 16 },
+  notePreviewText: { fontFamily: fonts.body, fontSize: 11, color: colors.sage, lineHeight: 16 },
   datesText: {
+    fontFamily: fonts.bodyMedium,
     fontSize: 11,
-    color: "#4A9B7F",
-    fontWeight: "500",
+    color: "#4A9B7F", // no brand token — matches "confirmed" stage green
     marginTop: 6,
   },
 
   avatar: {
-    backgroundColor: "#D1EBDB",
+    backgroundColor: colors.mint,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.7)",
   },
-  avatarText: { fontWeight: "700", color: "#3C5759" },
+  avatarText: { fontFamily: fonts.bodySemibold, color: colors.slate },
   tierBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
-  tierText: { fontSize: 10, fontWeight: "600" },
+  tierText: { fontFamily: fonts.bodySemibold, fontSize: 10 },
 
   declinedSection: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 16 },
   declinedHeader: { paddingVertical: 10 },
-  declinedHeaderText: { fontSize: 12, fontWeight: "600", color: "#959D90" },
+  declinedHeaderText: { fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.sage },
 
   archiveList: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 },
-  archiveCard: { ...GLASS, padding: 14, marginBottom: 10 },
-  archiveSub: { fontSize: 11, color: "#959D90" },
-  archiveLink: { fontSize: 11, fontWeight: "500", color: "#7B68C8" },
-  rating: { fontSize: 13, color: "#D4A843" },
+  archiveCardShadow: { ...shadows.sm, borderRadius: radii.md, marginBottom: 10 },
+  archiveCardContent: { padding: 14 },
+  archiveSub: { fontFamily: fonts.body, fontSize: 11, color: colors.sage },
+  archiveLink: { fontFamily: fonts.bodyMedium, fontSize: 11, color: "#7B68C8" }, // no brand token — matches "live" stage / micro-influencer tier purple
+  rating: { fontSize: 13, color: "#D4A843" }, // no brand token — matches "completed" stage gold
   emptyArchive: { alignItems: "center", paddingTop: 60 },
   emptyArchiveIcon: { fontSize: 36, marginBottom: 10 },
-  emptyArchiveText: { fontSize: 14, color: "#959D90" },
+  emptyArchiveText: { fontFamily: fonts.body, fontSize: 14, color: colors.sage },
 
-  modalSafe: { flex: 1, backgroundColor: "#EFECE9" },
+  modalSafe: { flex: 1, backgroundColor: colors.bone },
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -1303,18 +1327,23 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "rgba(60,87,89,0.08)",
   },
-  modalDone: { fontSize: 15, fontWeight: "500", color: "#3C5759" },
-  modalTitle: { fontSize: 16, fontWeight: "700", color: "#192524" },
-  modalContent: { paddingHorizontal: 20 },
-  modalCreatorCard: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    ...GLASS,
-    padding: 16,
-    marginTop: 16,
+  modalDone: { fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.slate },
+  modalTitle: {
+    fontFamily: fonts.display,
+    fontSize: 16,
+    color: colors.ink,
+    letterSpacing: track(16, tracking.display),
   },
-  modalCreatorName: { fontSize: 18, fontWeight: "700", color: "#192524" },
-  modalHandle: { fontSize: 13, color: "#959D90", marginTop: 2 },
+  modalContent: { paddingHorizontal: 20 },
+  modalCreatorCardShadow: { ...shadows.sm, borderRadius: radii.md, marginTop: 16 },
+  modalCreatorCardContent: { flexDirection: "row", alignItems: "flex-start", padding: 16 },
+  modalCreatorName: {
+    fontFamily: fonts.display,
+    fontSize: 18,
+    color: colors.ink,
+    letterSpacing: track(18, tracking.display),
+  },
+  modalHandle: { fontFamily: fonts.body, fontSize: 13, color: colors.sage, marginTop: 2 },
   modalBadges: { flexDirection: "row", gap: 7, marginTop: 8, flexWrap: "wrap" },
   followerBadge: {
     paddingHorizontal: 8,
@@ -1322,23 +1351,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "rgba(25,37,36,0.07)",
   },
-  followerText: { fontSize: 11, color: "#3C5759" },
+  followerText: { fontFamily: fonts.body, fontSize: 11, color: colors.slate },
   modalSection: { marginTop: 22 },
   modalLabel: {
+    fontFamily: fonts.bodySemibold,
     fontSize: 10,
-    fontWeight: "600",
-    color: "#959D90",
-    letterSpacing: 1.2,
+    color: colors.sage,
+    letterSpacing: track(10, tracking.eyebrow),
     marginBottom: 10,
   },
-  infoCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    ...GLASS,
-    padding: 14,
-  },
-  infoCardText: { fontSize: 14, fontWeight: "500", color: "#192524", flex: 1 },
+  infoCardShadow: { ...shadows.sm, borderRadius: radii.md },
+  infoCardContent: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14 },
+  infoCardText: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.ink, flex: 1 },
   currentStagePill: {
     flexDirection: "row",
     alignItems: "center",
@@ -1348,7 +1372,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 12,
   },
-  currentStageText: { fontSize: 15, fontWeight: "600" },
+  currentStageText: { fontFamily: fonts.bodySemibold, fontSize: 15 },
   stageGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   stageBtn: {
     flexDirection: "row",
@@ -1360,12 +1384,12 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     backgroundColor: "rgba(255,255,255,0.5)",
   },
-  stageBtnText: { fontSize: 12, fontWeight: "500" },
+  stageBtnText: { fontFamily: fonts.bodyMedium, fontSize: 12 },
 
   // Contract history
   historyWrap: { marginBottom: 10 },
   historyRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center" },
-  historyArrow: { color: "#D0D5CE", fontSize: 11, marginHorizontal: 3 },
+  historyArrow: { color: colors.stone, fontSize: 11, marginHorizontal: 3 },
   historyPill: {
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -1375,25 +1399,22 @@ const styles = StyleSheet.create({
   },
   historyPillHost: { backgroundColor: "rgba(123,104,200,0.1)" },
   historyPillCreator: { backgroundColor: "rgba(74,155,127,0.1)" },
-  historyPillText: { fontSize: 11, fontWeight: "600", color: "#959D90" },
-  historyPillTextHost: { color: "#5b4db8" },
-  historyPillTextCreator: { color: "#2d7d5e" },
+  historyPillText: { fontFamily: fonts.bodySemibold, fontSize: 11, color: colors.sage },
+  historyPillTextHost: { color: "#5b4db8" }, // no brand token — darker text-on-tint variant of the "live" stage purple
+  historyPillTextCreator: { color: "#2d7d5e" }, // no brand token — darker text-on-tint variant of the "confirmed" stage green
   historyNote: {
+    fontFamily: fonts.body,
     fontSize: 11,
-    color: "#3C5759",
+    color: colors.slate,
     fontStyle: "italic",
     marginTop: 7,
   },
 
   // Contract quick actions (within detail modal)
   contractActionsRow: { flexDirection: "row", gap: 8 },
-  contractActionBtn: {
-    flex: 1,
-    ...GLASS,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  contractActionText: { fontSize: 12, fontWeight: "600", color: "#192524" },
+  contractActionBtnShadow: { flex: 1, ...shadows.sm, borderRadius: radii.md },
+  contractActionBtnContent: { paddingVertical: 10, alignItems: "center" },
+  contractActionText: { fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink },
 
   // Bottom-sheet modals shared by Negotiate/Sign
   sheetOverlay: {
@@ -1402,7 +1423,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   sheetCard: {
-    backgroundColor: "#EFECE9",
+    backgroundColor: colors.bone,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -1414,8 +1435,13 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 16,
   },
-  sheetTitle: { fontSize: 17, fontWeight: "700", color: "#192524" },
-  sheetSub: { fontSize: 12, color: "#959D90", marginTop: 3 },
+  sheetTitle: {
+    fontFamily: fonts.display,
+    fontSize: 17,
+    color: colors.ink,
+    letterSpacing: track(17, tracking.display),
+  },
+  sheetSub: { fontFamily: fonts.body, fontSize: 12, color: colors.sage, marginTop: 3 },
   sheetClose: {
     width: 28,
     height: 28,
@@ -1424,23 +1450,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  sheetCloseText: { fontSize: 13, color: "#3C5759" },
+  sheetCloseText: { fontSize: 13, color: colors.slate },
   fieldLabel: {
+    fontFamily: fonts.bodySemibold,
     fontSize: 10,
-    fontWeight: "700",
-    color: "#959D90",
-    letterSpacing: 1,
+    color: colors.sage,
+    letterSpacing: track(10, tracking.label),
     marginBottom: 6,
   },
   fieldInput: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: "rgba(25,37,36,0.12)",
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
+    fontFamily: fonts.body,
     fontSize: 14,
-    color: "#192524",
+    color: colors.ink,
   },
   sheetActions: { flexDirection: "row", gap: 10, marginTop: 16 },
   sheetCancelBtn: {
@@ -1451,37 +1478,39 @@ const styles = StyleSheet.create({
     borderColor: "rgba(25,37,36,0.15)",
     alignItems: "center",
   },
-  sheetCancelText: { fontSize: 14, fontWeight: "600", color: "#3C5759" },
+  sheetCancelText: { fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.slate },
   sheetSendBtn: {
     flex: 2,
     paddingVertical: 13,
     borderRadius: 9999,
-    backgroundColor: "#192524",
+    backgroundColor: colors.ink,
     alignItems: "center",
   },
   sheetSignBtn: {
     flex: 2,
     paddingVertical: 13,
     borderRadius: 9999,
-    backgroundColor: "#4A9B7F",
+    backgroundColor: "#4A9B7F", // no brand token — matches "confirmed" stage green
     alignItems: "center",
   },
-  sheetSendText: { fontSize: 14, fontWeight: "700", color: "#fff" },
+  sheetSendText: { fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.surface },
 
   // Sign modal contract summary
-  signTermsCard: { ...GLASS, padding: 14, marginBottom: 14 },
+  signTermsCardShadow: { ...shadows.sm, borderRadius: radii.md, marginBottom: 14 },
+  signTermsCardContent: { padding: 14 },
   signTermRow: { flexDirection: "row", gap: 8, marginBottom: 5 },
-  signTermLabel: { fontSize: 12, color: "#959D90", minWidth: 100 },
-  signTermValue: { fontSize: 12, fontWeight: "600", color: "#192524", flex: 1 },
-  signRoundsNote: { fontSize: 11, color: "#959D90", marginTop: 8 },
+  signTermLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.sage, minWidth: 100 },
+  signTermValue: { fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink, flex: 1 },
+  signRoundsNote: { fontFamily: fonts.body, fontSize: 11, color: colors.sage, marginTop: 8 },
   signAgreementText: {
+    fontFamily: fonts.body,
     fontSize: 12.5,
-    color: "#3C5759",
+    color: colors.slate,
     lineHeight: 18,
     marginBottom: 14,
   },
   signNameInput: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: "rgba(25,37,36,0.12)",
     borderRadius: 12,
@@ -1489,30 +1518,32 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     fontStyle: "italic",
-    color: "#192524",
+    color: colors.ink,
   },
 
-  inputCard: { ...GLASS, padding: 14 },
-  inputField: { fontSize: 14, color: "#192524" },
-  noteCard: { ...GLASS, padding: 14 },
-  noteInput: { fontSize: 14, color: "#192524", minHeight: 80, lineHeight: 21 },
+  inputCardShadow: { ...shadows.sm, borderRadius: radii.md },
+  inputCardContent: { padding: 14 },
+  inputField: { fontFamily: fonts.body, fontSize: 14, color: colors.ink },
+  noteCardShadow: { ...shadows.sm, borderRadius: radii.md },
+  noteCardContent: { padding: 14 },
+  noteInput: { fontFamily: fonts.body, fontSize: 14, color: colors.ink, minHeight: 80, lineHeight: 21 },
   saveBtn: {
-    backgroundColor: "#3C5759",
+    backgroundColor: colors.slate,
     paddingVertical: 14,
     borderRadius: 16,
     alignItems: "center",
     marginTop: 20,
   },
-  saveBtnText: { fontSize: 15, fontWeight: "600", color: "#EFECE9" },
+  saveBtnText: { fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.bone },
   actionRow: { flexDirection: "row", gap: 10 },
   actionPrimary: {
     flex: 1,
-    backgroundColor: "#3C5759",
+    backgroundColor: colors.slate,
     paddingVertical: 13,
     borderRadius: 14,
     alignItems: "center",
   },
-  actionPrimaryText: { fontSize: 14, fontWeight: "600", color: "#EFECE9" },
+  actionPrimaryText: { fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.bone },
   actionDanger: {
     flex: 1,
     backgroundColor: "rgba(200,104,104,0.1)",
@@ -1522,5 +1553,5 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
   },
-  actionDangerText: { fontSize: 14, fontWeight: "600", color: "#C86868" },
+  actionDangerText: { fontFamily: fonts.bodySemibold, fontSize: 14, color: "#C86868" }, // no brand token — semantic danger red
 });
