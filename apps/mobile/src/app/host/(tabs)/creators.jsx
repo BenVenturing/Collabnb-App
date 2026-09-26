@@ -42,6 +42,9 @@ import {
   mockReviews,
   mockPastCollaborations,
 } from "@/data/mockCreators";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import Glass from "@/components/Glass";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
@@ -149,7 +152,7 @@ export default function HostCreatorsScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+    <AtmosphericBackground>
       <StatusBar style="dark" />
       <ScrollView
         style={{ flex: 1 }}
@@ -172,15 +175,16 @@ export default function HostCreatorsScreen() {
           <View>
             <Text
               style={{
+                fontFamily: fonts.display,
                 fontSize: 32,
-                fontWeight: "700",
-                color: "#192524",
+                color: colors.ink,
+                letterSpacing: track(32, tracking.display),
                 marginBottom: 4,
               }}
             >
               Discover Creators
             </Text>
-            <Text style={{ fontSize: 15, color: "#3C5759" }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 15, color: colors.slate }}>
               Find your perfect collaboration match
             </Text>
           </View>
@@ -194,15 +198,15 @@ export default function HostCreatorsScreen() {
                 paddingHorizontal: 14,
                 paddingVertical: 8,
                 borderRadius: 20,
-                backgroundColor: "#D1EBDB",
+                backgroundColor: colors.mint,
               }}
             >
-              <Bookmark color="#192524" size={18} fill="#192524" />
+              <Bookmark color={colors.ink} size={18} fill={colors.ink} />
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 14,
-                  fontWeight: "600",
-                  color: "#192524",
+                  color: colors.ink,
                 }}
               >
                 Saved ({savedCreatorIds.length})
@@ -215,9 +219,10 @@ export default function HostCreatorsScreen() {
         <View style={{ marginBottom: 28 }}>
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 18,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(18, tracking.display),
               marginBottom: 14,
             }}
           >
@@ -235,118 +240,103 @@ export default function HostCreatorsScreen() {
                 activeOpacity={0.8}
                 style={{ width: 290 }}
               >
-                <BlurView
-                  intensity={60}
-                  tint="light"
-                  style={{
-                    borderRadius: 20,
-                    overflow: "hidden",
-                    borderWidth: 1,
-                    borderColor: "rgba(255, 255, 255, 0.5)",
-                  }}
-                >
+                <Glass variant="card" contentStyle={{ padding: 18 }}>
                   <View
                     style={{
-                      backgroundColor: "rgba(255, 255, 255, 0.95)",
-                      padding: 18,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginBottom: 14,
                     }}
                   >
                     <View
                       style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginBottom: 14,
+                        width: 50,
+                        height: 50,
+                        borderRadius: 25,
+                        overflow: "hidden",
+                        borderWidth: 2,
+                        borderColor: colors.surface,
+                        zIndex: 2,
                       }}
                     >
-                      <View
-                        style={{
-                          width: 50,
-                          height: 50,
-                          borderRadius: 25,
-                          overflow: "hidden",
-                          borderWidth: 2,
-                          borderColor: "#fff",
-                          zIndex: 2,
-                        }}
-                      >
-                        <Image
-                          source={{ uri: review.creatorAvatarUri }}
-                          style={{ width: "100%", height: "100%" }}
-                          contentFit="cover"
-                        />
-                      </View>
-                      <View
-                        style={{
-                          width: 50,
-                          height: 50,
-                          borderRadius: 25,
-                          overflow: "hidden",
-                          borderWidth: 2,
-                          borderColor: "#fff",
-                          marginLeft: -18,
-                          zIndex: 1,
-                        }}
-                      >
-                        <Image
-                          source={{ uri: review.listingAvatarUri }}
-                          style={{ width: "100%", height: "100%" }}
-                          contentFit="cover"
-                        />
-                      </View>
-                      <View style={{ marginLeft: 14, flex: 1 }}>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 3,
-                            marginBottom: 3,
-                          }}
-                        >
-                          {Array.from({ length: review.rating }).map((_, i) => (
-                            <Star
-                              key={i}
-                              size={13}
-                              color="#F5D547"
-                              fill="#F5D547"
-                            />
-                          ))}
-                        </View>
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            fontWeight: "600",
-                            color: "#192524",
-                          }}
-                          numberOfLines={1}
-                        >
-                          {review.creatorName}
-                        </Text>
-                      </View>
+                      <Image
+                        source={{ uri: review.creatorAvatarUri }}
+                        style={{ width: "100%", height: "100%" }}
+                        contentFit="cover"
+                      />
                     </View>
-
-                    <Text
+                    <View
                       style={{
-                        fontSize: 14,
-                        color: "#3C5759",
-                        lineHeight: 20,
-                        marginBottom: 10,
-                      }}
-                      numberOfLines={2}
-                    >
-                      {review.snippet}
-                    </Text>
-
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: "#959D90",
-                        fontWeight: "500",
+                        width: 50,
+                        height: 50,
+                        borderRadius: 25,
+                        overflow: "hidden",
+                        borderWidth: 2,
+                        borderColor: colors.surface,
+                        marginLeft: -18,
+                        zIndex: 1,
                       }}
                     >
-                      {review.listingName}
-                    </Text>
+                      <Image
+                        source={{ uri: review.listingAvatarUri }}
+                        style={{ width: "100%", height: "100%" }}
+                        contentFit="cover"
+                      />
+                    </View>
+                    <View style={{ marginLeft: 14, flex: 1 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 3,
+                          marginBottom: 3,
+                        }}
+                      >
+                        {Array.from({ length: review.rating }).map((_, i) => (
+                          <Star
+                            key={i}
+                            size={13}
+                            color="#F5D547" // no brand token — star-rating gold, flagged for design review
+                            fill="#F5D547"
+                          />
+                        ))}
+                      </View>
+                      <Text
+                        style={{
+                          fontFamily: fonts.bodySemibold,
+                          fontSize: 14,
+                          color: colors.ink,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {review.creatorName}
+                      </Text>
+                    </View>
                   </View>
-                </BlurView>
+
+                  <Text
+                    style={{
+                      fontFamily: fonts.body,
+                      fontSize: 14,
+                      color: colors.slate,
+                      lineHeight: 20,
+                      marginBottom: 10,
+                    }}
+                    numberOfLines={2}
+                  >
+                    {review.snippet}
+                  </Text>
+
+                  <Text
+                    style={{
+                      fontFamily: fonts.bodyMedium,
+                      fontSize: 12,
+                      color: colors.sage,
+                    }}
+                  >
+                    {review.listingName}
+                  </Text>
+                </Glass>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -355,9 +345,10 @@ export default function HostCreatorsScreen() {
         {/* Swipe Deck */}
         <Text
           style={{
+            fontFamily: fonts.display,
             fontSize: 18,
-            fontWeight: "700",
-            color: "#192524",
+            color: colors.ink,
+            letterSpacing: track(18, tracking.display),
             marginBottom: 14,
           }}
         >
@@ -407,7 +398,7 @@ export default function HostCreatorsScreen() {
         onSelectListing={handleBulkMessage}
         onClose={() => setShowListingPicker(false)}
       />
-    </View>
+    </AtmosphericBackground>
   );
 }
 
@@ -534,17 +525,17 @@ function SwipeDeck({
           height: 480,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: "#EFECE9",
+          backgroundColor: colors.bone,
           borderRadius: 24,
           padding: 40,
         }}
       >
-        <Users color="#959D90" size={48} />
+        <Users color={colors.sage} size={48} />
         <Text
           style={{
+            fontFamily: fonts.bodySemibold,
             fontSize: 18,
-            fontWeight: "600",
-            color: "#192524",
+            color: colors.ink,
             marginTop: 16,
             textAlign: "center",
           }}
@@ -553,8 +544,9 @@ function SwipeDeck({
         </Text>
         <Text
           style={{
+            fontFamily: fonts.body,
             fontSize: 14,
-            color: "#3C5759",
+            color: colors.slate,
             marginTop: 8,
             textAlign: "center",
           }}
@@ -574,140 +566,125 @@ function SwipeDeck({
             cardAnimatedStyle,
           ]}
         >
-          <BlurView
-            intensity={60}
-            tint="light"
-            style={{
-              flex: 1,
-              borderRadius: 24,
-              overflow: "hidden",
-              borderWidth: 1,
-              borderColor: "rgba(255, 255, 255, 0.5)",
-            }}
-          >
+          {/* radius here (24) is a touch looser than glass.card's 20 (radii.lg) —
+              closest available token, kept for the deck's "hero" card. */}
+          <Glass variant="card" style={{ flex: 1, borderRadius: 24 }}>
             <View
               style={{
-                backgroundColor: "rgba(255, 255, 255, 0.95)",
-                flex: 1,
-                borderRadius: 24,
+                height: 280,
+                width: "100%",
+                backgroundColor: colors.bone,
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                overflow: "hidden",
               }}
             >
-              <View
+              <Image
+                source={{ uri: currentCreator.avatarUri }}
+                style={{ width: "100%", height: "100%" }}
+                contentFit="cover"
+                transition={200}
+              />
+            </View>
+
+            <View style={{ padding: 20 }}>
+              <Text
                 style={{
-                  height: 280,
-                  width: "100%",
-                  backgroundColor: "#EFECE9",
-                  borderTopLeftRadius: 24,
-                  borderTopRightRadius: 24,
-                  overflow: "hidden",
+                  fontFamily: fonts.display,
+                  fontSize: 24,
+                  color: colors.ink,
+                  letterSpacing: track(24, tracking.display),
+                  marginBottom: 6,
                 }}
               >
-                <Image
-                  source={{ uri: currentCreator.avatarUri }}
-                  style={{ width: "100%", height: "100%" }}
-                  contentFit="cover"
-                  transition={200}
-                />
-              </View>
+                {currentCreator.name}
+              </Text>
 
-              <View style={{ padding: 20 }}>
-                <Text
-                  style={{
-                    fontSize: 24,
-                    fontWeight: "700",
-                    color: "#192524",
-                    marginBottom: 6,
-                  }}
-                >
-                  {currentCreator.name}
-                </Text>
-
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 12,
+                }}
+              >
                 <View
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 8,
-                    marginBottom: 12,
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: 12,
+                    backgroundColor: colors.mint,
                   }}
                 >
+                  <Text
+                    style={{
+                      fontFamily: fonts.bodySemibold,
+                      fontSize: 12,
+                      color: colors.ink,
+                    }}
+                  >
+                    {currentCreator.tier}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: 12,
+                    backgroundColor: colors.bone,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: fonts.bodySemibold,
+                      fontSize: 12,
+                      color: colors.ink,
+                    }}
+                  >
+                    {currentCreator.followers} followers
+                  </Text>
+                </View>
+              </View>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 6,
+                  marginBottom: 12,
+                }}
+              >
+                {currentCreator.tags.map((tag, idx) => (
                   <View
+                    key={idx}
                     style={{
                       paddingHorizontal: 10,
-                      paddingVertical: 5,
-                      borderRadius: 12,
-                      backgroundColor: "#D1EBDB",
+                      paddingVertical: 4,
+                      borderRadius: 10,
+                      backgroundColor: colors.bone,
                     }}
                   >
                     <Text
                       style={{
-                        fontSize: 12,
-                        fontWeight: "600",
-                        color: "#192524",
+                        fontFamily: fonts.bodySemibold,
+                        fontSize: 11,
+                        color: colors.slate,
                       }}
                     >
-                      {currentCreator.tier}
+                      {tag}
                     </Text>
                   </View>
-                  <View
-                    style={{
-                      paddingHorizontal: 10,
-                      paddingVertical: 5,
-                      borderRadius: 12,
-                      backgroundColor: "#EFECE9",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "600",
-                        color: "#192524",
-                      }}
-                    >
-                      {currentCreator.followers} followers
-                    </Text>
-                  </View>
-                </View>
-
-                <View
-                  style={{
-                    flexDirection: "row",
-                    flexWrap: "wrap",
-                    gap: 6,
-                    marginBottom: 12,
-                  }}
-                >
-                  {currentCreator.tags.map((tag, idx) => (
-                    <View
-                      key={idx}
-                      style={{
-                        paddingHorizontal: 10,
-                        paddingVertical: 4,
-                        borderRadius: 10,
-                        backgroundColor: "#EFECE9",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          fontWeight: "600",
-                          color: "#3C5759",
-                        }}
-                      >
-                        {tag}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-
-                <Text
-                  style={{ fontSize: 13, color: "#3C5759", lineHeight: 18 }}
-                  numberOfLines={3}
-                >
-                  {currentCreator.bio}
-                </Text>
+                ))}
               </View>
+
+              <Text
+                style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, lineHeight: 18 }}
+                numberOfLines={3}
+              >
+                {currentCreator.bio}
+              </Text>
             </View>
-          </BlurView>
+          </Glass>
 
           {/* Swipe Labels */}
           <Animated.View
@@ -724,13 +701,13 @@ function SwipeDeck({
                 borderRadius: 20,
                 backgroundColor: "rgba(255, 255, 255, 0.95)",
                 borderWidth: 2,
-                borderColor: "#3C5759",
+                borderColor: colors.slate,
               },
               leftLabelStyle,
             ]}
           >
-            <ArrowLeft color="#3C5759" size={20} />
-            <Text style={{ fontSize: 15, fontWeight: "700", color: "#3C5759" }}>
+            <ArrowLeft color={colors.slate} size={20} />
+            <Text style={{ fontFamily: fonts.display, fontSize: 15, color: colors.slate }}>
               Skip
             </Text>
           </Animated.View>
@@ -749,15 +726,15 @@ function SwipeDeck({
                 borderRadius: 20,
                 backgroundColor: "rgba(255, 255, 255, 0.95)",
                 borderWidth: 2,
-                borderColor: "#D1EBDB",
+                borderColor: colors.mint,
               },
               rightLabelStyle,
             ]}
           >
-            <Text style={{ fontSize: 15, fontWeight: "700", color: "#192524" }}>
+            <Text style={{ fontFamily: fonts.display, fontSize: 15, color: colors.ink }}>
               Save
             </Text>
-            <ArrowRight color="#192524" size={20} />
+            <ArrowRight color={colors.ink} size={20} />
           </Animated.View>
 
           <Animated.View
@@ -774,13 +751,13 @@ function SwipeDeck({
                 borderRadius: 20,
                 backgroundColor: "rgba(255, 255, 255, 0.95)",
                 borderWidth: 2,
-                borderColor: "#3C5759",
+                borderColor: colors.slate,
               },
               upLabelStyle,
             ]}
           >
-            <ArrowUp color="#3C5759" size={20} />
-            <Text style={{ fontSize: 15, fontWeight: "700", color: "#3C5759" }}>
+            <ArrowUp color={colors.slate} size={20} />
+            <Text style={{ fontFamily: fonts.display, fontSize: 15, color: colors.slate }}>
               Message Now
             </Text>
           </Animated.View>
@@ -791,6 +768,12 @@ function SwipeDeck({
 }
 
 // Past Collaborations Sheet
+//
+// A true bottom sheet: top-only rounded corners, flush with the screen's
+// bottom edge. <Glass> always rounds all four corners (its `radius` isn't
+// overridable per-corner without editing the locked Glass.jsx), so it can't
+// reproduce this shape — left as a raw BlurView per STYLE-GUIDE.md's "when
+// web and mobile genuinely can't match" guidance. Colors are still tokenized.
 function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
   if (!visible || !creatorId) return null;
 
@@ -837,14 +820,19 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
               style={{
                 padding: 20,
                 borderBottomWidth: 1,
-                borderBottomColor: "#D0D5CE",
+                borderBottomColor: colors.stone,
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
               }}
             >
               <Text
-                style={{ fontSize: 20, fontWeight: "700", color: "#192524" }}
+                style={{
+                  fontFamily: fonts.display,
+                  fontSize: 20,
+                  color: colors.ink,
+                  letterSpacing: track(20, tracking.display),
+                }}
               >
                 Past Collaborations
               </Text>
@@ -854,12 +842,12 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: "#EFECE9",
+                  backgroundColor: colors.bone,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <X color="#3C5759" size={18} />
+                <X color={colors.slate} size={18} />
               </TouchableOpacity>
             </View>
 
@@ -870,12 +858,12 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
             >
               {collabs.length === 0 ? (
                 <View style={{ padding: 40, alignItems: "center" }}>
-                  <Users color="#959D90" size={48} />
+                  <Users color={colors.sage} size={48} />
                   <Text
                     style={{
+                      fontFamily: fonts.bodySemibold,
                       fontSize: 16,
-                      fontWeight: "600",
-                      color: "#192524",
+                      color: colors.ink,
                       marginTop: 16,
                       textAlign: "center",
                     }}
@@ -884,8 +872,9 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
                   </Text>
                   <Text
                     style={{
+                      fontFamily: fonts.body,
                       fontSize: 14,
-                      color: "#3C5759",
+                      color: colors.slate,
                       marginTop: 8,
                       textAlign: "center",
                     }}
@@ -900,10 +889,10 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
                     style={{
                       marginBottom: 16,
                       padding: 16,
-                      backgroundColor: "#EFECE9",
+                      backgroundColor: colors.bone,
                       borderRadius: 16,
                       borderWidth: 1,
-                      borderColor: "#D0D5CE",
+                      borderColor: colors.stone,
                     }}
                   >
                     <View
@@ -917,15 +906,16 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
                       <View style={{ flex: 1 }}>
                         <Text
                           style={{
+                            fontFamily: fonts.display,
                             fontSize: 16,
-                            fontWeight: "700",
-                            color: "#192524",
+                            color: colors.ink,
+                            letterSpacing: track(16, tracking.display),
                             marginBottom: 4,
                           }}
                         >
                           {collab.listingName}
                         </Text>
-                        <Text style={{ fontSize: 13, color: "#3C5759" }}>
+                        <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate }}>
                           {collab.date}
                         </Text>
                       </View>
@@ -940,7 +930,7 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
                           <Star
                             key={i}
                             size={14}
-                            color="#F5D547"
+                            color="#F5D547" // no brand token — star-rating gold, flagged for design review
                             fill="#F5D547"
                           />
                         ))}
@@ -949,8 +939,9 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
 
                     <Text
                       style={{
+                        fontFamily: fonts.body,
                         fontSize: 14,
-                        color: "#192524",
+                        color: colors.ink,
                         lineHeight: 20,
                         marginBottom: 12,
                       }}
@@ -961,22 +952,22 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
                     <View
                       style={{
                         padding: 12,
-                        backgroundColor: "#fff",
+                        backgroundColor: colors.surface,
                         borderRadius: 12,
                         marginBottom: 12,
                       }}
                     >
                       <Text
                         style={{
+                          fontFamily: fonts.bodySemibold,
                           fontSize: 13,
-                          fontWeight: "600",
-                          color: "#192524",
+                          color: colors.ink,
                           marginBottom: 6,
                         }}
                       >
                         Deliverables
                       </Text>
-                      <Text style={{ fontSize: 13, color: "#3C5759" }}>
+                      <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate }}>
                         {collab.deliverableSummary}
                       </Text>
                     </View>
@@ -990,9 +981,9 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
                     >
                       <Text
                         style={{
+                          fontFamily: fonts.bodySemibold,
                           fontSize: 13,
-                          fontWeight: "600",
-                          color: "#192524",
+                          color: colors.ink,
                           marginBottom: 6,
                         }}
                       >
@@ -1000,8 +991,9 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
                       </Text>
                       <Text
                         style={{
+                          fontFamily: fonts.body,
                           fontSize: 12,
-                          color: "#3C5759",
+                          color: colors.slate,
                           fontStyle: "italic",
                         }}
                       >
@@ -1020,6 +1012,9 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
 }
 
 // Saved Creators Modal
+//
+// Another true bottom sheet (top-only radius) — see the note above
+// PastCollaborationsSheet for why this stays a raw BlurView.
 function SavedCreatorsModal({
   visible,
   savedCreatorIds,
@@ -1076,14 +1071,19 @@ function SavedCreatorsModal({
               style={{
                 padding: 20,
                 borderBottomWidth: 1,
-                borderBottomColor: "#D0D5CE",
+                borderBottomColor: colors.stone,
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
               }}
             >
               <Text
-                style={{ fontSize: 20, fontWeight: "700", color: "#192524" }}
+                style={{
+                  fontFamily: fonts.display,
+                  fontSize: 20,
+                  color: colors.ink,
+                  letterSpacing: track(20, tracking.display),
+                }}
               >
                 Saved Creators ({savedCreatorIds.length})
               </Text>
@@ -1093,12 +1093,12 @@ function SavedCreatorsModal({
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: "#EFECE9",
+                  backgroundColor: colors.bone,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <X color="#3C5759" size={18} />
+                <X color={colors.slate} size={18} />
               </TouchableOpacity>
             </View>
 
@@ -1116,10 +1116,10 @@ function SavedCreatorsModal({
                     style={{
                       marginBottom: 12,
                       padding: 16,
-                      backgroundColor: isSelected ? "#D1EBDB" : "#EFECE9",
+                      backgroundColor: isSelected ? colors.mint : colors.bone,
                       borderRadius: 16,
                       borderWidth: 2,
-                      borderColor: isSelected ? "#3C5759" : "transparent",
+                      borderColor: isSelected ? colors.slate : "transparent",
                       flexDirection: "row",
                       alignItems: "center",
                     }}
@@ -1142,9 +1142,9 @@ function SavedCreatorsModal({
                     <View style={{ flex: 1 }}>
                       <Text
                         style={{
+                          fontFamily: fonts.bodySemibold,
                           fontSize: 16,
-                          fontWeight: "600",
-                          color: "#192524",
+                          color: colors.ink,
                           marginBottom: 4,
                         }}
                       >
@@ -1162,25 +1162,25 @@ function SavedCreatorsModal({
                             paddingHorizontal: 8,
                             paddingVertical: 3,
                             borderRadius: 8,
-                            backgroundColor: "#fff",
+                            backgroundColor: colors.surface,
                           }}
                         >
                           <Text
                             style={{
+                              fontFamily: fonts.bodySemibold,
                               fontSize: 11,
-                              fontWeight: "600",
-                              color: "#192524",
+                              color: colors.ink,
                             }}
                           >
                             {creator.tier}
                           </Text>
                         </View>
-                        <Text style={{ fontSize: 12, color: "#3C5759" }}>
+                        <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.slate }}>
                           {creator.followers}
                         </Text>
                       </View>
                     </View>
-                    {isSelected && <CheckCircle2 color="#3C5759" size={24} />}
+                    {isSelected && <CheckCircle2 color={colors.slate} size={24} />}
                   </TouchableOpacity>
                 );
               })}
@@ -1191,7 +1191,7 @@ function SavedCreatorsModal({
                 style={{
                   padding: 20,
                   borderTopWidth: 1,
-                  borderTopColor: "#D0D5CE",
+                  borderTopColor: colors.stone,
                 }}
               >
                 <TouchableOpacity
@@ -1199,16 +1199,16 @@ function SavedCreatorsModal({
                   style={{
                     paddingVertical: 16,
                     borderRadius: 12,
-                    backgroundColor: "#3C5759",
+                    backgroundColor: colors.slate,
                     alignItems: "center",
                     flexDirection: "row",
                     justifyContent: "center",
                     gap: 8,
                   }}
                 >
-                  <Send color="#fff" size={20} />
+                  <Send color={colors.surface} size={20} />
                   <Text
-                    style={{ fontSize: 16, fontWeight: "600", color: "#fff" }}
+                    style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: colors.surface }}
                   >
                     Send to {selectedForBulk.length} creator
                     {selectedForBulk.length > 1 ? "s" : ""}
@@ -1223,7 +1223,8 @@ function SavedCreatorsModal({
   );
 }
 
-// Listing Picker Modal
+// Listing Picker Modal — a centered dialog (not a bottom sheet), so its
+// uniform corner radius can use <Glass> like any other card.
 function ListingPickerModal({
   visible,
   availableListings,
@@ -1247,125 +1248,116 @@ function ListingPickerModal({
           padding: 20,
         }}
       >
-        <BlurView
-          intensity={80}
-          tint="light"
-          style={{ borderRadius: 24, overflow: "hidden", maxHeight: "70%" }}
-        >
+        <Glass variant="card" style={{ borderRadius: 24, maxHeight: "70%" }}>
           <View
             style={{
-              backgroundColor: "rgba(255, 255, 255, 0.98)",
-              borderRadius: 24,
+              padding: 20,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.stone,
             }}
           >
-            <View
+            <Text
               style={{
-                padding: 20,
-                borderBottomWidth: 1,
-                borderBottomColor: "#D0D5CE",
+                fontFamily: fonts.display,
+                fontSize: 20,
+                color: colors.ink,
+                letterSpacing: track(20, tracking.display),
+                marginBottom: 8,
+              }}
+            >
+              Choose a listing
+            </Text>
+            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate }}>
+              Select which listing to propose to selected creators
+            </Text>
+          </View>
+
+          <ScrollView
+            style={{ maxHeight: 400 }}
+            contentContainerStyle={{ padding: 20 }}
+          >
+            {availableListings.length === 0 ? (
+              <View style={{ padding: 40, alignItems: "center" }}>
+                <FileText color={colors.sage} size={48} />
+                <Text
+                  style={{
+                    fontFamily: fonts.bodySemibold,
+                    fontSize: 16,
+                    color: colors.ink,
+                    marginTop: 16,
+                    textAlign: "center",
+                  }}
+                >
+                  No listings available
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: fonts.body,
+                    fontSize: 14,
+                    color: colors.slate,
+                    marginTop: 8,
+                    textAlign: "center",
+                  }}
+                >
+                  Create a listing first
+                </Text>
+              </View>
+            ) : (
+              availableListings.map((listing) => (
+                <TouchableOpacity
+                  key={listing.id}
+                  onPress={() => onSelectListing(listing.id)}
+                  style={{
+                    marginBottom: 12,
+                    padding: 16,
+                    backgroundColor: colors.bone,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: colors.stone,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: fonts.bodySemibold,
+                      fontSize: 16,
+                      color: colors.ink,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {listing.title}
+                  </Text>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate }}>
+                    {listing.location_city}, {listing.location_country}
+                  </Text>
+                </TouchableOpacity>
+              ))
+            )}
+          </ScrollView>
+
+          <View
+            style={{
+              padding: 20,
+              borderTopWidth: 1,
+              borderTopColor: colors.stone,
+            }}
+          >
+            <TouchableOpacity
+              onPress={onClose}
+              style={{
+                paddingVertical: 14,
+                borderRadius: 12,
+                backgroundColor: colors.bone,
+                alignItems: "center",
               }}
             >
               <Text
-                style={{
-                  fontSize: 20,
-                  fontWeight: "700",
-                  color: "#192524",
-                  marginBottom: 8,
-                }}
+                style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}
               >
-                Choose a listing
+                Cancel
               </Text>
-              <Text style={{ fontSize: 14, color: "#3C5759" }}>
-                Select which listing to propose to selected creators
-              </Text>
-            </View>
-
-            <ScrollView
-              style={{ maxHeight: 400 }}
-              contentContainerStyle={{ padding: 20 }}
-            >
-              {availableListings.length === 0 ? (
-                <View style={{ padding: 40, alignItems: "center" }}>
-                  <FileText color="#959D90" size={48} />
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontWeight: "600",
-                      color: "#192524",
-                      marginTop: 16,
-                      textAlign: "center",
-                    }}
-                  >
-                    No listings available
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      color: "#3C5759",
-                      marginTop: 8,
-                      textAlign: "center",
-                    }}
-                  >
-                    Create a listing first
-                  </Text>
-                </View>
-              ) : (
-                availableListings.map((listing) => (
-                  <TouchableOpacity
-                    key={listing.id}
-                    onPress={() => onSelectListing(listing.id)}
-                    style={{
-                      marginBottom: 12,
-                      padding: 16,
-                      backgroundColor: "#EFECE9",
-                      borderRadius: 16,
-                      borderWidth: 1,
-                      borderColor: "#D0D5CE",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        fontWeight: "600",
-                        color: "#192524",
-                        marginBottom: 4,
-                      }}
-                    >
-                      {listing.title}
-                    </Text>
-                    <Text style={{ fontSize: 13, color: "#3C5759" }}>
-                      {listing.location_city}, {listing.location_country}
-                    </Text>
-                  </TouchableOpacity>
-                ))
-              )}
-            </ScrollView>
-
-            <View
-              style={{
-                padding: 20,
-                borderTopWidth: 1,
-                borderTopColor: "#D0D5CE",
-              }}
-            >
-              <TouchableOpacity
-                onPress={onClose}
-                style={{
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  backgroundColor: "#EFECE9",
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{ fontSize: 15, fontWeight: "600", color: "#192524" }}
-                >
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           </View>
-        </BlurView>
+        </Glass>
       </View>
     </Modal>
   );
