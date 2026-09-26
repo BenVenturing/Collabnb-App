@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import ListingCreationShell from "@/components/ListingCreationShell";
 import { Sparkles, FileText, Package, CheckCircle } from "lucide-react-native";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 export default function CreateListingOverview() {
   const router = useRouter();
@@ -40,9 +41,10 @@ export default function CreateListingOverview() {
         <View style={{ marginBottom: 40 }}>
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 32,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(32, tracking.display),
               marginBottom: 12,
             }}
           >
@@ -50,8 +52,9 @@ export default function CreateListingOverview() {
           </Text>
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 16,
-              color: "#3C5759",
+              color: colors.slate,
               lineHeight: 24,
             }}
           >
@@ -66,11 +69,11 @@ export default function CreateListingOverview() {
             <View
               key={idx}
               style={{
-                backgroundColor: "#fff",
+                backgroundColor: colors.surface,
                 borderRadius: 20,
                 padding: 20,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 flexDirection: "row",
                 gap: 16,
                 alignItems: "center",
@@ -81,25 +84,25 @@ export default function CreateListingOverview() {
                   width: 48,
                   height: 48,
                   borderRadius: 24,
-                  backgroundColor: "#D1EBDB",
+                  backgroundColor: colors.mint,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <step.icon color="#3C5759" size={24} />
+                <step.icon color={colors.slate} size={24} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
+                    fontFamily: fonts.bodySemibold,
                     fontSize: 16,
-                    fontWeight: "600",
-                    color: "#192524",
+                    color: colors.ink,
                     marginBottom: 4,
                   }}
                 >
                   {idx + 1}. {step.title}
                 </Text>
-                <Text style={{ fontSize: 14, color: "#3C5759" }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate }}>
                   {step.description}
                 </Text>
               </View>
@@ -113,11 +116,11 @@ export default function CreateListingOverview() {
           style={{
             paddingVertical: 18,
             borderRadius: 14,
-            backgroundColor: "#3C5759",
+            backgroundColor: colors.slate,
             alignItems: "center",
           }}
         >
-          <Text style={{ fontSize: 17, fontWeight: "700", color: "#fff" }}>
+          <Text style={{ fontFamily: fonts.display, fontSize: 17, color: colors.surface }}>
             Get started
           </Text>
         </TouchableOpacity>

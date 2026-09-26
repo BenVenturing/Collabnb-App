@@ -5,6 +5,7 @@ import { X, Plus, HelpCircle, Sparkles } from "lucide-react-native";
 import ListingCreationShell from "@/components/ListingCreationShell";
 import ListingDraftStore from "@/utils/ListingDraftStore";
 import GlassHelpModal from "@/components/GlassHelpModal";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 export default function CreateListingOffer() {
   const router = useRouter();
@@ -136,9 +137,10 @@ export default function CreateListingOffer() {
         <View style={{ paddingHorizontal: 20, paddingTop: 24 }}>
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 28,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(28, tracking.display),
               marginBottom: 8,
             }}
           >
@@ -146,8 +148,9 @@ export default function CreateListingOffer() {
           </Text>
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 15,
-              color: "#3C5759",
+              color: colors.slate,
               marginBottom: 32,
               lineHeight: 22,
             }}
@@ -168,21 +171,23 @@ export default function CreateListingOffer() {
             >
               <Text
                 style={{
+                  fontFamily: fonts.display,
                   fontSize: 16,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: colors.ink,
+                  letterSpacing: track(16, tracking.display),
                 }}
               >
                 Add-ons
               </Text>
               <TouchableOpacity onPress={() => setShowAddonsHelp(true)}>
-                <HelpCircle color="#3C5759" size={18} />
+                <HelpCircle color={colors.slate} size={18} />
               </TouchableOpacity>
             </View>
             <Text
               style={{
+                fontFamily: fonts.body,
                 fontSize: 14,
-                color: "#3C5759",
+                color: colors.slate,
                 marginBottom: 12,
                 lineHeight: 20,
               }}
@@ -199,21 +204,21 @@ export default function CreateListingOffer() {
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      backgroundColor: "#D1EBDB",
+                      backgroundColor: colors.mint,
                       borderRadius: 12,
                       paddingLeft: 16,
                       paddingRight: 8,
                       paddingVertical: 12,
                     }}
                   >
-                    <Text style={{ flex: 1, fontSize: 15, color: "#192524" }}>
+                    <Text style={{ flex: 1, fontFamily: fonts.body, fontSize: 15, color: colors.ink }}>
                       • {perk}
                     </Text>
                     <TouchableOpacity
                       onPress={() => removePerk(idx)}
                       style={{ padding: 4 }}
                     >
-                      <X color="#3C5759" size={18} />
+                      <X color={colors.slate} size={18} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -226,19 +231,20 @@ export default function CreateListingOffer() {
                 value={newPerk}
                 onChangeText={setNewPerk}
                 placeholder="e.g., Hot tub access"
-                placeholderTextColor="#959D90"
+                placeholderTextColor={colors.sage}
                 onSubmitEditing={addPerk}
                 returnKeyType="done"
                 style={{
                   flex: 1,
-                  backgroundColor: "#fff",
+                  backgroundColor: colors.surface,
                   borderWidth: 1,
-                  borderColor: "#D0D5CE",
+                  borderColor: colors.stone,
                   borderRadius: 12,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
+                  fontFamily: fonts.body,
                   fontSize: 15,
-                  color: "#192524",
+                  color: colors.ink,
                 }}
               />
               <TouchableOpacity
@@ -247,12 +253,12 @@ export default function CreateListingOffer() {
                   width: 48,
                   height: 48,
                   borderRadius: 12,
-                  backgroundColor: "#3C5759",
+                  backgroundColor: colors.slate,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Plus color="#fff" size={24} />
+                <Plus color={colors.surface} size={24} />
               </TouchableOpacity>
             </View>
           </View>
@@ -269,21 +275,23 @@ export default function CreateListingOffer() {
             >
               <Text
                 style={{
+                  fontFamily: fonts.display,
                   fontSize: 16,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: colors.ink,
+                  letterSpacing: track(16, tracking.display),
                 }}
               >
                 Affiliate link or code (optional)
               </Text>
               <TouchableOpacity onPress={() => setShowAffiliateHelp(true)}>
-                <HelpCircle color="#3C5759" size={18} />
+                <HelpCircle color={colors.slate} size={18} />
               </TouchableOpacity>
             </View>
             <Text
               style={{
+                fontFamily: fonts.body,
                 fontSize: 14,
-                color: "#3C5759",
+                color: colors.slate,
                 marginBottom: 12,
                 lineHeight: 20,
               }}
@@ -298,18 +306,19 @@ export default function CreateListingOffer() {
                   ListingDraftStore.updateDraft({ affiliate_code: val })
                 }
                 placeholder="e.g., COLLABNB-ABCD or https://..."
-                placeholderTextColor="#959D90"
+                placeholderTextColor={colors.sage}
                 autoCapitalize="characters"
                 style={{
                   flex: 1,
-                  backgroundColor: "#fff",
+                  backgroundColor: colors.surface,
                   borderWidth: 1,
-                  borderColor: "#D0D5CE",
+                  borderColor: colors.stone,
                   borderRadius: 12,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
+                  fontFamily: fonts.body,
                   fontSize: 15,
-                  color: "#192524",
+                  color: colors.ink,
                 }}
               />
             </View>
@@ -322,15 +331,15 @@ export default function CreateListingOffer() {
                 gap: 6,
                 paddingVertical: 12,
                 borderRadius: 10,
-                backgroundColor: "#EFECE9",
+                backgroundColor: colors.bone,
               }}
             >
-              <Sparkles color="#3C5759" size={16} />
+              <Sparkles color={colors.slate} size={16} />
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 14,
-                  fontWeight: "600",
-                  color: "#3C5759",
+                  color: colors.slate,
                 }}
               >
                 Generate code
@@ -342,9 +351,10 @@ export default function CreateListingOffer() {
           <View style={{ marginBottom: 28 }}>
             <Text
               style={{
+                fontFamily: fonts.display,
                 fontSize: 16,
-                fontWeight: "700",
-                color: "#192524",
+                color: colors.ink,
+                letterSpacing: track(16, tracking.display),
                 marginBottom: 12,
               }}
             >
@@ -352,8 +362,9 @@ export default function CreateListingOffer() {
             </Text>
             <Text
               style={{
+                fontFamily: fonts.body,
                 fontSize: 14,
-                color: "#3C5759",
+                color: colors.slate,
                 marginBottom: 12,
                 lineHeight: 20,
               }}
@@ -378,7 +389,7 @@ export default function CreateListingOffer() {
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      backgroundColor: "#EFECE9",
+                      backgroundColor: colors.bone,
                       borderRadius: 20,
                       paddingLeft: 14,
                       paddingRight: 6,
@@ -387,9 +398,9 @@ export default function CreateListingOffer() {
                   >
                     <Text
                       style={{
+                        fontFamily: fonts.bodySemibold,
                         fontSize: 14,
-                        fontWeight: "600",
-                        color: "#192524",
+                        color: colors.ink,
                       }}
                     >
                       {tag}
@@ -398,7 +409,7 @@ export default function CreateListingOffer() {
                       onPress={() => removeTag(idx)}
                       style={{ padding: 4, marginLeft: 4 }}
                     >
-                      <X color="#3C5759" size={16} />
+                      <X color={colors.slate} size={16} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -411,19 +422,20 @@ export default function CreateListingOffer() {
                 value={newTag}
                 onChangeText={setNewTag}
                 placeholder="e.g., Cozy"
-                placeholderTextColor="#959D90"
+                placeholderTextColor={colors.sage}
                 onSubmitEditing={addTag}
                 returnKeyType="done"
                 style={{
                   flex: 1,
-                  backgroundColor: "#fff",
+                  backgroundColor: colors.surface,
                   borderWidth: 1,
-                  borderColor: "#D0D5CE",
+                  borderColor: colors.stone,
                   borderRadius: 12,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
+                  fontFamily: fonts.body,
                   fontSize: 15,
-                  color: "#192524",
+                  color: colors.ink,
                 }}
               />
               <TouchableOpacity
@@ -432,12 +444,12 @@ export default function CreateListingOffer() {
                   width: 48,
                   height: 48,
                   borderRadius: 12,
-                  backgroundColor: "#3C5759",
+                  backgroundColor: colors.slate,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Plus color="#fff" size={24} />
+                <Plus color={colors.surface} size={24} />
               </TouchableOpacity>
             </View>
           </View>
