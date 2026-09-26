@@ -24,8 +24,9 @@ import { api } from "@/convex/_generated/api";
 import { useSavedCollections } from "@/hooks/useSavedCollections";
 import { useAccessGate } from "@/hooks/useAccessGate";
 import { normalizeListing } from "@/utils/listingHelpers";
-import { colors, fonts, radii, shadows } from "@/config/theme";
+import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
 import ExploreMap from "@/components/ExploreMap";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
 
 const PROP_FILTERS = ["All", "Cabin", "Villa", "Treehouse", "Glamping", "Lodge", "Estate", "Cottage"];
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
@@ -125,7 +126,7 @@ export default function ExploreScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bone }}>
+    <AtmosphericBackground style={{ flex: 1 }}>
       <StatusBar style="dark" />
 
       {/* Trial countdown */}
@@ -144,7 +145,7 @@ export default function ExploreScreen() {
           activeOpacity={0.9}
           style={{ backgroundColor: colors.ink, paddingTop: insets.top + 12, paddingBottom: 12, paddingHorizontal: 20, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}
         >
-          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: "#fff" }}>Your trial has ended</Text>
+          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.surface }}>Your trial has ended</Text>
           <View style={{ backgroundColor: colors.mint, borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 4 }}>
             <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink }}>Subscribe</Text>
           </View>
@@ -214,7 +215,7 @@ export default function ExploreScreen() {
         </View>
       ) : listings.length === 0 ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40 }}>
-          <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 18, color: colors.ink, textAlign: "center", marginBottom: 8 }}>
+          <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 18, color: colors.ink, textAlign: "center", marginBottom: 8, letterSpacing: track(18, tracking.display) }}>
             No collaborations here yet
           </Text>
           <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage, textAlign: "center" }}>
@@ -256,8 +257,8 @@ export default function ExploreScreen() {
             ...shadows.lg,
           }}
         >
-          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: "#fff" }}>Map</Text>
-          <MapIcon color="#fff" size={16} />
+          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.surface }}>Map</Text>
+          <MapIcon color={colors.surface} size={16} />
         </TouchableOpacity>
       )}
 
@@ -301,7 +302,7 @@ export default function ExploreScreen() {
             }}
           >
             <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.stone, alignSelf: "center", marginBottom: 8 }} />
-            <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 13, color: colors.ink, paddingHorizontal: 16, marginBottom: 8 }}>
+            <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 13, color: colors.ink, paddingHorizontal: 16, marginBottom: 8, letterSpacing: track(13, tracking.display) }}>
               {mapListInBounds.length} collab{mapListInBounds.length === 1 ? "" : "s"} {mapAreaLabel ? `near ${mapAreaLabel}` : "here"}
             </Text>
             {mapListInBounds.length === 0 ? (
@@ -340,12 +341,12 @@ export default function ExploreScreen() {
                       <Image source={{ uri: item.image }} style={{ width: 48, height: 48 }} contentFit="cover" blurRadius={item._redacted ? 12 : 0} />
                       {item._redacted && (
                         <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(25,37,36,0.3)", alignItems: "center", justifyContent: "center" }}>
-                          <Lock color="#fff" size={14} />
+                          <Lock color={colors.surface} size={14} />
                         </View>
                       )}
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text numberOfLines={1} style={{ fontFamily: fonts.displaySemibold, fontSize: 13, color: colors.ink, opacity: item._redacted ? 0.35 : 1 }}>{item.title}</Text>
+                      <Text numberOfLines={1} style={{ fontFamily: fonts.displaySemibold, fontSize: 13, color: colors.ink, opacity: item._redacted ? 0.35 : 1, letterSpacing: track(13, tracking.display) }}>{item.title}</Text>
                       <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 11, color: colors.sage, marginTop: 1, opacity: item._redacted ? 0.35 : 1 }}>{item.location}</Text>
                       <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink, marginTop: 2 }}>{item.compensation}</Text>
                     </View>
@@ -356,7 +357,7 @@ export default function ExploreScreen() {
           </View>
         </View>
       )}
-    </View>
+    </AtmosphericBackground>
   );
 }
 
@@ -378,8 +379,8 @@ function ListingCard({ listing, saved, onToggleSave, onPress }) {
               hook), just not the listing contents behind it. */}
           {redacted && (
             <View style={{ position: "absolute", inset: 0, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(25,37,36,0.25)" }}>
-              <Lock color="#fff" size={20} style={{ marginBottom: 6, opacity: 0.85 }} />
-              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: "#fff", opacity: 0.85 }}>Apply to view</Text>
+              <Lock color={colors.surface} size={20} style={{ marginBottom: 6, opacity: 0.85 }} />
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.surface, opacity: 0.85 }}>Apply to view</Text>
             </View>
           )}
 
@@ -406,7 +407,7 @@ function ListingCard({ listing, saved, onToggleSave, onPress }) {
             <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.slate, marginLeft: 4 }}>{listing.location}</Text>
           </View>
 
-          <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 16, color: colors.ink, marginBottom: 4, opacity: redacted ? 0.35 : 1 }}>{listing.title}</Text>
+          <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 16, color: colors.ink, marginBottom: 4, opacity: redacted ? 0.35 : 1, letterSpacing: track(16, tracking.display) }}>{listing.title}</Text>
 
           {(listing.rating || listing.host_name) && (
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
@@ -432,7 +433,7 @@ function ListingCard({ listing, saved, onToggleSave, onPress }) {
           )}
 
           <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-            <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 17, color: colors.ink }}>{listing.compensation}</Text>
+            <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 17, color: colors.ink, letterSpacing: track(17, tracking.display) }}>{listing.compensation}</Text>
             {listing.deliverables ? (
               <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, marginLeft: 6 }}>
                 · {listing.deliverables}

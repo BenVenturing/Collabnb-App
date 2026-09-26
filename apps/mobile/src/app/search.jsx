@@ -17,6 +17,8 @@ import {
   MapPin,
   SlidersHorizontal,
 } from "lucide-react-native";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
 
@@ -140,7 +142,7 @@ export default function SearchScreen() {
   const mode = searchQuery.length > 0 ? "typing" : "overview";
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+    <AtmosphericBackground style={{ flex: 1 }}>
       <StatusBar style="dark" />
 
       {/* Header */}
@@ -150,7 +152,7 @@ export default function SearchScreen() {
           paddingHorizontal: 20,
           paddingBottom: 16,
           borderBottomWidth: 1,
-          borderBottomColor: "#D0D5CE",
+          borderBottomColor: colors.stone,
         }}
       >
         <View
@@ -169,23 +171,24 @@ export default function SearchScreen() {
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: "#EFECE9",
+              backgroundColor: colors.bone,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
             {mode === "typing" ? (
-              <ChevronLeft color="#192524" size={24} />
+              <ChevronLeft color={colors.ink} size={24} />
             ) : (
-              <X color="#192524" size={20} />
+              <X color={colors.ink} size={20} />
             )}
           </TouchableOpacity>
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 18,
-              fontWeight: "600",
-              color: "#192524",
+              color: colors.ink,
               flex: 1,
+              letterSpacing: track(18, tracking.display),
             }}
           >
             {mode === "typing" ? "Search destinations" : "Search"}
@@ -197,24 +200,25 @@ export default function SearchScreen() {
           style={{
             flexDirection: "row",
             alignItems: "center",
-            backgroundColor: "#EFECE9",
+            backgroundColor: colors.bone,
             borderRadius: 24,
             paddingHorizontal: 16,
             paddingVertical: 14,
           }}
         >
-          <Search color="#959D90" size={20} />
+          <Search color={colors.sage} size={20} />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search destinations"
-            placeholderTextColor="#959D90"
+            placeholderTextColor={colors.sage}
             autoFocus={mode === "typing"}
             style={{
               flex: 1,
               marginLeft: 12,
+              fontFamily: fonts.body,
               fontSize: 15,
-              color: "#192524",
+              color: colors.ink,
             }}
           />
           {searchQuery && (
@@ -224,12 +228,12 @@ export default function SearchScreen() {
                 width: 24,
                 height: 24,
                 borderRadius: 12,
-                backgroundColor: "#D0D5CE",
+                backgroundColor: colors.stone,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <X color="#192524" size={14} />
+              <X color={colors.ink} size={14} />
             </TouchableOpacity>
           )}
         </View>
@@ -245,10 +249,11 @@ export default function SearchScreen() {
           <View style={{ marginTop: 24, paddingHorizontal: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.displaySemibold,
                 fontSize: 14,
-                fontWeight: "700",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 12,
+                letterSpacing: track(14, tracking.display),
               }}
             >
               Recent searches
@@ -270,7 +275,7 @@ export default function SearchScreen() {
                       width: 40,
                       height: 40,
                       borderRadius: 10,
-                      backgroundColor: "#EFECE9",
+                      backgroundColor: colors.bone,
                       alignItems: "center",
                       justifyContent: "center",
                       marginRight: 12,
@@ -280,9 +285,9 @@ export default function SearchScreen() {
                   </View>
                   <Text
                     style={{
+                      fontFamily: fonts.bodyMedium,
                       fontSize: 15,
-                      fontWeight: "500",
-                      color: "#192524",
+                      color: colors.ink,
                     }}
                   >
                     {search.location}
@@ -301,13 +306,13 @@ export default function SearchScreen() {
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <Text style={{ fontSize: 14, fontWeight: "700", color: "#192524" }}>
+            <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 14, color: colors.ink, letterSpacing: track(14, tracking.display) }}>
               {useLiveResults ? "Destinations" : "Suggested destinations"}
             </Text>
-            {geoLoading && <ActivityIndicator size="small" color="#959D90" />}
+            {geoLoading && <ActivityIndicator size="small" color={colors.sage} />}
           </View>
           {useLiveResults && !geoLoading && geoResults.length === 0 && (
-            <Text style={{ fontSize: 14, color: "#959D90", paddingVertical: 8 }}>No places found.</Text>
+            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage, paddingVertical: 8 }}>No places found.</Text>
           )}
           <View style={{ gap: 2 }}>
             {filteredDestinations.map((dest) => (
@@ -326,26 +331,27 @@ export default function SearchScreen() {
                     width: 48,
                     height: 48,
                     borderRadius: 12,
-                    backgroundColor: "#EFECE9",
+                    backgroundColor: colors.bone,
                     alignItems: "center",
                     justifyContent: "center",
                     marginRight: 16,
                   }}
                 >
-                  {dest.icon ? <Text style={{ fontSize: 24 }}>{dest.icon}</Text> : <MapPin color="#3C5759" size={20} />}
+                  {dest.icon ? <Text style={{ fontSize: 24 }}>{dest.icon}</Text> : <MapPin color={colors.slate} size={20} />}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
                     style={{
+                      fontFamily: fonts.displaySemibold,
                       fontSize: 15,
-                      fontWeight: "600",
-                      color: "#192524",
+                      color: colors.ink,
                       marginBottom: 2,
+                      letterSpacing: track(15, tracking.display),
                     }}
                   >
                     {dest.title}
                   </Text>
-                  <Text style={{ fontSize: 13, color: "#959D90" }}>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage }}>
                     {dest.subtitle}
                   </Text>
                 </View>
@@ -354,6 +360,6 @@ export default function SearchScreen() {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </AtmosphericBackground>
   );
 }

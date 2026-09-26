@@ -11,6 +11,8 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { X } from "lucide-react-native";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 const DELIVERABLES_COUNT_OPTIONS = [
   { value: "", label: "Any" },
@@ -119,7 +121,7 @@ export default function FilterModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={{ flex: 1, backgroundColor: "#fff" }}>
+      <AtmosphericBackground style={{ flex: 1 }}>
         <StatusBar style="dark" />
 
         {/* Header */}
@@ -129,7 +131,7 @@ export default function FilterModal({
             paddingHorizontal: 20,
             paddingBottom: 16,
             borderBottomWidth: 1,
-            borderBottomColor: "#D0D5CE",
+            borderBottomColor: colors.stone,
           }}
         >
           <View
@@ -141,9 +143,10 @@ export default function FilterModal({
           >
             <Text
               style={{
+                fontFamily: fonts.display,
                 fontSize: 20,
-                fontWeight: "700",
-                color: "#192524",
+                color: colors.ink,
+                letterSpacing: track(20, tracking.display),
               }}
             >
               Filters
@@ -154,12 +157,12 @@ export default function FilterModal({
                 width: 40,
                 height: 40,
                 borderRadius: 20,
-                backgroundColor: "#EFECE9",
+                backgroundColor: colors.bone,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <X color="#192524" size={20} />
+              <X color={colors.ink} size={20} />
             </TouchableOpacity>
           </View>
         </View>
@@ -175,10 +178,11 @@ export default function FilterModal({
             <View style={{ marginBottom: 24 }}>
               <Text
                 style={{
+                  fontFamily: fonts.displaySemibold,
                   fontSize: 14,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 12,
+                  letterSpacing: track(14, tracking.display),
                 }}
               >
                 Number of deliverables
@@ -200,18 +204,18 @@ export default function FilterModal({
                       borderRadius: 20,
                       backgroundColor:
                         deliverablesCount === option.value
-                          ? "#3C5759"
-                          : "#EFECE9",
+                          ? colors.slate
+                          : colors.bone,
                     }}
                   >
                     <Text
                       style={{
+                        fontFamily: fonts.bodySemibold,
                         fontSize: 13,
-                        fontWeight: "600",
                         color:
                           deliverablesCount === option.value
-                            ? "#fff"
-                            : "#192524",
+                            ? colors.surface
+                            : colors.ink,
                       }}
                     >
                       {option.label}
@@ -225,10 +229,11 @@ export default function FilterModal({
             <View style={{ marginBottom: 24 }}>
               <Text
                 style={{
+                  fontFamily: fonts.displaySemibold,
                   fontSize: 14,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 12,
+                  letterSpacing: track(14, tracking.display),
                 }}
               >
                 Price range (value score)
@@ -242,37 +247,39 @@ export default function FilterModal({
                     setPriceRange((prev) => ({ ...prev, min: value }))
                   }
                   placeholder="Min"
-                  placeholderTextColor="#959D90"
+                  placeholderTextColor={colors.sage}
                   keyboardType="numeric"
                   style={{
                     flex: 1,
                     paddingHorizontal: 16,
                     paddingVertical: 12,
                     borderWidth: 1,
-                    borderColor: "#D0D5CE",
+                    borderColor: colors.stone,
                     borderRadius: 12,
+                    fontFamily: fonts.body,
                     fontSize: 15,
-                    color: "#192524",
+                    color: colors.ink,
                   }}
                 />
-                <Text style={{ color: "#959D90" }}>-</Text>
+                <Text style={{ fontFamily: fonts.body, color: colors.sage }}>-</Text>
                 <TextInput
                   value={priceRange.max}
                   onChangeText={(value) =>
                     setPriceRange((prev) => ({ ...prev, max: value }))
                   }
                   placeholder="Max"
-                  placeholderTextColor="#959D90"
+                  placeholderTextColor={colors.sage}
                   keyboardType="numeric"
                   style={{
                     flex: 1,
                     paddingHorizontal: 16,
                     paddingVertical: 12,
                     borderWidth: 1,
-                    borderColor: "#D0D5CE",
+                    borderColor: colors.stone,
                     borderRadius: 12,
+                    fontFamily: fonts.body,
                     fontSize: 15,
-                    color: "#192524",
+                    color: colors.ink,
                   }}
                 />
               </View>
@@ -282,10 +289,11 @@ export default function FilterModal({
             <View style={{ marginBottom: 24 }}>
               <Text
                 style={{
+                  fontFamily: fonts.displaySemibold,
                   fontSize: 14,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 12,
+                  letterSpacing: track(14, tracking.display),
                 }}
               >
                 Complete by date
@@ -294,15 +302,16 @@ export default function FilterModal({
                 value={completeByDate}
                 onChangeText={setCompleteByDate}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor="#959D90"
+                placeholderTextColor={colors.sage}
                 style={{
                   paddingHorizontal: 16,
                   paddingVertical: 12,
                   borderWidth: 1,
-                  borderColor: "#D0D5CE",
+                  borderColor: colors.stone,
                   borderRadius: 12,
+                  fontFamily: fonts.body,
                   fontSize: 15,
-                  color: "#192524",
+                  color: colors.ink,
                 }}
               />
             </View>
@@ -310,7 +319,7 @@ export default function FilterModal({
             <View
               style={{
                 height: 1,
-                backgroundColor: "#D0D5CE",
+                backgroundColor: colors.stone,
                 marginBottom: 24,
               }}
             />
@@ -327,19 +336,19 @@ export default function FilterModal({
                     height: 24,
                     borderRadius: 6,
                     borderWidth: 2,
-                    borderColor: nearbyEnabled ? "#3C5759" : "#D0D5CE",
-                    backgroundColor: nearbyEnabled ? "#3C5759" : "#fff",
+                    borderColor: nearbyEnabled ? colors.slate : colors.stone,
+                    backgroundColor: nearbyEnabled ? colors.slate : colors.surface,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
                   {nearbyEnabled && (
-                    <Text style={{ color: "#fff", fontSize: 14 }}>✓</Text>
+                    <Text style={{ color: colors.surface, fontSize: 14 }}>✓</Text>
                   )}
                 </View>
-                <Text style={{ fontSize: 14, color: "#192524", flex: 1 }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.ink, flex: 1 }}>
                   Nearby only{" "}
-                  <Text style={{ fontSize: 12, color: "#959D90" }}>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.sage }}>
                     (GPS coming soon)
                   </Text>
                 </Text>
@@ -358,9 +367,10 @@ export default function FilterModal({
               >
                 <Text
                   style={{
+                    fontFamily: fonts.displaySemibold,
                     fontSize: 14,
-                    fontWeight: "700",
-                    color: "#192524",
+                    color: colors.ink,
+                    letterSpacing: track(14, tracking.display),
                   }}
                 >
                   Deliverable types
@@ -371,14 +381,14 @@ export default function FilterModal({
                       paddingHorizontal: 8,
                       paddingVertical: 4,
                       borderRadius: 12,
-                      backgroundColor: "#3C5759",
+                      backgroundColor: colors.slate,
                     }}
                   >
                     <Text
                       style={{
+                        fontFamily: fonts.bodySemibold,
                         fontSize: 11,
-                        fontWeight: "600",
-                        color: "#fff",
+                        color: colors.surface,
                       }}
                     >
                       {selectedDeliverables.length} selected
@@ -398,17 +408,17 @@ export default function FilterModal({
                       backgroundColor: selectedDeliverables.includes(
                         deliverable,
                       )
-                        ? "#3C5759"
-                        : "#EFECE9",
+                        ? colors.slate
+                        : colors.bone,
                     }}
                   >
                     <Text
                       style={{
+                        fontFamily: fonts.bodySemibold,
                         fontSize: 13,
-                        fontWeight: "600",
                         color: selectedDeliverables.includes(deliverable)
-                          ? "#fff"
-                          : "#192524",
+                          ? colors.surface
+                          : colors.ink,
                       }}
                     >
                       {deliverable}
@@ -422,10 +432,11 @@ export default function FilterModal({
             <View style={{ marginBottom: 24 }}>
               <Text
                 style={{
+                  fontFamily: fonts.displaySemibold,
                   fontSize: 14,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 12,
+                  letterSpacing: track(14, tracking.display),
                 }}
               >
                 Creator tier
@@ -440,15 +451,15 @@ export default function FilterModal({
                       paddingVertical: 12,
                       borderRadius: 12,
                       backgroundColor:
-                        selectedTier === tier.value ? "#3C5759" : "#EFECE9",
+                        selectedTier === tier.value ? colors.slate : colors.bone,
                       alignItems: "center",
                     }}
                   >
                     <Text
                       style={{
+                        fontFamily: fonts.bodySemibold,
                         fontSize: 14,
-                        fontWeight: "600",
-                        color: selectedTier === tier.value ? "#fff" : "#192524",
+                        color: selectedTier === tier.value ? colors.surface : colors.ink,
                       }}
                     >
                       {tier.label}
@@ -456,7 +467,7 @@ export default function FilterModal({
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={{ fontSize: 12, color: "#959D90", marginTop: 8 }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.sage, marginTop: 8 }}>
                 Listings shown are based on your tier.
               </Text>
             </View>
@@ -473,9 +484,10 @@ export default function FilterModal({
               >
                 <Text
                   style={{
+                    fontFamily: fonts.displaySemibold,
                     fontSize: 14,
-                    fontWeight: "700",
-                    color: "#192524",
+                    color: colors.ink,
+                    letterSpacing: track(14, tracking.display),
                   }}
                 >
                   Compensation
@@ -486,14 +498,14 @@ export default function FilterModal({
                       paddingHorizontal: 8,
                       paddingVertical: 4,
                       borderRadius: 12,
-                      backgroundColor: "#3C5759",
+                      backgroundColor: colors.slate,
                     }}
                   >
                     <Text
                       style={{
+                        fontFamily: fonts.bodySemibold,
                         fontSize: 11,
-                        fontWeight: "600",
-                        color: "#fff",
+                        color: colors.surface,
                       }}
                     >
                       {compensationTypes.length} selected
@@ -511,17 +523,17 @@ export default function FilterModal({
                       paddingVertical: 10,
                       borderRadius: 20,
                       backgroundColor: compensationTypes.includes(comp.value)
-                        ? "#3C5759"
-                        : "#EFECE9",
+                        ? colors.slate
+                        : colors.bone,
                     }}
                   >
                     <Text
                       style={{
+                        fontFamily: fonts.bodySemibold,
                         fontSize: 13,
-                        fontWeight: "600",
                         color: compensationTypes.includes(comp.value)
-                          ? "#fff"
-                          : "#192524",
+                          ? colors.surface
+                          : colors.ink,
                       }}
                     >
                       {comp.label}
@@ -535,10 +547,11 @@ export default function FilterModal({
             <View style={{ marginBottom: 24 }}>
               <Text
                 style={{
+                  fontFamily: fonts.displaySemibold,
                   fontSize: 14,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 12,
+                  letterSpacing: track(14, tracking.display),
                 }}
               >
                 Deliverable load
@@ -557,16 +570,16 @@ export default function FilterModal({
                       paddingVertical: 12,
                       borderRadius: 12,
                       backgroundColor:
-                        deliverableLoad === load.value ? "#3C5759" : "#EFECE9",
+                        deliverableLoad === load.value ? colors.slate : colors.bone,
                       alignItems: "center",
                     }}
                   >
                     <Text
                       style={{
+                        fontFamily: fonts.bodySemibold,
                         fontSize: 14,
-                        fontWeight: "600",
                         color:
-                          deliverableLoad === load.value ? "#fff" : "#192524",
+                          deliverableLoad === load.value ? colors.surface : colors.ink,
                       }}
                     >
                       {load.label}
@@ -580,10 +593,11 @@ export default function FilterModal({
             <View style={{ marginBottom: 24 }}>
               <Text
                 style={{
+                  fontFamily: fonts.displaySemibold,
                   fontSize: 14,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 12,
+                  letterSpacing: track(14, tracking.display),
                 }}
               >
                 Sort by
@@ -598,14 +612,14 @@ export default function FilterModal({
                       paddingVertical: 10,
                       borderRadius: 20,
                       backgroundColor:
-                        sortBy === option.value ? "#3C5759" : "#EFECE9",
+                        sortBy === option.value ? colors.slate : colors.bone,
                     }}
                   >
                     <Text
                       style={{
+                        fontFamily: fonts.bodySemibold,
                         fontSize: 13,
-                        fontWeight: "600",
-                        color: sortBy === option.value ? "#fff" : "#192524",
+                        color: sortBy === option.value ? colors.surface : colors.ink,
                       }}
                     >
                       {option.label}
@@ -621,11 +635,11 @@ export default function FilterModal({
         <View
           style={{
             borderTopWidth: 1,
-            borderTopColor: "#D0D5CE",
+            borderTopColor: colors.stone,
             paddingHorizontal: 20,
             paddingTop: 16,
             paddingBottom: insets.bottom + 16,
-            backgroundColor: "#fff",
+            backgroundColor: colors.surface,
           }}
         >
           <View
@@ -638,9 +652,9 @@ export default function FilterModal({
             <TouchableOpacity onPress={onClearAll}>
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 14,
-                  fontWeight: "600",
-                  color: "#3C5759",
+                  color: colors.slate,
                   textDecorationLine: "underline",
                 }}
               >
@@ -650,7 +664,7 @@ export default function FilterModal({
             <TouchableOpacity
               onPress={onClose}
               style={{
-                backgroundColor: "#3C5759",
+                backgroundColor: colors.slate,
                 paddingHorizontal: 24,
                 paddingVertical: 12,
                 borderRadius: 12,
@@ -658,9 +672,9 @@ export default function FilterModal({
             >
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 15,
-                  fontWeight: "700",
-                  color: "#fff",
+                  color: colors.surface,
                 }}
               >
                 Apply filters
@@ -668,7 +682,7 @@ export default function FilterModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </AtmosphericBackground>
     </Modal>
   );
 }

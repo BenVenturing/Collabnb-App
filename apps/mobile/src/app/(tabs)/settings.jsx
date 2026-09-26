@@ -14,7 +14,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth as useClerkAuth } from "@clerk/clerk-expo";
 import { X, ChevronRight } from "lucide-react-native";
-import ThemedBackground from "@/components/ThemedBackground";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import Glass from "@/components/Glass";
+import { colors, fonts, shadows, tracking, track } from "@/config/theme";
 import {
   setTheme as setStoreTheme,
   getTheme,
@@ -109,7 +111,7 @@ export default function CreatorSettingsScreen() {
   };
 
   return (
-    <ThemedBackground style={{ flex: 1 }}>
+    <AtmosphericBackground style={{ flex: 1 }}>
       <StatusBar style="dark" />
 
       {/* Header */}
@@ -126,7 +128,7 @@ export default function CreatorSettingsScreen() {
         }}
       >
         <Text
-          style={{ fontFamily: "Inter-Bold", fontSize: 20, color: "#192524" }}
+          style={{ fontFamily: fonts.display, fontSize: 20, color: colors.ink, letterSpacing: track(20, tracking.display) }}
         >
           Settings
         </Text>
@@ -141,7 +143,7 @@ export default function CreatorSettingsScreen() {
             justifyContent: "center",
           }}
         >
-          <X color="#3C5759" size={18} />
+          <X color={colors.slate} size={18} />
         </TouchableOpacity>
       </View>
 
@@ -153,10 +155,10 @@ export default function CreatorSettingsScreen() {
         {/* PROFILE section */}
         <Text
           style={{
-            fontFamily: "Inter-Medium",
+            fontFamily: fonts.bodyMedium,
             fontSize: 11,
-            color: "#959D90",
-            letterSpacing: 1.2,
+            color: colors.sage,
+            letterSpacing: track(11, tracking.eyebrow),
             paddingHorizontal: 20,
             paddingTop: 28,
             paddingBottom: 10,
@@ -168,80 +170,76 @@ export default function CreatorSettingsScreen() {
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() => router.push("/(tabs)/profile-edit")}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            backgroundColor: "rgba(255,255,255,0.62)",
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.78)",
-            marginHorizontal: 20,
-            padding: 14,
-            gap: 14,
-            shadowColor: "#3C5759",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.08,
-            shadowRadius: 8,
-            elevation: 2,
-          }}
+          style={{ marginHorizontal: 20, ...shadows.sm }}
         >
-          <View
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              overflow: "hidden",
-              borderWidth: 2,
-              borderColor: "rgba(255,255,255,0.8)",
+          <Glass
+            variant="small"
+            contentStyle={{
+              flexDirection: "row",
+              alignItems: "center",
+              padding: 14,
+              gap: 14,
             }}
           >
-            <Image
-              source={SAMPLE_CREATOR.photo}
-              style={{ width: "100%", height: "100%" }}
-              resizeMode="cover"
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text
+            <View
               style={{
-                fontFamily: "Inter-Bold",
-                fontSize: 16,
-                color: "#192524",
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                overflow: "hidden",
+                borderWidth: 2,
+                borderColor: "rgba(255,255,255,0.8)",
               }}
             >
-              {SAMPLE_CREATOR.name}
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Inter-Regular",
-                fontSize: 13,
-                color: "#959D90",
-                marginTop: 2,
-              }}
-            >
-              {SAMPLE_CREATOR.handle}
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Inter-Regular",
-                fontSize: 11,
-                color: "#D0D5CE",
-                marginTop: 3,
-              }}
-            >
-              Tap to edit profile
-            </Text>
-          </View>
-          <ChevronRight color="#D0D5CE" size={18} />
+              <Image
+                source={SAMPLE_CREATOR.photo}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode="cover"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontFamily: fonts.display,
+                  fontSize: 16,
+                  color: colors.ink,
+                  letterSpacing: track(16, tracking.display),
+                }}
+              >
+                {SAMPLE_CREATOR.name}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  color: colors.sage,
+                  marginTop: 2,
+                }}
+              >
+                {SAMPLE_CREATOR.handle}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 11,
+                  color: colors.stone,
+                  marginTop: 3,
+                }}
+              >
+                Tap to edit profile
+              </Text>
+            </View>
+            <ChevronRight color={colors.stone} size={18} />
+          </Glass>
         </TouchableOpacity>
 
         {/* APPEARANCE section */}
         <Text
           style={{
-            fontFamily: "Inter-Medium",
+            fontFamily: fonts.bodyMedium,
             fontSize: 11,
-            color: "#959D90",
-            letterSpacing: 1.2,
+            color: colors.sage,
+            letterSpacing: track(11, tracking.eyebrow),
             paddingHorizontal: 20,
             paddingTop: 28,
             paddingBottom: 10,
@@ -250,21 +248,8 @@ export default function CreatorSettingsScreen() {
         >
           Appearance
         </Text>
-        <View
-          style={{
-            backgroundColor: "rgba(255,255,255,0.62)",
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.78)",
-            marginHorizontal: 20,
-            overflow: "hidden",
-            shadowColor: "#3C5759",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.06,
-            shadowRadius: 8,
-            elevation: 1,
-          }}
-        >
+        <View style={{ marginHorizontal: 20, ...shadows.sm }}>
+          <Glass variant="small">
           <TouchableOpacity
             onPress={() => setVibeExpanded(!vibeExpanded)}
             activeOpacity={0.8}
@@ -279,25 +264,25 @@ export default function CreatorSettingsScreen() {
             <View style={{ flex: 1 }}>
               <Text
                 style={{
-                  fontFamily: "Inter-Medium",
+                  fontFamily: fonts.bodyMedium,
                   fontSize: 15,
-                  color: "#192524",
+                  color: colors.ink,
                 }}
               >
                 Your Vibe
               </Text>
               <Text
                 style={{
-                  fontFamily: "Inter-Regular",
+                  fontFamily: fonts.body,
                   fontSize: 12,
-                  color: "#959D90",
+                  color: colors.sage,
                   marginTop: 2,
                 }}
               >
                 Changes background theme
               </Text>
             </View>
-            <Text style={{ fontSize: 18, color: "#D0D5CE" }}>
+            <Text style={{ fontSize: 18, color: colors.stone }}>
               {vibeExpanded ? "∨" : "›"}
             </Text>
           </TouchableOpacity>
@@ -334,7 +319,7 @@ export default function CreatorSettingsScreen() {
                         },
                         selectedTheme === theme.id && {
                           transform: [{ scale: 1.18 }],
-                          shadowColor: "#192524",
+                          shadowColor: colors.ink,
                           shadowOffset: { width: 0, height: 6 },
                           shadowOpacity: 0.2,
                           shadowRadius: 10,
@@ -348,9 +333,9 @@ export default function CreatorSettingsScreen() {
                             width: 34,
                             height: 34,
                             borderRadius: 17,
-                            backgroundColor: "#FFFFFF",
+                            backgroundColor: colors.surface,
                             borderWidth: 1.5,
-                            borderColor: "#E8E8E8",
+                            borderColor: colors.stone,
                           }}
                         />
                       ) : (
@@ -365,11 +350,11 @@ export default function CreatorSettingsScreen() {
                   </TouchableOpacity>
                   <Text
                     style={{
+                      fontFamily: selectedTheme === theme.id ? fonts.bodySemibold : fonts.bodyMedium,
                       fontSize: 8,
-                      color: selectedTheme === theme.id ? "#192524" : "#959D90",
+                      color: selectedTheme === theme.id ? colors.ink : colors.sage,
                       textAlign: "center",
                       marginTop: 4,
-                      fontWeight: selectedTheme === theme.id ? "700" : "500",
                     }}
                   >
                     {theme.label}
@@ -378,15 +363,16 @@ export default function CreatorSettingsScreen() {
               ))}
             </View>
           )}
+          </Glass>
         </View>
 
         {/* ACCOUNT section */}
         <Text
           style={{
-            fontFamily: "Inter-Medium",
+            fontFamily: fonts.bodyMedium,
             fontSize: 11,
-            color: "#959D90",
-            letterSpacing: 1.2,
+            color: colors.sage,
+            letterSpacing: track(11, tracking.eyebrow),
             paddingHorizontal: 20,
             paddingTop: 28,
             paddingBottom: 10,
@@ -395,21 +381,8 @@ export default function CreatorSettingsScreen() {
         >
           Account
         </Text>
-        <View
-          style={{
-            backgroundColor: "rgba(255,255,255,0.62)",
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.78)",
-            marginHorizontal: 20,
-            overflow: "hidden",
-            shadowColor: "#3C5759",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.06,
-            shadowRadius: 8,
-            elevation: 1,
-          }}
-        >
+        <View style={{ marginHorizontal: 20, ...shadows.sm }}>
+          <Glass variant="small">
           {[
             {
               label: "Privacy & Security",
@@ -443,14 +416,14 @@ export default function CreatorSettingsScreen() {
               >
                 <Text
                   style={{
-                    fontFamily: "Inter-Medium",
+                    fontFamily: fonts.bodyMedium,
                     fontSize: 15,
-                    color: "#192524",
+                    color: colors.ink,
                   }}
                 >
                   {row.label}
                 </Text>
-                <ChevronRight color="#D0D5CE" size={18} />
+                <ChevronRight color={colors.stone} size={18} />
               </TouchableOpacity>
               {i < arr.length - 1 && (
                 <View
@@ -463,15 +436,16 @@ export default function CreatorSettingsScreen() {
               )}
             </View>
           ))}
+          </Glass>
         </View>
 
         {/* MODE section */}
         <Text
           style={{
-            fontFamily: "Inter-Medium",
+            fontFamily: fonts.bodyMedium,
             fontSize: 11,
-            color: "#959D90",
-            letterSpacing: 1.2,
+            color: colors.sage,
+            letterSpacing: track(11, tracking.eyebrow),
             paddingHorizontal: 20,
             paddingTop: 28,
             paddingBottom: 10,
@@ -480,64 +454,58 @@ export default function CreatorSettingsScreen() {
         >
           Mode
         </Text>
-        <View
-          style={{
-            backgroundColor: "rgba(255,255,255,0.62)",
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.78)",
-            marginHorizontal: 20,
-            padding: 16,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            shadowColor: "#3C5759",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 12,
-            elevation: 3,
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontFamily: "Inter-Bold",
-                fontSize: 15,
-                color: "#192524",
-              }}
-            >
-              🏡 Host Mode
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Inter-Regular",
-                fontSize: 12,
-                color: "#959D90",
-                marginTop: 2,
-              }}
-            >
-              Switch to your host dashboard
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => attemptRoleSwitch("host")}
-            style={{
-              backgroundColor: "#3C5759",
-              paddingHorizontal: 14,
-              paddingVertical: 7,
-              borderRadius: 20,
+        <View style={{ marginHorizontal: 20, ...shadows.md }}>
+          <Glass
+            variant="small"
+            contentStyle={{
+              padding: 16,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
             }}
           >
-            <Text
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontFamily: fonts.display,
+                  fontSize: 15,
+                  color: colors.ink,
+                  letterSpacing: track(15, tracking.display),
+                }}
+              >
+                🏡 Host Mode
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 12,
+                  color: colors.sage,
+                  marginTop: 2,
+                }}
+              >
+                Switch to your host dashboard
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => attemptRoleSwitch("host")}
               style={{
-                fontFamily: "Inter-Medium",
-                fontSize: 13,
-                color: "#EFECE9",
+                backgroundColor: colors.slate,
+                paddingHorizontal: 14,
+                paddingVertical: 7,
+                borderRadius: 20,
               }}
             >
-              Switch ›
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={{
+                  fontFamily: fonts.bodyMedium,
+                  fontSize: 13,
+                  color: colors.bone,
+                }}
+              >
+                Switch ›
+              </Text>
+            </TouchableOpacity>
+          </Glass>
         </View>
 
         {/* Log Out */}
@@ -557,7 +525,7 @@ export default function CreatorSettingsScreen() {
         >
           <Text
             style={{
-              fontFamily: "Inter-Medium",
+              fontFamily: fonts.bodyMedium,
               fontSize: 15,
               color: "#C86868",
             }}
@@ -566,6 +534,6 @@ export default function CreatorSettingsScreen() {
           </Text>
         </TouchableOpacity>
       </ScrollView>
-    </ThemedBackground>
+    </AtmosphericBackground>
   );
 }

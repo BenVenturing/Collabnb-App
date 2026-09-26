@@ -16,6 +16,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Plus, MoreVertical } from "lucide-react-native";
 import { useSavedCollections } from "@/hooks/useSavedCollections";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { colors, fonts, tracking, track, lineHeights } from "@/config/theme";
 
 export default function CreatorSavedScreen() {
   const insets = useSafeAreaInsets();
@@ -48,7 +50,7 @@ export default function CreatorSavedScreen() {
 
   if (!isSignedIn) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#fff" }}>
+      <AtmosphericBackground style={{ flex: 1 }}>
         <StatusBar style="dark" />
         <View
           style={{
@@ -61,19 +63,21 @@ export default function CreatorSavedScreen() {
           <Text style={{ fontSize: 80, marginBottom: 16, opacity: 0.2 }}>♡</Text>
           <Text
             style={{
+              fontFamily: fonts.displaySemibold,
               fontSize: 18,
-              fontWeight: "600",
-              color: "#192524",
+              color: colors.ink,
               textAlign: "center",
               marginBottom: 8,
+              letterSpacing: track(18, tracking.display),
             }}
           >
             Sign in to see your wishlists
           </Text>
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 15,
-              color: "#3C5759",
+              color: colors.slate,
               textAlign: "center",
               marginBottom: 24,
             }}
@@ -83,39 +87,38 @@ export default function CreatorSavedScreen() {
           <TouchableOpacity
             onPress={() => router.push("/signin")}
             style={{
-              backgroundColor: "#3C5759",
+              backgroundColor: colors.slate,
               borderRadius: 12,
               paddingVertical: 14,
               paddingHorizontal: 32,
             }}
           >
-            <Text style={{ fontSize: 15, fontWeight: "600", color: "#fff" }}>
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.surface }}>
               Sign in
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </AtmosphericBackground>
     );
   }
 
   if (isLoading) {
     return (
-      <View
+      <AtmosphericBackground
         style={{
           flex: 1,
-          backgroundColor: "#fff",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
         <StatusBar style="dark" />
-        <ActivityIndicator color="#3C5759" />
-      </View>
+        <ActivityIndicator color={colors.slate} />
+      </AtmosphericBackground>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+    <AtmosphericBackground style={{ flex: 1 }}>
       <StatusBar style="dark" />
 
       <ScrollView
@@ -133,15 +136,17 @@ export default function CreatorSavedScreen() {
         >
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 32,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
               marginBottom: 8,
+              letterSpacing: track(32, tracking.display),
+              lineHeight: 32 * lineHeights.display,
             }}
           >
             Wishlists
           </Text>
-          <Text style={{ fontSize: 15, color: "#3C5759" }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 15, color: colors.slate }}>
             {getTotalSavedCount()} saved collaboration
             {getTotalSavedCount() !== 1 ? "s" : ""}
           </Text>
@@ -152,17 +157,18 @@ export default function CreatorSavedScreen() {
           <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
             <View
               style={{
-                backgroundColor: "#EFECE9",
+                backgroundColor: colors.bone,
                 borderRadius: 20,
                 padding: 20,
               }}
             >
               <Text
                 style={{
+                  fontFamily: fonts.display,
                   fontSize: 18,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 12,
+                  letterSpacing: track(18, tracking.display),
                 }}
               >
                 Create wishlist
@@ -171,14 +177,15 @@ export default function CreatorSavedScreen() {
                 value={newListName}
                 onChangeText={setNewListName}
                 placeholder="Enter list name"
-                placeholderTextColor="#959D90"
+                placeholderTextColor={colors.sage}
                 style={{
-                  backgroundColor: "#fff",
+                  backgroundColor: colors.surface,
                   borderRadius: 12,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
+                  fontFamily: fonts.body,
                   fontSize: 15,
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 16,
                 }}
                 autoFocus
@@ -193,15 +200,15 @@ export default function CreatorSavedScreen() {
                     flex: 1,
                     paddingVertical: 14,
                     borderRadius: 12,
-                    backgroundColor: "#fff",
+                    backgroundColor: colors.surface,
                     alignItems: "center",
                   }}
                 >
                   <Text
                     style={{
+                      fontFamily: fonts.bodySemibold,
                       fontSize: 15,
-                      fontWeight: "600",
-                      color: "#192524",
+                      color: colors.ink,
                     }}
                   >
                     Cancel
@@ -213,12 +220,12 @@ export default function CreatorSavedScreen() {
                     flex: 1,
                     paddingVertical: 14,
                     borderRadius: 12,
-                    backgroundColor: "#3C5759",
+                    backgroundColor: colors.slate,
                     alignItems: "center",
                   }}
                 >
                   <Text
-                    style={{ fontSize: 15, fontWeight: "600", color: "#fff" }}
+                    style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.surface }}
                   >
                     Create
                   </Text>
@@ -231,7 +238,7 @@ export default function CreatorSavedScreen() {
             <TouchableOpacity
               onPress={() => setShowCreateModal(true)}
               style={{
-                backgroundColor: "#EFECE9",
+                backgroundColor: colors.bone,
                 borderRadius: 20,
                 padding: 20,
                 flexDirection: "row",
@@ -239,13 +246,13 @@ export default function CreatorSavedScreen() {
                 justifyContent: "center",
                 gap: 12,
                 borderWidth: 2,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderStyle: "dashed",
               }}
             >
-              <Plus color="#3C5759" size={24} />
+              <Plus color={colors.slate} size={24} />
               <Text
-                style={{ fontSize: 16, fontWeight: "600", color: "#3C5759" }}
+                style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: colors.slate }}
               >
                 Create wishlist
               </Text>
@@ -268,7 +275,7 @@ export default function CreatorSavedScreen() {
                     aspectRatio: 1,
                     borderRadius: 16,
                     overflow: "hidden",
-                    backgroundColor: "#EFECE9",
+                    backgroundColor: colors.bone,
                     marginBottom: 12,
                   }}
                 >
@@ -304,7 +311,7 @@ export default function CreatorSavedScreen() {
                             width: "50%",
                             height: "50%",
                             borderWidth: 1,
-                            borderColor: "#fff",
+                            borderColor: colors.surface,
                           }}
                           resizeMode="cover"
                         />
@@ -317,9 +324,9 @@ export default function CreatorSavedScreen() {
                               style={{
                                 width: "50%",
                                 height: "50%",
-                                backgroundColor: "#D0D5CE",
+                                backgroundColor: colors.stone,
                                 borderWidth: 1,
-                                borderColor: "#fff",
+                                borderColor: colors.surface,
                               }}
                             />
                           ),
@@ -331,16 +338,17 @@ export default function CreatorSavedScreen() {
                 {/* List Info */}
                 <Text
                   style={{
+                    fontFamily: fonts.displaySemibold,
                     fontSize: 16,
-                    fontWeight: "700",
-                    color: "#192524",
+                    color: colors.ink,
                     marginBottom: 4,
+                    letterSpacing: track(16, tracking.display),
                   }}
                   numberOfLines={1}
                 >
                   {list.name}
                 </Text>
-                <Text style={{ fontSize: 13, color: "#3C5759" }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate }}>
                   {list.listing_ids.length} saved
                 </Text>
               </TouchableOpacity>
@@ -361,23 +369,24 @@ export default function CreatorSavedScreen() {
             </Text>
             <Text
               style={{
+                fontFamily: fonts.displaySemibold,
                 fontSize: 18,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 textAlign: "center",
                 marginBottom: 8,
+                letterSpacing: track(18, tracking.display),
               }}
             >
               No wishlists yet
             </Text>
             <Text
-              style={{ fontSize: 15, color: "#3C5759", textAlign: "center" }}
+              style={{ fontFamily: fonts.body, fontSize: 15, color: colors.slate, textAlign: "center" }}
             >
               Create your first wishlist to start saving collaborations
             </Text>
           </View>
         )}
       </ScrollView>
-    </View>
+    </AtmosphericBackground>
   );
 }

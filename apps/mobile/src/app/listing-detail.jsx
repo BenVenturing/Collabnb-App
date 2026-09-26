@@ -29,6 +29,9 @@ import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import ListingDraftStore from "@/utils/ListingDraftStore";
 import { AmenityIcon } from "@/lib/amenityIcons";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import Glass from "@/components/Glass";
+import { colors, fonts, tracking, track, lineHeights } from "@/config/theme";
 
 // Mirrors the compensation/deliverables formatting in (tabs)/index.jsx so a
 // listing reads the same way on Explore and here — keep the two in sync.
@@ -423,7 +426,7 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <View style={{ flex: 1, backgroundColor: "#EFECE9" }}>
+      <AtmosphericBackground style={{ flex: 1 }}>
         <View
           style={{
             paddingTop: insets.top + 12,
@@ -440,17 +443,17 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
                 width: 36,
                 height: 4,
                 borderRadius: 2,
-                backgroundColor: "#D0D5CE",
+                backgroundColor: colors.stone,
               }}
             />
           </View>
 
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 20,
-              fontWeight: "700",
-              color: "#192524",
-              letterSpacing: -0.3,
+              color: colors.ink,
+              letterSpacing: track(20, tracking.display),
             }}
           >
             Apply to {listing.title}
@@ -470,19 +473,21 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
             <Text style={{ fontSize: 48, marginBottom: 16 }}>✕</Text>
             <Text
               style={{
+                fontFamily: fonts.display,
                 fontSize: 22,
-                fontWeight: "700",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
                 textAlign: "center",
+                letterSpacing: track(22, tracking.display),
               }}
             >
               Couldn't submit
             </Text>
             <Text
               style={{
+                fontFamily: fonts.body,
                 fontSize: 15,
-                color: "#3C5759",
+                color: colors.slate,
                 textAlign: "center",
                 lineHeight: 22,
                 marginBottom: 32,
@@ -492,7 +497,7 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
             </Text>
             <TouchableOpacity
               style={{
-                backgroundColor: "#3C5759",
+                backgroundColor: colors.slate,
                 paddingVertical: 14,
                 paddingHorizontal: 32,
                 borderRadius: 24,
@@ -500,12 +505,12 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
               }}
               onPress={() => setError("")}
             >
-              <Text style={{ fontSize: 16, fontWeight: "600", color: "#fff" }}>
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: colors.surface }}>
                 Back to application
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleClose}>
-              <Text style={{ fontSize: 14, fontWeight: "600", color: "#959D90" }}>
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.sage }}>
                 Close
               </Text>
             </TouchableOpacity>
@@ -523,19 +528,21 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
             <Text style={{ fontSize: 48, marginBottom: 16 }}>✅</Text>
             <Text
               style={{
+                fontFamily: fonts.display,
                 fontSize: 22,
-                fontWeight: "700",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
                 textAlign: "center",
+                letterSpacing: track(22, tracking.display),
               }}
             >
               Application Submitted!
             </Text>
             <Text
               style={{
+                fontFamily: fonts.body,
                 fontSize: 15,
-                color: "#3C5759",
+                color: colors.slate,
                 textAlign: "center",
                 lineHeight: 22,
                 marginBottom: 8,
@@ -545,8 +552,9 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
             </Text>
             <Text
               style={{
+                fontFamily: fonts.body,
                 fontSize: 15,
-                color: "#959D90",
+                color: colors.sage,
                 textAlign: "center",
                 marginBottom: 32,
               }}
@@ -555,14 +563,14 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
             </Text>
             <TouchableOpacity
               style={{
-                backgroundColor: "#3C5759",
+                backgroundColor: colors.slate,
                 paddingVertical: 14,
                 paddingHorizontal: 32,
                 borderRadius: 24,
               }}
               onPress={handleClose}
             >
-              <Text style={{ fontSize: 16, fontWeight: "600", color: "#fff" }}>
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: colors.surface }}>
                 Close
               </Text>
             </TouchableOpacity>
@@ -578,21 +586,8 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
             showsVerticalScrollIndicator={false}
           >
             {/* Listing Info Card */}
-            <View
-              style={{
-                backgroundColor: "rgba(255,255,255,0.55)",
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.75)",
-                padding: 16,
-                marginBottom: 24,
-                shadowColor: "#3C5759",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.08,
-                shadowRadius: 8,
-                elevation: 2,
-              }}
-            >
+            <View style={{ marginBottom: 24, shadowColor: colors.slate, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 }}>
+              <Glass variant="regular" contentStyle={{ padding: 16 }}>
               <View
                 style={{
                   flexDirection: "row",
@@ -603,9 +598,9 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
                 <Text style={{ fontSize: 18, marginRight: 8 }}>🏡</Text>
                 <Text
                   style={{
+                    fontFamily: fonts.bodySemibold,
                     fontSize: 15,
-                    fontWeight: "600",
-                    color: "#192524",
+                    color: colors.ink,
                     flex: 1,
                   }}
                 >
@@ -620,7 +615,7 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
                 }}
               >
                 <Text style={{ fontSize: 16, marginRight: 8 }}>📍</Text>
-                <Text style={{ fontSize: 14, color: "#3C5759" }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate }}>
                   {listing.location}
                 </Text>
               </View>
@@ -632,23 +627,24 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
                 }}
               >
                 <Text style={{ fontSize: 16, marginRight: 8 }}>💰</Text>
-                <Text style={{ fontSize: 14, color: "#3C5759" }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate }}>
                   {listing.compensation}
                 </Text>
               </View>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <Text style={{ fontSize: 16, marginRight: 8 }}>📦</Text>
-                <Text style={{ fontSize: 14, color: "#3C5759" }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate }}>
                   {listing.deliverablesLoad} deliverables load
                 </Text>
               </View>
+              </Glass>
             </View>
 
             {/* Divider */}
             <View
               style={{
                 height: 1,
-                backgroundColor: "#D0D5CE",
+                backgroundColor: colors.stone,
                 marginBottom: 24,
               }}
             />
@@ -657,7 +653,7 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
                 editable default-pitch textarea in ListingDetail.jsx */}
             <View style={{ marginBottom: 24 }}>
               <Text
-                style={{ fontSize: 15, fontWeight: "600", color: "#192524", marginBottom: 8 }}
+                style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink, marginBottom: 8 }}
               >
                 Your message
               </Text>
@@ -668,8 +664,9 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
                   borderWidth: 1,
                   borderColor: "rgba(60,87,89,0.2)",
                   padding: 14,
+                  fontFamily: fonts.body,
                   fontSize: 14,
-                  color: "#192524",
+                  color: colors.ink,
                   minHeight: 180,
                   lineHeight: 21,
                 }}
@@ -677,7 +674,7 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
                 onChangeText={setPitch}
                 multiline
                 placeholder="Introduce yourself and explain why you're a great fit..."
-                placeholderTextColor="#959D90"
+                placeholderTextColor={colors.sage}
                 textAlignVertical="top"
               />
             </View>
@@ -686,7 +683,7 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
             <View
               style={{
                 height: 1,
-                backgroundColor: "#D0D5CE",
+                backgroundColor: colors.stone,
                 marginBottom: 24,
               }}
             />
@@ -694,7 +691,7 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
             {/* Submit Button */}
             <TouchableOpacity
               style={{
-                backgroundColor: "#3C5759",
+                backgroundColor: colors.slate,
                 paddingVertical: 16,
                 borderRadius: 24,
                 alignItems: "center",
@@ -703,19 +700,19 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
               onPress={handleSubmit}
               disabled={submitting || !pitch.trim()}
             >
-              <Text style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}>
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: colors.surface }}>
                 {submitting ? "Submitting..." : "Submit Application"}
               </Text>
             </TouchableOpacity>
 
             <Text
-              style={{ fontSize: 13, color: "#959D90", textAlign: "center", marginTop: 16 }}
+              style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage, textAlign: "center", marginTop: 16 }}
             >
               Hosts typically respond in 24–72 hours.
             </Text>
           </ScrollView>
         )}
-      </View>
+      </AtmosphericBackground>
     </Modal>
   );
 }
@@ -752,7 +749,7 @@ function PhotoGallery({ onBack, onEdit, isHost, listingId, coverImage }) {
         />
       ) : (
         <LinearGradient
-          colors={item.colors || ["#D1EBDB", "#3C5759"]}
+          colors={item.colors || [colors.mint, colors.slate]}
           start={{ x: 0.15, y: 0 }}
           end={{ x: 0.85, y: 1 }}
           style={{ width: SCREEN_WIDTH, height: 320 }}
@@ -784,10 +781,10 @@ function PhotoGallery({ onBack, onEdit, isHost, listingId, coverImage }) {
           width: 38,
           height: 38,
           borderRadius: 19,
-          backgroundColor: "#fff",
+          backgroundColor: colors.surface,
           alignItems: "center",
           justifyContent: "center",
-          shadowColor: "#000",
+          shadowColor: colors.ink,
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.15,
           shadowRadius: 8,
@@ -799,7 +796,7 @@ function PhotoGallery({ onBack, onEdit, isHost, listingId, coverImage }) {
           style={{
             fontSize: 28,
             fontWeight: "300",
-            color: "#192524",
+            color: colors.ink,
             marginTop: -2,
           }}
         >
@@ -817,10 +814,10 @@ function PhotoGallery({ onBack, onEdit, isHost, listingId, coverImage }) {
             paddingHorizontal: 16,
             height: 38,
             borderRadius: 19,
-            backgroundColor: "#fff",
+            backgroundColor: colors.surface,
             alignItems: "center",
             justifyContent: "center",
-            shadowColor: "#000",
+            shadowColor: colors.ink,
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.15,
             shadowRadius: 8,
@@ -828,7 +825,7 @@ function PhotoGallery({ onBack, onEdit, isHost, listingId, coverImage }) {
           }}
           onPress={onEdit}
         >
-          <Text style={{ fontSize: 14, fontWeight: "600", color: "#3C5759" }}>
+          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.slate }}>
             Edit
           </Text>
         </TouchableOpacity>
@@ -855,7 +852,7 @@ function PhotoGallery({ onBack, onEdit, isHost, listingId, coverImage }) {
               height: 6,
               borderRadius: 3,
               backgroundColor:
-                currentIndex === index ? "#FFFFFF" : "rgba(255,255,255,0.5)",
+                currentIndex === index ? colors.surface : "rgba(255,255,255,0.5)",
             }}
           />
         ))}
@@ -867,13 +864,13 @@ function PhotoGallery({ onBack, onEdit, isHost, listingId, coverImage }) {
           position: "absolute",
           bottom: 12,
           right: 12,
-          backgroundColor: "rgba(0,0,0,0.55)",
+          backgroundColor: "rgba(25,37,36,0.55)",
           borderRadius: 12,
           paddingHorizontal: 10,
           paddingVertical: 4,
         }}
       >
-        <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
+        <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface, fontSize: 12 }}>
           {currentIndex + 1} / {totalImages}
         </Text>
       </View>
@@ -907,12 +904,12 @@ function HostAvatar({ name, avatarUrl }) {
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: "#D1EBDB",
+        backgroundColor: colors.mint,
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <Text style={{ fontSize: 16, fontWeight: "700", color: "#3C5759" }}>
+      <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: colors.slate }}>
         {initials}
       </Text>
     </View>
@@ -923,13 +920,13 @@ function HostAvatar({ name, avatarUrl }) {
 function RedactedListingDetail({ listing, onBack, onSubscribe }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+    <AtmosphericBackground style={{ flex: 1 }}>
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Blurred hero */}
         <View style={{ height: 300, position: "relative", overflow: "hidden" }}>
           <LinearGradient
-            colors={["#192524", "#3C5759"]}
+            colors={[colors.ink, colors.slate]}
             start={{ x: 0.15, y: 0 }}
             end={{ x: 0.85, y: 1 }}
             style={{ width: "100%", height: "100%" }}
@@ -945,7 +942,7 @@ function RedactedListingDetail({ listing, onBack, onSubscribe }) {
             }}
           >
             <Text style={{ fontSize: 28, marginBottom: 8 }}>🔒</Text>
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>
+            <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface, fontSize: 14 }}>
               Photos hidden
             </Text>
           </BlurView>
@@ -958,12 +955,12 @@ function RedactedListingDetail({ listing, onBack, onSubscribe }) {
               width: 36,
               height: 36,
               borderRadius: 18,
-              backgroundColor: "rgba(0,0,0,0.4)",
+              backgroundColor: "rgba(25,37,36,0.4)",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: "#fff", fontSize: 18 }}>‹</Text>
+            <Text style={{ color: colors.surface, fontSize: 18 }}>‹</Text>
           </TouchableOpacity>
         </View>
 
@@ -980,7 +977,7 @@ function RedactedListingDetail({ listing, onBack, onSubscribe }) {
           />
 
           {listing.location && (
-            <Text style={{ fontSize: 15, color: "#3C5759", fontWeight: "600", marginBottom: 20 }}>
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.slate, marginBottom: 20 }}>
               📍 {listing.location}
             </Text>
           )}
@@ -988,27 +985,27 @@ function RedactedListingDetail({ listing, onBack, onSubscribe }) {
           {/* Offer stats — visible */}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
             {listing.compensation && (
-              <View style={{ flex: 1, minWidth: 100, backgroundColor: "#F7F7F5", borderRadius: 16, padding: 14 }}>
-                <Text style={{ fontSize: 11, fontWeight: "700", color: "#959D90", marginBottom: 4, textTransform: "uppercase" }}>
+              <View style={{ flex: 1, minWidth: 100, backgroundColor: colors.bone, borderRadius: 16, padding: 14 }}>
+                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 11, color: colors.sage, marginBottom: 4, textTransform: "uppercase", letterSpacing: track(11, tracking.eyebrow) }}>
                   Compensation
                 </Text>
-                <Text style={{ fontSize: 14, fontWeight: "700", color: "#192524" }}>{listing.compensation}</Text>
+                <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 14, color: colors.ink, letterSpacing: track(14, tracking.display) }}>{listing.compensation}</Text>
               </View>
             )}
             {listing.deliverables && (
-              <View style={{ flex: 1, minWidth: 100, backgroundColor: "#F7F7F5", borderRadius: 16, padding: 14 }}>
-                <Text style={{ fontSize: 11, fontWeight: "700", color: "#959D90", marginBottom: 4, textTransform: "uppercase" }}>
+              <View style={{ flex: 1, minWidth: 100, backgroundColor: colors.bone, borderRadius: 16, padding: 14 }}>
+                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 11, color: colors.sage, marginBottom: 4, textTransform: "uppercase", letterSpacing: track(11, tracking.eyebrow) }}>
                   Deliverables
                 </Text>
-                <Text style={{ fontSize: 14, fontWeight: "700", color: "#192524" }}>{listing.deliverables}</Text>
+                <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 14, color: colors.ink, letterSpacing: track(14, tracking.display) }}>{listing.deliverables}</Text>
               </View>
             )}
             {listing.dates && (
-              <View style={{ flex: 1, minWidth: 100, backgroundColor: "#F7F7F5", borderRadius: 16, padding: 14 }}>
-                <Text style={{ fontSize: 11, fontWeight: "700", color: "#959D90", marginBottom: 4, textTransform: "uppercase" }}>
+              <View style={{ flex: 1, minWidth: 100, backgroundColor: colors.bone, borderRadius: 16, padding: 14 }}>
+                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 11, color: colors.sage, marginBottom: 4, textTransform: "uppercase", letterSpacing: track(11, tracking.eyebrow) }}>
                   Dates
                 </Text>
-                <Text style={{ fontSize: 14, fontWeight: "700", color: "#192524" }}>{listing.dates}</Text>
+                <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 14, color: colors.ink, letterSpacing: track(14, tracking.display) }}>{listing.dates}</Text>
               </View>
             )}
           </View>
@@ -1032,19 +1029,19 @@ function RedactedListingDetail({ listing, onBack, onSubscribe }) {
           <TouchableOpacity
             onPress={onSubscribe}
             style={{
-              backgroundColor: "#192524",
+              backgroundColor: colors.ink,
               paddingVertical: 16,
               borderRadius: 999,
               alignItems: "center",
             }}
           >
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
+            <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface, fontSize: 15 }}>
               Subscribe to unlock
             </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </AtmosphericBackground>
   );
 }
 
@@ -1071,7 +1068,7 @@ function SaveCollectionModal({ visible, onClose, listingId, collections, onToggl
         <TouchableOpacity activeOpacity={1} onPress={() => {}}>
           <View
             style={{
-              backgroundColor: "#fff",
+              backgroundColor: colors.surface,
               borderTopLeftRadius: 28,
               borderTopRightRadius: 28,
               padding: 20,
@@ -1080,12 +1077,12 @@ function SaveCollectionModal({ visible, onClose, listingId, collections, onToggl
             }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <Text style={{ fontSize: 17, fontWeight: "700", color: "#192524" }}>Save to collection</Text>
+              <Text style={{ fontFamily: fonts.display, fontSize: 17, color: colors.ink, letterSpacing: track(17, tracking.display) }}>Save to collection</Text>
               <TouchableOpacity
                 onPress={onClose}
-                style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: "#F0F0F0", alignItems: "center", justifyContent: "center" }}
+                style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: colors.hairline, alignItems: "center", justifyContent: "center" }}
               >
-                <Text style={{ fontSize: 14, color: "#3C5759" }}>✕</Text>
+                <Text style={{ fontSize: 14, color: colors.slate }}>✕</Text>
               </TouchableOpacity>
             </View>
 
@@ -1107,13 +1104,13 @@ function SaveCollectionModal({ visible, onClose, listingId, collections, onToggl
                       marginBottom: 4,
                     }}
                   >
-                    <Text style={{ fontSize: 15, fontWeight: "600", color: "#192524" }}>{col.name}</Text>
+                    <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}>{col.name}</Text>
                     {isIn && <Check size={18} color="#2d6a4f" strokeWidth={2.5} />}
                   </TouchableOpacity>
                 );
               })}
               {collections.length === 0 && (
-                <Text style={{ fontSize: 14, color: "#959D90", paddingVertical: 8 }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage, paddingVertical: 8 }}>
                   No collections yet — create one below.
                 </Text>
               )}
@@ -1129,19 +1126,20 @@ function SaveCollectionModal({ visible, onClose, listingId, collections, onToggl
                   style={{
                     flex: 1,
                     borderWidth: 1,
-                    borderColor: "#E5E5E0",
+                    borderColor: colors.stone,
                     borderRadius: 14,
                     paddingHorizontal: 14,
                     paddingVertical: 10,
+                    fontFamily: fonts.body,
                     fontSize: 15,
-                    color: "#192524",
+                    color: colors.ink,
                   }}
                 />
                 <TouchableOpacity
                   onPress={handleCreate}
-                  style={{ backgroundColor: "#192524", borderRadius: 14, paddingHorizontal: 18, alignItems: "center", justifyContent: "center" }}
+                  style={{ backgroundColor: colors.ink, borderRadius: 14, paddingHorizontal: 18, alignItems: "center", justifyContent: "center" }}
                 >
-                  <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>Save</Text>
+                  <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface, fontSize: 14 }}>Save</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -1156,12 +1154,12 @@ function SaveCollectionModal({ visible, onClose, listingId, collections, onToggl
                   paddingVertical: 12,
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: "#E5E5E0",
+                  borderColor: colors.stone,
                   borderStyle: "dashed",
                 }}
               >
-                <Plus size={16} color="#3C5759" />
-                <Text style={{ fontSize: 14, fontWeight: "600", color: "#3C5759" }}>New collection</Text>
+                <Plus size={16} color={colors.slate} />
+                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.slate }}>New collection</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -1268,7 +1266,7 @@ export default function ListingDetailScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      <AtmosphericBackground style={{ flex: 1 }}>
         <View
           style={{
             flex: 1,
@@ -1276,9 +1274,9 @@ export default function ListingDetailScreen() {
             justifyContent: "center",
           }}
         >
-          <ActivityIndicator size="large" color="#3C5759" />
+          <ActivityIndicator size="large" color={colors.slate} />
         </View>
-      </View>
+      </AtmosphericBackground>
     );
   }
 
@@ -1294,7 +1292,7 @@ export default function ListingDetailScreen() {
 
   if (!listing) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      <AtmosphericBackground style={{ flex: 1 }}>
         <View
           style={{
             flex: 1,
@@ -1305,11 +1303,12 @@ export default function ListingDetailScreen() {
         >
           <Text
             style={{
+              fontFamily: fonts.displaySemibold,
               fontSize: 18,
-              fontWeight: "600",
-              color: "#192524",
+              color: colors.ink,
               marginBottom: 8,
               textAlign: "center",
+              letterSpacing: track(18, tracking.display),
             }}
           >
             Listing not found
@@ -1317,18 +1316,18 @@ export default function ListingDetailScreen() {
           <TouchableOpacity
             onPress={() => router.back()}
             style={{
-              backgroundColor: "#3C5759",
+              backgroundColor: colors.slate,
               paddingVertical: 12,
               paddingHorizontal: 24,
               borderRadius: 12,
             }}
           >
-            <Text style={{ fontSize: 15, fontWeight: "600", color: "#fff" }}>
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.surface }}>
               Go Back
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </AtmosphericBackground>
     );
   }
 
@@ -1362,7 +1361,7 @@ export default function ListingDetailScreen() {
     : descriptionLines.slice(0, 3).join("\n");
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+    <AtmosphericBackground style={{ flex: 1 }}>
       <StatusBar style="dark" />
 
       {/* Photo Gallery */}
@@ -1379,7 +1378,7 @@ export default function ListingDetailScreen() {
         style={{
           flex: 1,
           marginTop: -40,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.surface,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
         }}
@@ -1390,16 +1389,16 @@ export default function ListingDetailScreen() {
         <View style={{ padding: 20, paddingBottom: 16 }}>
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 26,
-              fontWeight: "700",
-              color: "#192524",
-              letterSpacing: -0.3,
+              color: colors.ink,
+              letterSpacing: track(26, tracking.display),
               marginBottom: 8,
             }}
           >
             {listing.title}
           </Text>
-          <Text style={{ fontSize: 14, color: "#959D90", marginBottom: 12 }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage, marginBottom: 12 }}>
             ✦ Boutique Stay · {listing.location}
           </Text>
           <View style={{ flexDirection: "row", gap: 8 }}>
@@ -1412,7 +1411,7 @@ export default function ListingDetailScreen() {
               }}
             >
               <Text
-                style={{ fontSize: 11, fontWeight: "600", color: "#3C5759" }}
+                style={{ fontFamily: fonts.bodySemibold, fontSize: 11, color: colors.slate }}
               >
                 {listing.status === "active"
                   ? "Active"
@@ -1430,7 +1429,7 @@ export default function ListingDetailScreen() {
               }}
             >
               <Text
-                style={{ fontSize: 11, fontWeight: "600", color: "#959D90" }}
+                style={{ fontFamily: fonts.bodySemibold, fontSize: 11, color: colors.sage }}
               >
                 {listing.tierRequired}
               </Text>
@@ -1448,13 +1447,13 @@ export default function ListingDetailScreen() {
                   paddingHorizontal: 14,
                   paddingVertical: 8,
                   borderRadius: 999,
-                  backgroundColor: "#F7F7F5",
+                  backgroundColor: colors.bone,
                   borderWidth: 1,
-                  borderColor: "#EDEDEA",
+                  borderColor: colors.bone,
                 }}
               >
-                <Share2 size={13} color="#3C5759" strokeWidth={2} />
-                <Text style={{ fontSize: 13, fontWeight: "600", color: "#3C5759" }}>Share</Text>
+                <Share2 size={13} color={colors.slate} strokeWidth={2} />
+                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.slate }}>Share</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setSaveModalVisible(true)}
@@ -1465,18 +1464,18 @@ export default function ListingDetailScreen() {
                   paddingHorizontal: 14,
                   paddingVertical: 8,
                   borderRadius: 999,
-                  backgroundColor: isSaved ? "rgba(192,57,43,0.08)" : "#F7F7F5",
+                  backgroundColor: isSaved ? "rgba(192,57,43,0.08)" : colors.bone,
                   borderWidth: 1,
-                  borderColor: isSaved ? "rgba(192,57,43,0.2)" : "#EDEDEA",
+                  borderColor: isSaved ? "rgba(192,57,43,0.2)" : colors.bone,
                 }}
               >
                 <Heart
                   size={13}
-                  color={isSaved ? "#c0392b" : "#3C5759"}
+                  color={isSaved ? "#c0392b" : colors.slate}
                   fill={isSaved ? "#c0392b" : "none"}
                   strokeWidth={2}
                 />
-                <Text style={{ fontSize: 13, fontWeight: "600", color: isSaved ? "#c0392b" : "#3C5759" }}>
+                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: isSaved ? "#c0392b" : colors.slate }}>
                   {isSaved ? "Saved" : "Save"}
                 </Text>
               </TouchableOpacity>
@@ -1485,7 +1484,7 @@ export default function ListingDetailScreen() {
         </View>
 
         <View
-          style={{ height: 1, backgroundColor: "#F0F0F0", marginBottom: 20 }}
+          style={{ height: 1, backgroundColor: colors.hairline, marginBottom: 20 }}
         />
 
         {/* SECTION 2 — Host Info Row */}
@@ -1497,11 +1496,11 @@ export default function ListingDetailScreen() {
             />
             <View style={{ flex: 1 }}>
               <Text
-                style={{ fontSize: 15, fontWeight: "700", color: "#192524" }}
+                style={{ fontFamily: fonts.displaySemibold, fontSize: 15, color: colors.ink, letterSpacing: track(15, tracking.display) }}
               >
                 Listed by {hostProfile?.full_name || listing.host || "Host"}
               </Text>
-              <Text style={{ fontSize: 13, color: "#959D90" }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage }}>
                 Collabnb Host
               </Text>
             </View>
@@ -1509,7 +1508,7 @@ export default function ListingDetailScreen() {
         </View>
 
         <View
-          style={{ height: 1, backgroundColor: "#F0F0F0", marginBottom: 20 }}
+          style={{ height: 1, backgroundColor: colors.hairline, marginBottom: 20 }}
         />
 
         {/* SECTION 3 — Three highlight pills */}
@@ -1523,53 +1522,55 @@ export default function ListingDetailScreen() {
         >
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 20, marginBottom: 4 }}>🎯</Text>
-            <Text style={{ fontSize: 13, fontWeight: "600", color: "#192524" }}>
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink }}>
               Creator Tier
             </Text>
-            <Text style={{ fontSize: 13, color: "#959D90" }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage }}>
               {listing.tierRequired}
             </Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 20, marginBottom: 4 }}>💰</Text>
-            <Text style={{ fontSize: 13, fontWeight: "600", color: "#192524" }}>
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink }}>
               Compensation
             </Text>
-            <Text style={{ fontSize: 13, color: "#959D90" }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage }}>
               {listing.compensation}
             </Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 20, marginBottom: 4 }}>📦</Text>
-            <Text style={{ fontSize: 13, fontWeight: "600", color: "#192524" }}>
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink }}>
               Deliverables
             </Text>
-            <Text style={{ fontSize: 13, color: "#959D90" }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage }}>
               {listing.deliverablesLoad} load
             </Text>
           </View>
         </View>
 
         <View
-          style={{ height: 1, backgroundColor: "#F0F0F0", marginBottom: 20 }}
+          style={{ height: 1, backgroundColor: colors.hairline, marginBottom: 20 }}
         />
 
         {/* SECTION 4 — About This Stay */}
         <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 18,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
               marginBottom: 12,
+              letterSpacing: track(18, tracking.display),
             }}
           >
             About this stay
           </Text>
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 15,
-              color: "#3C5759",
+              color: colors.slate,
               lineHeight: 24,
               marginBottom: 8,
             }}
@@ -1582,9 +1583,9 @@ export default function ListingDetailScreen() {
             >
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 15,
-                  fontWeight: "600",
-                  color: "#192524",
+                  color: colors.ink,
                   textDecorationLine: "underline",
                 }}
               >
@@ -1595,7 +1596,7 @@ export default function ListingDetailScreen() {
         </View>
 
         <View
-          style={{ height: 1, backgroundColor: "#F0F0F0", marginBottom: 20 }}
+          style={{ height: 1, backgroundColor: colors.hairline, marginBottom: 20 }}
         />
 
         {/* SECTION 4B — Amenities */}
@@ -1603,7 +1604,7 @@ export default function ListingDetailScreen() {
           <>
             <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
               <Text
-                style={{ fontSize: 18, fontWeight: "700", color: "#192524", marginBottom: 14 }}
+                style={{ fontFamily: fonts.display, fontSize: 18, color: colors.ink, marginBottom: 14, letterSpacing: track(18, tracking.display) }}
               >
                 What this place offers
               </Text>
@@ -1621,14 +1622,14 @@ export default function ListingDetailScreen() {
                     }}
                   >
                     <AmenityIcon icon={icon} size={18} />
-                    <Text style={{ fontSize: 14, color: "#3C5759", flex: 1 }}>{label}</Text>
+                    <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate, flex: 1 }}>{label}</Text>
                   </View>
                 ))}
               </View>
             </View>
 
             <View
-              style={{ height: 1, backgroundColor: "#F0F0F0", marginBottom: 20 }}
+              style={{ height: 1, backgroundColor: colors.hairline, marginBottom: 20 }}
             />
           </>
         )}
@@ -1639,10 +1640,11 @@ export default function ListingDetailScreen() {
             <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
               <Text
                 style={{
+                  fontFamily: fonts.display,
                   fontSize: 18,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 12,
+                  letterSpacing: track(18, tracking.display),
                 }}
               >
                 What we're looking for
@@ -1658,14 +1660,15 @@ export default function ListingDetailScreen() {
                   }}
                 >
                   <Text
-                    style={{ fontSize: 12, color: "#3C5759", marginTop: 2 }}
+                    style={{ fontSize: 12, color: colors.slate, marginTop: 2 }}
                   >
                     ✦
                   </Text>
                   <Text
                     style={{
+                      fontFamily: fonts.body,
                       fontSize: 15,
-                      color: "#192524",
+                      color: colors.ink,
                       flex: 1,
                       lineHeight: 20,
                     }}
@@ -1679,7 +1682,7 @@ export default function ListingDetailScreen() {
             <View
               style={{
                 height: 1,
-                backgroundColor: "#F0F0F0",
+                backgroundColor: colors.hairline,
                 marginBottom: 20,
               }}
             />
@@ -1692,10 +1695,11 @@ export default function ListingDetailScreen() {
             <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
               <Text
                 style={{
+                  fontFamily: fonts.display,
                   fontSize: 18,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 12,
+                  letterSpacing: track(18, tracking.display),
                 }}
               >
                 Collab details
@@ -1707,11 +1711,11 @@ export default function ListingDetailScreen() {
                   paddingVertical: 12,
                 }}
               >
-                <Text style={{ fontSize: 15, color: "#3C5759" }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 15, color: colors.slate }}>
                   Available dates
                 </Text>
                 <Text
-                  style={{ fontSize: 15, fontWeight: "600", color: "#192524" }}
+                  style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}
                 >
                   {listing.dates}
                 </Text>
@@ -1721,7 +1725,7 @@ export default function ListingDetailScreen() {
             <View
               style={{
                 height: 1,
-                backgroundColor: "#F0F0F0",
+                backgroundColor: colors.hairline,
                 marginBottom: 20,
               }}
             />
@@ -1732,10 +1736,11 @@ export default function ListingDetailScreen() {
         <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 18,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
               marginBottom: 16,
+              letterSpacing: track(18, tracking.display),
             }}
           >
             Things to know
@@ -1747,16 +1752,16 @@ export default function ListingDetailScreen() {
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
+                    fontFamily: fonts.bodySemibold,
                     fontSize: 15,
-                    fontWeight: "600",
-                    color: "#192524",
+                    color: colors.ink,
                     marginBottom: 4,
                   }}
                 >
                   Content Guidelines
                 </Text>
                 <Text
-                  style={{ fontSize: 14, color: "#3C5759", lineHeight: 20 }}
+                  style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate, lineHeight: 20 }}
                 >
                   Review brand guidelines before applying
                 </Text>
@@ -1768,16 +1773,16 @@ export default function ListingDetailScreen() {
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
+                    fontFamily: fonts.bodySemibold,
                     fontSize: 15,
-                    fontWeight: "600",
-                    color: "#192524",
+                    color: colors.ink,
                     marginBottom: 4,
                   }}
                 >
                   Application Process
                 </Text>
                 <Text
-                  style={{ fontSize: 14, color: "#3C5759", lineHeight: 20 }}
+                  style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate, lineHeight: 20 }}
                 >
                   Host reviews and responds within 48 hours
                 </Text>
@@ -1789,16 +1794,16 @@ export default function ListingDetailScreen() {
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
+                    fontFamily: fonts.bodySemibold,
                     fontSize: 15,
-                    fontWeight: "600",
-                    color: "#192524",
+                    color: colors.ink,
                     marginBottom: 4,
                   }}
                 >
                   After Your Stay
                 </Text>
                 <Text
-                  style={{ fontSize: 14, color: "#3C5759", lineHeight: 20 }}
+                  style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate, lineHeight: 20 }}
                 >
                   Share content within agreed posting window
                 </Text>
@@ -1811,10 +1816,10 @@ export default function ListingDetailScreen() {
         {listing.requirements?.length > 0 && (
           <>
             <View
-              style={{ height: 1, backgroundColor: "#F0F0F0", marginTop: 4, marginBottom: 20 }}
+              style={{ height: 1, backgroundColor: colors.hairline, marginTop: 4, marginBottom: 20 }}
             />
             <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-              <Text style={{ fontSize: 18, fontWeight: "700", color: "#192524", marginBottom: 14 }}>
+              <Text style={{ fontFamily: fonts.display, fontSize: 18, color: colors.ink, marginBottom: 14, letterSpacing: track(18, tracking.display) }}>
                 Requirements
               </Text>
               <View style={{ gap: 10 }}>
@@ -1825,11 +1830,11 @@ export default function ListingDetailScreen() {
                         width: 6,
                         height: 6,
                         borderRadius: 3,
-                        backgroundColor: "#3C5759",
+                        backgroundColor: colors.slate,
                         marginTop: 7,
                       }}
                     />
-                    <Text style={{ fontSize: 14, color: "#3C5759", flex: 1, lineHeight: 20 }}>
+                    <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate, flex: 1, lineHeight: 20 }}>
                       {req}
                     </Text>
                   </View>
@@ -1843,14 +1848,14 @@ export default function ListingDetailScreen() {
         {typeof listing.lat === "number" && typeof listing.lng === "number" && (
           <>
             <View
-              style={{ height: 1, backgroundColor: "#F0F0F0", marginBottom: 20 }}
+              style={{ height: 1, backgroundColor: colors.hairline, marginBottom: 20 }}
             />
             <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-              <Text style={{ fontSize: 18, fontWeight: "700", color: "#192524", marginBottom: 4 }}>
+              <Text style={{ fontFamily: fonts.display, fontSize: 18, color: colors.ink, marginBottom: 4, letterSpacing: track(18, tracking.display) }}>
                 Location
               </Text>
               {listing.locationFull && (
-                <Text style={{ fontSize: 13, color: "#959D90", marginBottom: 12 }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage, marginBottom: 12 }}>
                   {listing.locationFull}
                 </Text>
               )}
@@ -1860,7 +1865,7 @@ export default function ListingDetailScreen() {
                   borderRadius: 20,
                   overflow: "hidden",
                   borderWidth: 1,
-                  borderColor: "#F0F0F0",
+                  borderColor: colors.hairline,
                 }}
               >
                 <MapView
@@ -1885,10 +1890,10 @@ export default function ListingDetailScreen() {
 
         {/* SECTION 10 — Reviews */}
         <View
-          style={{ height: 1, backgroundColor: "#F0F0F0", marginBottom: 20 }}
+          style={{ height: 1, backgroundColor: colors.hairline, marginBottom: 20 }}
         />
         <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
-          <Text style={{ fontSize: 18, fontWeight: "700", color: "#192524", marginBottom: 14 }}>
+          <Text style={{ fontFamily: fonts.display, fontSize: 18, color: colors.ink, marginBottom: 14, letterSpacing: track(18, tracking.display) }}>
             Reviews
           </Text>
           {listingReviews?.length > 0 ? (
@@ -1898,17 +1903,17 @@ export default function ListingDetailScreen() {
                   key={i}
                   style={{
                     width: 240,
-                    backgroundColor: "#F7F7F5",
+                    backgroundColor: colors.bone,
                     borderRadius: 16,
                     padding: 16,
                   }}
                 >
-                  <Quote size={16} color="#959D90" strokeWidth={1.75} style={{ marginBottom: 8 }} />
-                  <Text style={{ fontSize: 13, color: "#3C5759", lineHeight: 19, marginBottom: 12, minHeight: 57 }}>
+                  <Quote size={16} color={colors.sage} strokeWidth={1.75} style={{ marginBottom: 8 }} />
+                  <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, lineHeight: 19, marginBottom: 12, minHeight: 57 }}>
                     {r.comment}
                   </Text>
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#192524" }}>
+                    <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink }}>
                       {r.reviewer_name || "Creator"}
                     </Text>
                     <View style={{ flexDirection: "row", gap: 1 }}>
@@ -1917,8 +1922,8 @@ export default function ListingDetailScreen() {
                           key={si}
                           size={11}
                           strokeWidth={0}
-                          fill={si < r.rating ? "#d9a441" : "#E5E5E0"}
-                          color={si < r.rating ? "#d9a441" : "#E5E5E0"}
+                          fill={si < r.rating ? "#d9a441" : colors.stone}
+                          color={si < r.rating ? "#d9a441" : colors.stone}
                         />
                       ))}
                     </View>
@@ -1927,7 +1932,7 @@ export default function ListingDetailScreen() {
               ))}
             </ScrollView>
           ) : (
-            <Text style={{ fontSize: 14, color: "#959D90" }}>No reviews yet.</Text>
+            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage }}>No reviews yet.</Text>
           )}
         </View>
       </ScrollView>
@@ -1939,9 +1944,9 @@ export default function ListingDetailScreen() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: "rgba(255,255,255,0.97)",
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: "#F0F0F0",
+          borderTopColor: colors.hairline,
           paddingHorizontal: 20,
           paddingTop: 12,
           paddingBottom: insets.bottom + 12,
@@ -1954,14 +1959,14 @@ export default function ListingDetailScreen() {
           <TouchableOpacity
             style={{
               flex: 1,
-              backgroundColor: "#3C5759",
+              backgroundColor: colors.slate,
               paddingVertical: 14,
               borderRadius: 24,
               alignItems: "center",
             }}
             onPress={handleEdit}
           >
-            <Text style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}>
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: colors.surface }}>
               Edit Listing
             </Text>
           </TouchableOpacity>
@@ -1969,20 +1974,20 @@ export default function ListingDetailScreen() {
           <>
             <View style={{ flex: 1 }}>
               <Text
-                style={{ fontSize: 16, fontWeight: "700", color: "#192524" }}
+                style={{ fontFamily: fonts.displaySemibold, fontSize: 16, color: colors.ink, letterSpacing: track(16, tracking.display) }}
               >
                 {listing.compensation?.includes("Free") ||
                 listing.compensation?.includes("Complimentary")
                   ? "Free stay"
                   : listing.compensation?.split("+")[0]?.trim() || "Free stay"}
               </Text>
-              <Text style={{ fontSize: 13, color: "#959D90" }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage }}>
                 {listing.compensation}
               </Text>
             </View>
             <TouchableOpacity
               style={{
-                backgroundColor: hasApplied ? "#D0D5CE" : "#3C5759",
+                backgroundColor: hasApplied ? colors.stone : colors.slate,
                 paddingVertical: 14,
                 paddingHorizontal: 24,
                 borderRadius: 24,
@@ -1991,7 +1996,7 @@ export default function ListingDetailScreen() {
               onPress={hasApplied ? undefined : handleApply}
               disabled={hasApplied}
             >
-              <Text style={{ fontSize: 16, fontWeight: "700", color: hasApplied ? "#3C5759" : "#fff" }}>
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: hasApplied ? colors.slate : colors.surface }}>
                 {hasApplied ? "Applied ✓" : "Apply Now"}
               </Text>
             </TouchableOpacity>
@@ -2021,6 +2026,6 @@ export default function ListingDetailScreen() {
           toggleSaveCvx({ collectionId: String(collectionId), listingId }).catch(() => {});
         }}
       />
-    </View>
+    </AtmosphericBackground>
   );
 }

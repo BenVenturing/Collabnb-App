@@ -15,6 +15,9 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import Glass from "@/components/Glass";
+import { colors, fonts, shadows, tracking, track } from "@/config/theme";
 
 const PROFILE_KEY = "@collabnb_creator_profile_v1";
 
@@ -105,64 +108,58 @@ export default function CreatorProfileEditScreen() {
         key={field.key}
         onPress={() => openEdit(field.key)}
         activeOpacity={0.7}
-        style={{
-          backgroundColor: "rgba(255,255,255,0.62)",
-          borderRadius: 14,
-          borderWidth: 1,
-          borderColor: "rgba(60,87,89,0.08)",
-          marginHorizontal: 20,
-          marginBottom: 8,
-          paddingHorizontal: 16,
-          paddingVertical: 14,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          shadowColor: "#3C5759",
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 4,
-          elevation: 1,
-        }}
+        style={{ marginHorizontal: 20, marginBottom: 8, ...shadows.sm }}
       >
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              fontFamily: "Inter-Medium",
-              fontSize: 13,
-              color: "#959D90",
-              marginBottom: 3,
-            }}
-          >
-            {field.label}
-          </Text>
-          <Text
-            numberOfLines={field.multiline ? 2 : 1}
-            style={{
-              fontFamily: "Inter-Regular",
-              fontSize: 15,
-              color: isEmpty ? "#D0D5CE" : "#192524",
-            }}
-          >
-            {displayValue}
-          </Text>
-        </View>
-        <Text
-          style={{
-            fontFamily: "Inter-Medium",
-            fontSize: 14,
-            color: "#3C5759",
-            textDecorationLine: "underline",
-            marginLeft: 12,
+        <Glass
+          variant="small"
+          contentStyle={{
+            paddingHorizontal: 16,
+            paddingVertical: 14,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
-          {action} ›
-        </Text>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                fontFamily: fonts.bodyMedium,
+                fontSize: 13,
+                color: colors.sage,
+                marginBottom: 3,
+              }}
+            >
+              {field.label}
+            </Text>
+            <Text
+              numberOfLines={field.multiline ? 2 : 1}
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 15,
+                color: isEmpty ? colors.stone : colors.ink,
+              }}
+            >
+              {displayValue}
+            </Text>
+          </View>
+          <Text
+            style={{
+              fontFamily: fonts.bodyMedium,
+              fontSize: 14,
+              color: colors.slate,
+              textDecorationLine: "underline",
+              marginLeft: 12,
+            }}
+          >
+            {action} ›
+          </Text>
+        </Glass>
       </TouchableOpacity>
     );
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+    <AtmosphericBackground style={{ flex: 1 }}>
       <StatusBar style="dark" />
 
       {/* Header */}
@@ -174,21 +171,21 @@ export default function CreatorProfileEditScreen() {
           paddingTop: insets.top + 12,
           paddingBottom: 16,
           borderBottomWidth: 1,
-          borderBottomColor: "#F0F0F0",
+          borderBottomColor: colors.hairline,
         }}
       >
         <TouchableOpacity
           onPress={() => router.back()}
           style={{ marginRight: 16 }}
         >
-          <Text style={{ fontSize: 22, color: "#192524" }}>←</Text>
+          <Text style={{ fontSize: 22, color: colors.ink }}>←</Text>
         </TouchableOpacity>
         <Text
           style={{
-            fontFamily: "Inter-Bold",
+            fontFamily: fonts.display,
             fontSize: 22,
-            color: "#192524",
-            letterSpacing: -0.3,
+            color: colors.ink,
+            letterSpacing: track(22, tracking.display),
           }}
         >
           Personal Info
@@ -208,7 +205,7 @@ export default function CreatorProfileEditScreen() {
             paddingHorizontal: 20,
             paddingVertical: 20,
             borderBottomWidth: 1,
-            borderBottomColor: "#F0F0F0",
+            borderBottomColor: colors.hairline,
             gap: 16,
           }}
         >
@@ -219,7 +216,7 @@ export default function CreatorProfileEditScreen() {
               borderRadius: 32,
               overflow: "hidden",
               borderWidth: 2,
-              borderColor: "#F0F0F0",
+              borderColor: colors.hairline,
             }}
           >
             <Image
@@ -235,9 +232,9 @@ export default function CreatorProfileEditScreen() {
           >
             <Text
               style={{
-                fontFamily: "Inter-Medium",
+                fontFamily: fonts.bodyMedium,
                 fontSize: 15,
-                color: "#3C5759",
+                color: colors.slate,
                 textDecorationLine: "underline",
               }}
             >
@@ -249,10 +246,10 @@ export default function CreatorProfileEditScreen() {
         {/* Personal Info section */}
         <Text
           style={{
-            fontFamily: "Inter-Medium",
+            fontFamily: fonts.bodyMedium,
             fontSize: 11,
-            color: "#959D90",
-            letterSpacing: 1.4,
+            color: colors.sage,
+            letterSpacing: track(11, tracking.eyebrow),
             paddingHorizontal: 20,
             paddingTop: 28,
             paddingBottom: 8,
@@ -266,10 +263,10 @@ export default function CreatorProfileEditScreen() {
         {/* Socials section */}
         <Text
           style={{
-            fontFamily: "Inter-Medium",
+            fontFamily: fonts.bodyMedium,
             fontSize: 11,
-            color: "#959D90",
-            letterSpacing: 1.4,
+            color: colors.sage,
+            letterSpacing: track(11, tracking.eyebrow),
             paddingHorizontal: 20,
             paddingTop: 28,
             paddingBottom: 8,
@@ -301,17 +298,17 @@ export default function CreatorProfileEditScreen() {
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: "rgba(0,0,0,0.35)",
+              backgroundColor: "rgba(25,37,36,0.35)",
             }}
           />
           <View style={{ flex: 1, justifyContent: "flex-end" }}>
             <View
               style={{
-                backgroundColor: "#FFFFFF",
+                backgroundColor: colors.surface,
                 borderTopLeftRadius: 24,
                 borderTopRightRadius: 24,
                 padding: 24,
-                shadowColor: "#000",
+                shadowColor: colors.ink,
                 shadowOffset: { width: 0, height: -4 },
                 shadowOpacity: 0.1,
                 shadowRadius: 20,
@@ -324,17 +321,18 @@ export default function CreatorProfileEditScreen() {
                   width: 36,
                   height: 4,
                   borderRadius: 2,
-                  backgroundColor: "#E0E0E0",
+                  backgroundColor: colors.stone,
                   alignSelf: "center",
                   marginBottom: 20,
                 }}
               />
               <Text
                 style={{
-                  fontFamily: "Inter-Bold",
+                  fontFamily: fonts.display,
                   fontSize: 18,
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 16,
+                  letterSpacing: track(18, tracking.display),
                 }}
               >
                 {activeField?.label}
@@ -353,19 +351,19 @@ export default function CreatorProfileEditScreen() {
                   paddingHorizontal: 14,
                   paddingVertical: 12,
                   fontSize: 15,
-                  color: "#192524",
-                  fontFamily: "Inter-Regular",
+                  color: colors.ink,
+                  fontFamily: fonts.body,
                   marginBottom: 16,
                   minHeight: activeField?.multiline ? 100 : undefined,
                   textAlignVertical: activeField?.multiline ? "top" : "center",
                 }}
-                placeholderTextColor="#D0D5CE"
+                placeholderTextColor={colors.stone}
                 placeholder={`Enter ${activeField?.label?.toLowerCase()}...`}
               />
               <TouchableOpacity
                 onPress={saveEdit}
                 style={{
-                  backgroundColor: "#3C5759",
+                  backgroundColor: colors.slate,
                   paddingVertical: 14,
                   borderRadius: 14,
                   alignItems: "center",
@@ -374,9 +372,9 @@ export default function CreatorProfileEditScreen() {
               >
                 <Text
                   style={{
-                    fontFamily: "Inter-Medium",
+                    fontFamily: fonts.bodyMedium,
                     fontSize: 15,
-                    color: "#EFECE9",
+                    color: colors.bone,
                   }}
                 >
                   Save
@@ -388,9 +386,9 @@ export default function CreatorProfileEditScreen() {
               >
                 <Text
                   style={{
-                    fontFamily: "Inter-Medium",
+                    fontFamily: fonts.bodyMedium,
                     fontSize: 14,
-                    color: "#959D90",
+                    color: colors.sage,
                   }}
                 >
                   Cancel
@@ -418,16 +416,16 @@ export default function CreatorProfileEditScreen() {
           <Text style={{ fontSize: 56, marginBottom: 12 }}>🎉</Text>
           <Text
             style={{
-              fontFamily: "Inter-Bold",
+              fontFamily: fonts.display,
               fontSize: 22,
-              color: "#192524",
-              letterSpacing: -0.3,
+              color: colors.ink,
+              letterSpacing: track(22, tracking.display),
             }}
           >
             Profile updated!
           </Text>
         </View>
       )}
-    </View>
+    </AtmosphericBackground>
   );
 }

@@ -29,8 +29,8 @@ import { useRouter } from "expo-router";
 import { useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
-import ThemedBackground from "@/components/ThemedBackground";
-import { colors, fonts, radii, shadows } from "@/config/theme";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { colors, fonts, radii, shadows, tracking, track, lineHeights } from "@/config/theme";
 
 const IMG_FALLBACK = "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=400";
 
@@ -85,7 +85,7 @@ export default function CreatorCollaborationsScreen() {
   );
 
   return (
-    <ThemedBackground>
+    <AtmosphericBackground>
       <View style={{ flex: 1, backgroundColor: "transparent" }}>
         <StatusBar style="dark" />
 
@@ -100,7 +100,16 @@ export default function CreatorCollaborationsScreen() {
             borderBottomColor: colors.stone,
           }}
         >
-          <Text style={{ fontFamily: fonts.display, fontSize: 28, color: colors.ink, marginBottom: 16 }}>
+          <Text
+            style={{
+              fontFamily: fonts.display,
+              fontSize: 28,
+              color: colors.ink,
+              marginBottom: 16,
+              letterSpacing: track(28, tracking.display),
+              lineHeight: 28 * lineHeights.display,
+            }}
+          >
             Collaborations
           </Text>
 
@@ -145,7 +154,16 @@ export default function CreatorCollaborationsScreen() {
             {filteredCollabs.length === 0 ? (
               <View style={{ alignItems: "center", paddingTop: 40, paddingHorizontal: 40 }}>
                 <Text style={{ fontSize: 32, marginBottom: 12 }}>✦</Text>
-                <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 18, color: colors.ink, marginBottom: 6 }}>
+                <Text
+                  style={{
+                    fontFamily: fonts.displaySemibold,
+                    fontSize: 18,
+                    color: colors.ink,
+                    marginBottom: 6,
+                    letterSpacing: track(18, tracking.display),
+                    lineHeight: 18 * lineHeights.display,
+                  }}
+                >
                   {activeFilter === "active" ? "No collabs yet" : "No archived collaborations"}
                 </Text>
                 {activeFilter === "active" && (
@@ -205,7 +223,13 @@ export default function CreatorCollaborationsScreen() {
                       />
                       <View style={{ flex: 1, padding: 12 }}>
                         <Text
-                          style={{ fontFamily: fonts.displaySemibold, fontSize: 16, color: colors.ink, marginBottom: 4 }}
+                          style={{
+                            fontFamily: fonts.displaySemibold,
+                            fontSize: 16,
+                            color: colors.ink,
+                            marginBottom: 4,
+                            letterSpacing: track(16, tracking.display),
+                          }}
                           numberOfLines={1}
                         >
                           {collab.propertyName}
@@ -292,6 +316,6 @@ export default function CreatorCollaborationsScreen() {
           </ScrollView>
         )}
       </View>
-    </ThemedBackground>
+    </AtmosphericBackground>
   );
 }

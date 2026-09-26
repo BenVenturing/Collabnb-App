@@ -15,6 +15,8 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState, useEffect, useRef } from "react";
 import { Image } from "expo-image";
 import { ArrowLeft, Send } from "lucide-react-native";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { colors, fonts } from "@/config/theme";
 
 export default function CreatorConversationScreen() {
   const insets = useSafeAreaInsets();
@@ -131,24 +133,24 @@ export default function CreatorConversationScreen() {
                 borderBottomRightRadius: 4,
                 padding: 12,
                 paddingHorizontal: 16,
-                backgroundColor: "#D1EBDB",
+                backgroundColor: colors.mint,
               }}
             >
-              <Text style={{ fontSize: 15, color: "#192524", lineHeight: 20 }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 15, color: colors.ink, lineHeight: 20 }}>
                 {item.content}
               </Text>
             </View>
           ) : (
             <View
               style={{
-                backgroundColor: "#EFECE9",
+                backgroundColor: colors.bone,
                 borderRadius: 20,
                 borderBottomLeftRadius: 4,
                 padding: 12,
                 paddingHorizontal: 16,
               }}
             >
-              <Text style={{ fontSize: 15, color: "#192524", lineHeight: 20 }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 15, color: colors.ink, lineHeight: 20 }}>
                 {item.content}
               </Text>
             </View>
@@ -156,8 +158,9 @@ export default function CreatorConversationScreen() {
 
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 11,
-              color: "#959D90",
+              color: colors.sage,
               marginTop: 4,
               marginLeft: isMe ? 0 : 16,
               marginRight: isMe ? 16 : 0,
@@ -194,8 +197,9 @@ export default function CreatorConversationScreen() {
   };
 
   return (
+    <AtmosphericBackground style={{ flex: 1 }}>
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#fff" }}
+      style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={0}
     >
@@ -207,15 +211,15 @@ export default function CreatorConversationScreen() {
           paddingTop: insets.top + 12,
           paddingBottom: 12,
           paddingHorizontal: 16,
-          backgroundColor: "#fff",
+          backgroundColor: colors.surface,
           borderBottomWidth: 1,
-          borderBottomColor: "#D0D5CE",
+          borderBottomColor: colors.stone,
           flexDirection: "row",
           alignItems: "center",
         }}
       >
         <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
-          <ArrowLeft color="#192524" size={24} />
+          <ArrowLeft color={colors.ink} size={24} />
         </TouchableOpacity>
 
         <View
@@ -235,7 +239,7 @@ export default function CreatorConversationScreen() {
           />
         </View>
 
-        <Text style={{ fontSize: 18, fontWeight: "600", color: "#192524" }}>
+        <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 18, color: colors.ink }}>
           User {otherUserId}
         </Text>
       </View>
@@ -261,9 +265,9 @@ export default function CreatorConversationScreen() {
           paddingHorizontal: 16,
           paddingTop: 12,
           paddingBottom: Math.max(insets.bottom, 12),
-          backgroundColor: "#fff",
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: "#D0D5CE",
+          borderTopColor: colors.stone,
           flexDirection: "row",
           alignItems: "center",
         }}
@@ -271,7 +275,7 @@ export default function CreatorConversationScreen() {
         <View
           style={{
             flex: 1,
-            backgroundColor: "#EFECE9",
+            backgroundColor: colors.bone,
             borderRadius: 24,
             paddingHorizontal: 16,
             paddingVertical: 10,
@@ -282,10 +286,11 @@ export default function CreatorConversationScreen() {
             value={newMessage}
             onChangeText={setNewMessage}
             placeholder="Type a message..."
-            placeholderTextColor="#959D90"
+            placeholderTextColor={colors.sage}
             style={{
+              fontFamily: fonts.body,
               fontSize: 15,
-              color: "#192524",
+              color: colors.ink,
               maxHeight: 100,
             }}
             multiline
@@ -304,16 +309,17 @@ export default function CreatorConversationScreen() {
             borderRadius: 22,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: newMessage.trim() ? "#3C5759" : "#D0D5CE",
+            backgroundColor: newMessage.trim() ? colors.slate : colors.stone,
           }}
         >
           <Send
-            color={newMessage.trim() ? "#fff" : "#959D90"}
+            color={newMessage.trim() ? colors.surface : colors.sage}
             size={20}
-            fill={newMessage.trim() ? "#fff" : "transparent"}
+            fill={newMessage.trim() ? colors.surface : "transparent"}
           />
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
+    </AtmosphericBackground>
   );
 }

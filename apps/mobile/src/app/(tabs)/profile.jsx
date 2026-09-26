@@ -12,7 +12,9 @@ import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
 import { useRoleSwitch } from "@/hooks/useRoleSwitch";
 import { getCreatorTier } from "@/utils/profileHelpers";
 import { Instagram, Camera, Youtube, Globe } from "lucide-react-native";
-import ThemedBackground from "@/components/ThemedBackground";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import Glass from "@/components/Glass";
+import { colors, fonts, tracking, track } from "@/config/theme";
 import ProfileInfoCard from "@/components/Profile/ProfileInfoCard";
 import LinksSection from "@/components/Profile/LinksSection";
 import SpecialtiesSection from "@/components/Profile/SpecialtiesSection";
@@ -122,15 +124,15 @@ export default function CreatorProfileScreen() {
 
   if (profile === undefined) {
     return (
-      <ThemedBackground style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+      <AtmosphericBackground style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <StatusBar style="dark" />
-        <ActivityIndicator color="#3C5759" />
-      </ThemedBackground>
+        <ActivityIndicator color={colors.slate} />
+      </AtmosphericBackground>
     );
   }
 
   return (
-    <ThemedBackground style={{ flex: 1 }}>
+    <AtmosphericBackground style={{ flex: 1 }}>
       <StatusBar style="dark" />
 
       {/* Top bar — gear icon only */}
@@ -142,15 +144,10 @@ export default function CreatorProfileScreen() {
           backgroundColor: "transparent",
         }}
       >
-        <TouchableOpacity
-          onPress={() => router.push("/(tabs)/settings")}
-          style={{
-            backgroundColor: "rgba(255,255,255,0.4)",
-            borderRadius: 20,
-            padding: 10,
-          }}
-        >
-          <Settings color="#3C5759" size={24} />
+        <TouchableOpacity onPress={() => router.push("/(tabs)/settings")}>
+          <Glass variant="small" contentStyle={{ padding: 10 }}>
+            <Settings color={colors.slate} size={24} />
+          </Glass>
         </TouchableOpacity>
       </View>
 
@@ -162,10 +159,10 @@ export default function CreatorProfileScreen() {
             height: 96,
             borderRadius: 48,
             borderWidth: 3,
-            borderColor: "#FFFFFF",
+            borderColor: colors.surface,
             overflow: "hidden",
             marginBottom: 16,
-            shadowColor: "#000",
+            shadowColor: colors.ink,
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.15,
             shadowRadius: 12,
@@ -204,26 +201,13 @@ export default function CreatorProfileScreen() {
         {/* Collab Preferences — only shown when prefs are saved */}
         {collabPrefs && (
           <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-            <View
-              style={{
-                backgroundColor: "rgba(255,255,255,0.55)",
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.75)",
-                padding: 16,
-                shadowColor: "#3C5759",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.08,
-                shadowRadius: 12,
-                elevation: 3,
-              }}
-            >
+            <Glass variant="regular" contentStyle={{ padding: 16 }}>
               <Text
                 style={{
-                  fontFamily: "Inter-Medium",
+                  fontFamily: fonts.bodyMedium,
                   fontSize: 10,
-                  color: "#959D90",
-                  letterSpacing: 1.2,
+                  color: colors.sage,
+                  letterSpacing: track(10, tracking.eyebrow),
                   textTransform: "uppercase",
                   marginBottom: 12,
                 }}
@@ -241,12 +225,12 @@ export default function CreatorProfileScreen() {
                   <Text style={{ fontSize: 14, marginRight: 8 }}>📍</Text>
                   <Text
                     style={{
-                      fontFamily: "Inter-Regular",
+                      fontFamily: fonts.body,
                       fontSize: 13,
-                      color: "#3C5759",
+                      color: colors.slate,
                     }}
                   >
-                    <Text style={{ fontWeight: "600", color: "#192524" }}>
+                    <Text style={{ fontFamily: fonts.bodySemibold, color: colors.ink }}>
                       Based in:{" "}
                     </Text>
                     {collabPrefs.currentLocation}
@@ -265,21 +249,21 @@ export default function CreatorProfileScreen() {
                     </Text>
                     <Text
                       style={{
-                        fontFamily: "Inter-Regular",
+                        fontFamily: fonts.body,
                         fontSize: 13,
-                        color: "#3C5759",
+                        color: colors.slate,
                         flex: 1,
                         lineHeight: 20,
                       }}
                     >
-                      <Text style={{ fontWeight: "600", color: "#192524" }}>
+                      <Text style={{ fontFamily: fonts.bodySemibold, color: colors.ink }}>
                         Open to:{" "}
                       </Text>
                       {collabPrefs.collabPrefs.join(", ")}
                     </Text>
                   </View>
                 )}
-            </View>
+            </Glass>
           </View>
         )}
 
@@ -289,18 +273,19 @@ export default function CreatorProfileScreen() {
         >
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 16,
-              fontWeight: "600",
-              color: "#192524",
+              color: colors.ink,
               marginBottom: 12,
+              letterSpacing: track(16, tracking.display),
             }}
           >
             Past Collabs
           </Text>
           {collabs === undefined ? (
-            <ActivityIndicator color="#3C5759" />
+            <ActivityIndicator color={colors.slate} />
           ) : collabs.length === 0 ? (
-            <Text style={{ fontSize: 13, color: "#959D90" }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage }}>
               No past collaborations yet
             </Text>
           ) : (
@@ -316,7 +301,7 @@ export default function CreatorProfileScreen() {
                     height: (400 - 56) / 3,
                     borderRadius: 12,
                     overflow: "hidden",
-                    backgroundColor: "#E5E7EB",
+                    backgroundColor: colors.bone,
                   }}
                 >
                   {collab.image && (
@@ -340,10 +325,10 @@ export default function CreatorProfileScreen() {
                     >
                       <Text
                         style={{
+                          fontFamily: fonts.bodySemibold,
                           fontSize: 9,
-                          fontWeight: "700",
-                          color: "#EFECE9",
-                          letterSpacing: 1,
+                          color: colors.bone,
+                          letterSpacing: track(9, tracking.eyebrow),
                           textTransform: "uppercase",
                         }}
                       >
@@ -371,6 +356,6 @@ export default function CreatorProfileScreen() {
         pendingTargetRole={pendingTargetRole}
         onStartOnboarding={startOnboarding}
       />
-    </ThemedBackground>
+    </AtmosphericBackground>
   );
 }
