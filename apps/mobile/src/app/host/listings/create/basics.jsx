@@ -14,6 +14,7 @@ import { Camera, X, HelpCircle } from "lucide-react-native";
 import ListingCreationShell from "@/components/ListingCreationShell";
 import ListingDraftStore from "@/utils/ListingDraftStore";
 import GlassHelpModal from "@/components/GlassHelpModal";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 export default function CreateListingBasics() {
   const router = useRouter();
@@ -169,9 +170,10 @@ export default function CreateListingBasics() {
         <View style={{ paddingHorizontal: 20, paddingTop: 24 }}>
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 28,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(28, tracking.display),
               marginBottom: 8,
             }}
           >
@@ -179,8 +181,9 @@ export default function CreateListingBasics() {
           </Text>
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 15,
-              color: "#3C5759",
+              color: colors.slate,
               marginBottom: 32,
               lineHeight: 22,
             }}
@@ -193,9 +196,9 @@ export default function CreateListingBasics() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
@@ -205,16 +208,17 @@ export default function CreateListingBasics() {
               value={draft.title}
               onChangeText={(val) => updateField("title", val)}
               placeholder="e.g., Cozy Lake Tahoe Cabin"
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
               style={{
-                backgroundColor: "#fff",
+                backgroundColor: colors.surface,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                fontFamily: fonts.body,
                 fontSize: 16,
-                color: "#192524",
+                color: colors.ink,
               }}
             />
           </View>
@@ -223,9 +227,9 @@ export default function CreateListingBasics() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
@@ -236,34 +240,36 @@ export default function CreateListingBasics() {
                 value={draft.location_city}
                 onChangeText={(val) => updateField("location_city", val)}
                 placeholder="City"
-                placeholderTextColor="#959D90"
+                placeholderTextColor={colors.sage}
                 style={{
                   flex: 1,
-                  backgroundColor: "#fff",
+                  backgroundColor: colors.surface,
                   borderWidth: 1,
-                  borderColor: "#D0D5CE",
+                  borderColor: colors.stone,
                   borderRadius: 12,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
+                  fontFamily: fonts.body,
                   fontSize: 16,
-                  color: "#192524",
+                  color: colors.ink,
                 }}
               />
               <TextInput
                 value={draft.location_country}
                 onChangeText={(val) => updateField("location_country", val)}
                 placeholder="State/Country"
-                placeholderTextColor="#959D90"
+                placeholderTextColor={colors.sage}
                 style={{
                   flex: 1,
-                  backgroundColor: "#fff",
+                  backgroundColor: colors.surface,
                   borderWidth: 1,
-                  borderColor: "#D0D5CE",
+                  borderColor: colors.stone,
                   borderRadius: 12,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
+                  fontFamily: fonts.body,
                   fontSize: 16,
-                  color: "#192524",
+                  color: colors.ink,
                 }}
               />
             </View>
@@ -273,9 +279,9 @@ export default function CreateListingBasics() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
@@ -285,18 +291,19 @@ export default function CreateListingBasics() {
               value={draft.airbnb_url || ""}
               onChangeText={(val) => updateField("airbnb_url", val)}
               placeholder="https://airbnb.com/rooms/12345678"
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
               autoCapitalize="none"
               keyboardType="url"
               style={{
-                backgroundColor: "#fff",
+                backgroundColor: colors.surface,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                fontFamily: fonts.body,
                 fontSize: 16,
-                color: "#192524",
+                color: colors.ink,
               }}
             />
             {draft.airbnb_url && (
@@ -307,12 +314,12 @@ export default function CreateListingBasics() {
                   paddingVertical: 10,
                   paddingHorizontal: 14,
                   borderRadius: 8,
-                  backgroundColor: "#EFECE9",
+                  backgroundColor: colors.bone,
                   alignItems: "center",
                 }}
               >
                 <Text
-                  style={{ fontSize: 14, fontWeight: "600", color: "#3C5759" }}
+                  style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.slate }}
                 >
                   📥 Import property images (Coming Soon)
                 </Text>
@@ -324,9 +331,9 @@ export default function CreateListingBasics() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
@@ -348,7 +355,7 @@ export default function CreateListingBasics() {
                         width: 100,
                         height: 100,
                         borderRadius: 12,
-                        backgroundColor: "#EFECE9",
+                        backgroundColor: colors.bone,
                       }}
                     />
                     <TouchableOpacity
@@ -357,12 +364,12 @@ export default function CreateListingBasics() {
                         position: "absolute",
                         top: 4,
                         right: 4,
-                        backgroundColor: "rgba(0,0,0,0.6)",
+                        backgroundColor: "rgba(25,37,36,0.6)",
                         borderRadius: 12,
                         padding: 4,
                       }}
                     >
-                      <X color="#fff" size={16} />
+                      <X color={colors.surface} size={16} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -375,26 +382,27 @@ export default function CreateListingBasics() {
                 paddingVertical: 16,
                 borderRadius: 12,
                 borderWidth: 2,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderStyle: "dashed",
-                backgroundColor: "#fff",
+                backgroundColor: colors.surface,
                 alignItems: "center",
                 flexDirection: "row",
                 justifyContent: "center",
                 gap: 8,
               }}
             >
-              <Camera color="#3C5759" size={20} />
+              <Camera color={colors.slate} size={20} />
               <Text
-                style={{ fontSize: 15, fontWeight: "600", color: "#3C5759" }}
+                style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.slate }}
               >
                 Upload images
               </Text>
             </TouchableOpacity>
             <Text
               style={{
+                fontFamily: fonts.body,
                 fontSize: 12,
-                color: "#959D90",
+                color: colors.sage,
                 marginTop: 6,
                 textAlign: "center",
               }}
@@ -407,9 +415,9 @@ export default function CreateListingBasics() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
@@ -417,8 +425,9 @@ export default function CreateListingBasics() {
             </Text>
             <Text
               style={{
+                fontFamily: fonts.body,
                 fontSize: 13,
-                color: "#3C5759",
+                color: colors.slate,
                 marginBottom: 8,
                 lineHeight: 18,
               }}
@@ -429,18 +438,19 @@ export default function CreateListingBasics() {
               value={draft.collaboration_brief || ""}
               onChangeText={(val) => updateField("collaboration_brief", val)}
               placeholder="e.g., Looking for authentic content that highlights the mountain views and cozy cabin vibe. Perfect for lifestyle creators who love nature..."
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
               multiline
               numberOfLines={4}
               style={{
-                backgroundColor: "#fff",
+                backgroundColor: colors.surface,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                fontFamily: fonts.body,
                 fontSize: 15,
-                color: "#192524",
+                color: colors.ink,
                 minHeight: 100,
                 textAlignVertical: "top",
               }}
@@ -451,9 +461,9 @@ export default function CreateListingBasics() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
@@ -475,19 +485,19 @@ export default function CreateListingBasics() {
                     borderWidth: 2,
                     borderColor:
                       draft.compensation_type === type.value
-                        ? "#3C5759"
-                        : "#D0D5CE",
+                        ? colors.slate
+                        : colors.stone,
                     backgroundColor:
                       draft.compensation_type === type.value
-                        ? "#D1EBDB"
-                        : "#fff",
+                        ? colors.mint
+                        : colors.surface,
                   }}
                 >
                   <Text
                     style={{
+                      fontFamily: fonts.bodySemibold,
                       fontSize: 16,
-                      fontWeight: "600",
-                      color: "#192524",
+                      color: colors.ink,
                     }}
                   >
                     {type.label}
@@ -503,9 +513,9 @@ export default function CreateListingBasics() {
             <View style={{ marginBottom: 20 }}>
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 14,
-                  fontWeight: "600",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 8,
                 }}
               >
@@ -514,9 +524,9 @@ export default function CreateListingBasics() {
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <Text
                   style={{
+                    fontFamily: fonts.bodySemibold,
                     fontSize: 20,
-                    fontWeight: "600",
-                    color: "#192524",
+                    color: colors.ink,
                     marginRight: 8,
                   }}
                 >
@@ -528,18 +538,19 @@ export default function CreateListingBasics() {
                     updateField("cash_payout", parseInt(val) || 0)
                   }
                   placeholder="450"
-                  placeholderTextColor="#959D90"
+                  placeholderTextColor={colors.sage}
                   keyboardType="number-pad"
                   style={{
                     flex: 1,
-                    backgroundColor: "#fff",
+                    backgroundColor: colors.surface,
                     borderWidth: 1,
-                    borderColor: "#D0D5CE",
+                    borderColor: colors.stone,
                     borderRadius: 12,
                     paddingHorizontal: 16,
                     paddingVertical: 14,
+                    fontFamily: fonts.body,
                     fontSize: 16,
-                    color: "#192524",
+                    color: colors.ink,
                   }}
                 />
               </View>
@@ -552,9 +563,9 @@ export default function CreateListingBasics() {
             <View style={{ marginBottom: 20 }}>
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 14,
-                  fontWeight: "600",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 8,
                 }}
               >
@@ -566,17 +577,18 @@ export default function CreateListingBasics() {
                   updateField("stay_nights", parseInt(val) || 1)
                 }
                 placeholder="2"
-                placeholderTextColor="#959D90"
+                placeholderTextColor={colors.sage}
                 keyboardType="number-pad"
                 style={{
-                  backgroundColor: "#fff",
+                  backgroundColor: colors.surface,
                   borderWidth: 1,
-                  borderColor: "#D0D5CE",
+                  borderColor: colors.stone,
                   borderRadius: 12,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
+                  fontFamily: fonts.body,
                   fontSize: 16,
-                  color: "#192524",
+                  color: colors.ink,
                 }}
               />
             </View>
@@ -594,21 +606,22 @@ export default function CreateListingBasics() {
             >
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 14,
-                  fontWeight: "600",
-                  color: "#192524",
+                  color: colors.ink,
                 }}
               >
                 Creator tier required *
               </Text>
               <TouchableOpacity onPress={() => setShowTierHelp(true)}>
-                <HelpCircle color="#3C5759" size={18} />
+                <HelpCircle color={colors.slate} size={18} />
               </TouchableOpacity>
             </View>
             <Text
               style={{
+                fontFamily: fonts.body,
                 fontSize: 13,
-                color: "#3C5759",
+                color: colors.slate,
                 marginBottom: 12,
                 lineHeight: 18,
               }}
@@ -634,18 +647,18 @@ export default function CreateListingBasics() {
                     borderRadius: 20,
                     backgroundColor:
                       draft.creator_tier_required === tier.value
-                        ? "#3C5759"
-                        : "#EFECE9",
+                        ? colors.slate
+                        : colors.bone,
                   }}
                 >
                   <Text
                     style={{
+                      fontFamily: fonts.bodySemibold,
                       fontSize: 14,
-                      fontWeight: "600",
                       color:
                         draft.creator_tier_required === tier.value
-                          ? "#fff"
-                          : "#192524",
+                          ? colors.surface
+                          : colors.ink,
                     }}
                   >
                     {tier.label}
@@ -656,8 +669,9 @@ export default function CreateListingBasics() {
             {draft.creator_tier_required && (
               <Text
                 style={{
+                  fontFamily: fonts.body,
                   fontSize: 13,
-                  color: "#3C5759",
+                  color: colors.slate,
                   marginTop: 10,
                   fontStyle: "italic",
                 }}
@@ -679,15 +693,15 @@ export default function CreateListingBasics() {
             >
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 14,
-                  fontWeight: "600",
-                  color: "#192524",
+                  color: colors.ink,
                 }}
               >
                 Deliverable load *
               </Text>
               <TouchableOpacity onPress={() => setShowLoadHelp(true)}>
-                <HelpCircle color="#3C5759" size={18} />
+                <HelpCircle color={colors.slate} size={18} />
               </TouchableOpacity>
             </View>
             <View style={{ gap: 8 }}>
@@ -718,25 +732,25 @@ export default function CreateListingBasics() {
                     borderWidth: 2,
                     borderColor:
                       draft.deliverable_load === load.value
-                        ? "#3C5759"
-                        : "#D0D5CE",
+                        ? colors.slate
+                        : colors.stone,
                     backgroundColor:
                       draft.deliverable_load === load.value
-                        ? "#D1EBDB"
-                        : "#fff",
+                        ? colors.mint
+                        : colors.surface,
                   }}
                 >
                   <Text
                     style={{
+                      fontFamily: fonts.bodySemibold,
                       fontSize: 15,
-                      fontWeight: "600",
-                      color: "#192524",
+                      color: colors.ink,
                       marginBottom: 2,
                     }}
                   >
                     {load.label}
                   </Text>
-                  <Text style={{ fontSize: 13, color: "#3C5759" }}>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate }}>
                     {load.desc}
                   </Text>
                 </TouchableOpacity>
