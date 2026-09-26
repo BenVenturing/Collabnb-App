@@ -12,6 +12,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Calendar, X, Plus, Edit2 } from "lucide-react-native";
 import ListingCreationShell from "@/components/ListingCreationShell";
 import ListingDraftStore from "@/utils/ListingDraftStore";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 const DELIVERABLE_PRESETS = {
   light: [
@@ -212,7 +213,7 @@ export default function CreateListingDeliverables() {
     <View
       style={{
         width: 200,
-        backgroundColor: "#EFECE9",
+        backgroundColor: colors.bone,
         borderRadius: 16,
         padding: 14,
         marginRight: 12,
@@ -228,9 +229,9 @@ export default function CreateListingDeliverables() {
       >
         <Text
           style={{
+            fontFamily: fonts.display,
             fontSize: 15,
-            fontWeight: "700",
-            color: "#192524",
+            color: colors.ink,
             flex: 1,
             paddingRight: 8,
           }}
@@ -242,17 +243,17 @@ export default function CreateListingDeliverables() {
             onPress={() => openEditModal(index)}
             style={{ padding: 4 }}
           >
-            <Edit2 color="#3C5759" size={16} />
+            <Edit2 color={colors.slate} size={16} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => removeDeliverable(index)}
             style={{ padding: 4 }}
           >
-            <X color="#3C5759" size={16} />
+            <X color={colors.slate} size={16} />
           </TouchableOpacity>
         </View>
       </View>
-      <Text style={{ fontSize: 13, color: "#3C5759", lineHeight: 18 }}>
+      <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, lineHeight: 18 }}>
         {item.description}
       </Text>
     </View>
@@ -271,9 +272,10 @@ export default function CreateListingDeliverables() {
         <View style={{ paddingHorizontal: 20 }}>
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 28,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(28, tracking.display),
               marginBottom: 8,
             }}
           >
@@ -281,8 +283,9 @@ export default function CreateListingDeliverables() {
           </Text>
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 15,
-              color: "#3C5759",
+              color: colors.slate,
               marginBottom: 32,
               lineHeight: 22,
             }}
@@ -300,12 +303,13 @@ export default function CreateListingDeliverables() {
                 marginBottom: 12,
               }}
             >
-              <Calendar color="#3C5759" size={20} />
+              <Calendar color={colors.slate} size={20} />
               <Text
                 style={{
+                  fontFamily: fonts.display,
                   fontSize: 16,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: colors.ink,
+                  letterSpacing: track(16, tracking.display),
                 }}
               >
                 Collaboration window *
@@ -314,7 +318,7 @@ export default function CreateListingDeliverables() {
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <Text
-                  style={{ fontSize: 13, color: "#3C5759", marginBottom: 6 }}
+                  style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, marginBottom: 6 }}
                 >
                   Start date
                 </Text>
@@ -327,22 +331,23 @@ export default function CreateListingDeliverables() {
                     })
                   }
                   placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#959D90"
+                  placeholderTextColor={colors.sage}
                   style={{
-                    backgroundColor: "#fff",
+                    backgroundColor: colors.surface,
                     borderWidth: 1,
-                    borderColor: "#D0D5CE",
+                    borderColor: colors.stone,
                     borderRadius: 12,
                     paddingHorizontal: 14,
                     paddingVertical: 12,
+                    fontFamily: fonts.body,
                     fontSize: 15,
-                    color: "#192524",
+                    color: colors.ink,
                   }}
                 />
               </View>
               <View style={{ flex: 1 }}>
                 <Text
-                  style={{ fontSize: 13, color: "#3C5759", marginBottom: 6 }}
+                  style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, marginBottom: 6 }}
                 >
                   End date
                 </Text>
@@ -355,16 +360,17 @@ export default function CreateListingDeliverables() {
                     })
                   }
                   placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#959D90"
+                  placeholderTextColor={colors.sage}
                   style={{
-                    backgroundColor: "#fff",
+                    backgroundColor: colors.surface,
                     borderWidth: 1,
-                    borderColor: "#D0D5CE",
+                    borderColor: colors.stone,
                     borderRadius: 12,
                     paddingHorizontal: 14,
                     paddingVertical: 12,
+                    fontFamily: fonts.body,
                     fontSize: 15,
-                    color: "#192524",
+                    color: colors.ink,
                   }}
                 />
               </View>
@@ -375,9 +381,9 @@ export default function CreateListingDeliverables() {
           <View style={{ marginBottom: 24 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
@@ -389,17 +395,18 @@ export default function CreateListingDeliverables() {
                 updateField("turnaround_time_days", parseInt(val) || 14)
               }
               placeholder="14"
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
               keyboardType="number-pad"
               style={{
-                backgroundColor: "#fff",
+                backgroundColor: colors.surface,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                fontFamily: fonts.body,
                 fontSize: 16,
-                color: "#192524",
+                color: colors.ink,
               }}
             />
           </View>
@@ -407,7 +414,7 @@ export default function CreateListingDeliverables() {
           {/* Deliverables Summary */}
           <View
             style={{
-              backgroundColor: "#D1EBDB",
+              backgroundColor: colors.mint,
               borderRadius: 16,
               padding: 16,
               marginBottom: 20,
@@ -415,15 +422,15 @@ export default function CreateListingDeliverables() {
           >
             <Text
               style={{
+                fontFamily: fonts.display,
                 fontSize: 15,
-                fontWeight: "700",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 4,
               }}
             >
               {getTotalDeliverables()} total deliverables
             </Text>
-            <Text style={{ fontSize: 13, color: "#3C5759" }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate }}>
               Across {draft.deliverables.length} format
               {draft.deliverables.length !== 1 ? "s" : ""} •{" "}
               {draft.deliverable_load} load
@@ -441,14 +448,15 @@ export default function CreateListingDeliverables() {
           >
             <Text
               style={{
+                fontFamily: fonts.display,
                 fontSize: 16,
-                fontWeight: "700",
-                color: "#192524",
+                color: colors.ink,
+                letterSpacing: track(16, tracking.display),
               }}
             >
               Deliverables
             </Text>
-            <Text style={{ fontSize: 12, color: "#959D90" }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.sage }}>
               Swipe to see all →
             </Text>
           </View>
@@ -470,19 +478,19 @@ export default function CreateListingDeliverables() {
           {/* Add Custom Deliverable */}
           <View
             style={{
-              backgroundColor: "#fff",
+              backgroundColor: colors.surface,
               borderRadius: 12,
               borderWidth: 1,
-              borderColor: "#D0D5CE",
+              borderColor: colors.stone,
               padding: 16,
               marginBottom: 24,
             }}
           >
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 12,
               }}
             >
@@ -500,16 +508,17 @@ export default function CreateListingDeliverables() {
                     })
                   }
                   placeholder="Qty"
-                  placeholderTextColor="#959D90"
+                  placeholderTextColor={colors.sage}
                   keyboardType="number-pad"
                   style={{
                     width: 60,
-                    backgroundColor: "#EFECE9",
+                    backgroundColor: colors.bone,
                     borderRadius: 8,
                     paddingHorizontal: 12,
                     paddingVertical: 10,
+                    fontFamily: fonts.body,
                     fontSize: 15,
-                    color: "#192524",
+                    color: colors.ink,
                     textAlign: "center",
                   }}
                 />
@@ -519,15 +528,16 @@ export default function CreateListingDeliverables() {
                     setNewDeliverable({ ...newDeliverable, type: val })
                   }
                   placeholder="Platform/Type (e.g., Instagram Reels)"
-                  placeholderTextColor="#959D90"
+                  placeholderTextColor={colors.sage}
                   style={{
                     flex: 1,
-                    backgroundColor: "#EFECE9",
+                    backgroundColor: colors.bone,
                     borderRadius: 8,
                     paddingHorizontal: 12,
                     paddingVertical: 10,
+                    fontFamily: fonts.body,
                     fontSize: 15,
-                    color: "#192524",
+                    color: colors.ink,
                   }}
                 />
               </View>
@@ -538,15 +548,16 @@ export default function CreateListingDeliverables() {
                   setNewDeliverable({ ...newDeliverable, description: val })
                 }
                 placeholder="Description"
-                placeholderTextColor="#959D90"
+                placeholderTextColor={colors.sage}
                 multiline
                 style={{
-                  backgroundColor: "#EFECE9",
+                  backgroundColor: colors.bone,
                   borderRadius: 8,
                   paddingHorizontal: 12,
                   paddingVertical: 10,
+                  fontFamily: fonts.body,
                   fontSize: 15,
-                  color: "#192524",
+                  color: colors.ink,
                   minHeight: 60,
                   textAlignVertical: "top",
                 }}
@@ -557,16 +568,16 @@ export default function CreateListingDeliverables() {
                 style={{
                   paddingVertical: 12,
                   borderRadius: 8,
-                  backgroundColor: "#3C5759",
+                  backgroundColor: colors.slate,
                   alignItems: "center",
                   flexDirection: "row",
                   justifyContent: "center",
                   gap: 6,
                 }}
               >
-                <Plus color="#fff" size={18} />
+                <Plus color={colors.surface} size={18} />
                 <Text
-                  style={{ fontSize: 15, fontWeight: "600", color: "#fff" }}
+                  style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.surface }}
                 >
                   Add deliverable
                 </Text>
@@ -578,9 +589,10 @@ export default function CreateListingDeliverables() {
           <View style={{ marginBottom: 24 }}>
             <Text
               style={{
+                fontFamily: fonts.display,
                 fontSize: 16,
-                fontWeight: "700",
-                color: "#192524",
+                color: colors.ink,
+                letterSpacing: track(16, tracking.display),
                 marginBottom: 16,
               }}
             >
@@ -591,9 +603,9 @@ export default function CreateListingDeliverables() {
               <View>
                 <Text
                   style={{
+                    fontFamily: fonts.bodySemibold,
                     fontSize: 14,
-                    fontWeight: "600",
-                    color: "#192524",
+                    color: colors.ink,
                     marginBottom: 8,
                   }}
                 >
@@ -603,17 +615,18 @@ export default function CreateListingDeliverables() {
                   value={draft.revision_policy}
                   onChangeText={(val) => updateField("revision_policy", val)}
                   placeholder="e.g., 1 round of minor revisions"
-                  placeholderTextColor="#959D90"
+                  placeholderTextColor={colors.sage}
                   multiline
                   style={{
-                    backgroundColor: "#fff",
+                    backgroundColor: colors.surface,
                     borderWidth: 1,
-                    borderColor: "#D0D5CE",
+                    borderColor: colors.stone,
                     borderRadius: 12,
                     paddingHorizontal: 14,
                     paddingVertical: 12,
+                    fontFamily: fonts.body,
                     fontSize: 15,
-                    color: "#192524",
+                    color: colors.ink,
                     minHeight: 70,
                     textAlignVertical: "top",
                   }}
@@ -623,9 +636,9 @@ export default function CreateListingDeliverables() {
               <View>
                 <Text
                   style={{
+                    fontFamily: fonts.bodySemibold,
                     fontSize: 14,
-                    fontWeight: "600",
-                    color: "#192524",
+                    color: colors.ink,
                     marginBottom: 8,
                   }}
                 >
@@ -635,17 +648,18 @@ export default function CreateListingDeliverables() {
                   value={draft.usage_rights}
                   onChangeText={(val) => updateField("usage_rights", val)}
                   placeholder="e.g., Perpetual marketing license"
-                  placeholderTextColor="#959D90"
+                  placeholderTextColor={colors.sage}
                   multiline
                   style={{
-                    backgroundColor: "#fff",
+                    backgroundColor: colors.surface,
                     borderWidth: 1,
-                    borderColor: "#D0D5CE",
+                    borderColor: colors.stone,
                     borderRadius: 12,
                     paddingHorizontal: 14,
                     paddingVertical: 12,
+                    fontFamily: fonts.body,
                     fontSize: 15,
-                    color: "#192524",
+                    color: colors.ink,
                     minHeight: 70,
                     textAlignVertical: "top",
                   }}
@@ -656,7 +670,8 @@ export default function CreateListingDeliverables() {
         </View>
       </View>
 
-      {/* Edit Modal */}
+      {/* Edit Modal — an opaque dialog, not a translucent surface, so it
+          stays a plain themed View rather than <Glass>. */}
       <Modal
         visible={showEditModal}
         transparent
@@ -666,7 +681,7 @@ export default function CreateListingDeliverables() {
         <View
           style={{
             flex: 1,
-            backgroundColor: "rgba(0,0,0,0.5)",
+            backgroundColor: "rgba(25,37,36,0.5)",
             justifyContent: "center",
             alignItems: "center",
             padding: 20,
@@ -674,7 +689,7 @@ export default function CreateListingDeliverables() {
         >
           <View
             style={{
-              backgroundColor: "#fff",
+              backgroundColor: colors.surface,
               borderRadius: 20,
               padding: 24,
               width: "100%",
@@ -683,9 +698,10 @@ export default function CreateListingDeliverables() {
           >
             <Text
               style={{
+                fontFamily: fonts.display,
                 fontSize: 20,
-                fontWeight: "700",
-                color: "#192524",
+                color: colors.ink,
+                letterSpacing: track(20, tracking.display),
                 marginBottom: 20,
               }}
             >
@@ -698,8 +714,9 @@ export default function CreateListingDeliverables() {
                   <View style={{ width: 80 }}>
                     <Text
                       style={{
+                        fontFamily: fonts.body,
                         fontSize: 13,
-                        color: "#3C5759",
+                        color: colors.slate,
                         marginBottom: 6,
                       }}
                     >
@@ -715,12 +732,13 @@ export default function CreateListingDeliverables() {
                       }
                       keyboardType="number-pad"
                       style={{
-                        backgroundColor: "#EFECE9",
+                        backgroundColor: colors.bone,
                         borderRadius: 8,
                         paddingHorizontal: 12,
                         paddingVertical: 10,
+                        fontFamily: fonts.body,
                         fontSize: 15,
-                        color: "#192524",
+                        color: colors.ink,
                         textAlign: "center",
                       }}
                     />
@@ -728,8 +746,9 @@ export default function CreateListingDeliverables() {
                   <View style={{ flex: 1 }}>
                     <Text
                       style={{
+                        fontFamily: fonts.body,
                         fontSize: 13,
-                        color: "#3C5759",
+                        color: colors.slate,
                         marginBottom: 6,
                       }}
                     >
@@ -744,14 +763,15 @@ export default function CreateListingDeliverables() {
                         })
                       }
                       placeholder="TikTok Videos"
-                      placeholderTextColor="#959D90"
+                      placeholderTextColor={colors.sage}
                       style={{
-                        backgroundColor: "#EFECE9",
+                        backgroundColor: colors.bone,
                         borderRadius: 8,
                         paddingHorizontal: 12,
                         paddingVertical: 10,
+                        fontFamily: fonts.body,
                         fontSize: 15,
-                        color: "#192524",
+                        color: colors.ink,
                       }}
                     />
                   </View>
@@ -759,7 +779,7 @@ export default function CreateListingDeliverables() {
 
                 <View>
                   <Text
-                    style={{ fontSize: 13, color: "#3C5759", marginBottom: 6 }}
+                    style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, marginBottom: 6 }}
                   >
                     Description
                   </Text>
@@ -772,15 +792,16 @@ export default function CreateListingDeliverables() {
                       })
                     }
                     placeholder="Describe what you want"
-                    placeholderTextColor="#959D90"
+                    placeholderTextColor={colors.sage}
                     multiline
                     style={{
-                      backgroundColor: "#EFECE9",
+                      backgroundColor: colors.bone,
                       borderRadius: 8,
                       paddingHorizontal: 12,
                       paddingVertical: 10,
+                      fontFamily: fonts.body,
                       fontSize: 15,
-                      color: "#192524",
+                      color: colors.ink,
                       minHeight: 80,
                       textAlignVertical: "top",
                     }}
@@ -794,15 +815,15 @@ export default function CreateListingDeliverables() {
                       flex: 1,
                       paddingVertical: 14,
                       borderRadius: 12,
-                      backgroundColor: "#EFECE9",
+                      backgroundColor: colors.bone,
                       alignItems: "center",
                     }}
                   >
                     <Text
                       style={{
+                        fontFamily: fonts.bodySemibold,
                         fontSize: 15,
-                        fontWeight: "600",
-                        color: "#192524",
+                        color: colors.ink,
                       }}
                     >
                       Cancel
@@ -814,12 +835,12 @@ export default function CreateListingDeliverables() {
                       flex: 1,
                       paddingVertical: 14,
                       borderRadius: 12,
-                      backgroundColor: "#3C5759",
+                      backgroundColor: colors.slate,
                       alignItems: "center",
                     }}
                   >
                     <Text
-                      style={{ fontSize: 15, fontWeight: "600", color: "#fff" }}
+                      style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.surface }}
                     >
                       Save Changes
                     </Text>
