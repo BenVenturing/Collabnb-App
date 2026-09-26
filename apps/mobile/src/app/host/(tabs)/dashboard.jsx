@@ -23,8 +23,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path, Rect, Defs, LinearGradient as SvgGradient, Stop } from "react-native-svg";
-import ThemedBackground from "@/components/ThemedBackground";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import Glass from "@/components/Glass";
 import PricingTool from "@/components/PricingTool";
+import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_INNER_WIDTH = SCREEN_WIDTH - 40; // 20px horizontal padding each side
@@ -52,7 +54,7 @@ const SAMPLE_LISTINGS = [
         type: "image",
         uri: "https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?w=800&q=80",
       },
-      { type: "gradient", colors: ["#D1EBDB", "#3C5759"] },
+      { type: "gradient", colors: [colors.mint, colors.slate] },
     ],
   },
   {
@@ -75,7 +77,7 @@ const SAMPLE_LISTINGS = [
         type: "image",
         uri: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&q=80",
       },
-      { type: "gradient", colors: ["#BCC8D4", "#3C5759"] },
+      { type: "gradient", colors: ["#BCC8D4", colors.slate] }, // #BCC8D4: decorative placeholder-photo accent, no brand equivalent
     ],
   },
   {
@@ -98,7 +100,7 @@ const SAMPLE_LISTINGS = [
         type: "image",
         uri: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=800&q=80",
       },
-      { type: "gradient", colors: ["#CCC0A8", "#3C5759"] },
+      { type: "gradient", colors: ["#CCC0A8", colors.slate] }, // #CCC0A8: decorative placeholder-photo accent, no brand equivalent
     ],
   },
   {
@@ -121,7 +123,7 @@ const SAMPLE_LISTINGS = [
         type: "image",
         uri: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80",
       },
-      { type: "gradient", colors: ["#BCC8B0", "#3C5759"] },
+      { type: "gradient", colors: ["#BCC8B0", colors.slate] }, // #BCC8B0: decorative placeholder-photo accent, no brand equivalent
     ],
   },
 ];
@@ -171,12 +173,17 @@ const SAMPLE_ACTIVITY = [
 
 const IMPACT_MONTHS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep"];
 
+// Multi-value status/tier/chart-legend colors need to stay visually distinct
+// per value (green/amber/grey; grey/teal/purple/red). Only #3C5759 and #959D90
+// have brand equivalents (slate, sage); #4A9B7F, #D4A843, #7B68C8 and #C86868
+// have no token in the 9-color palette — left as literals per
+// "don't add a new color, ask" in STYLE-GUIDE.md. Flagged for design review.
 const LIFETIME_STATS = [
   {
     key: "collabs",
     num: "14",
     label: "Total Collabs",
-    dot: "#4A9B7F",
+    dot: "#4A9B7F", // no brand token — semantic chart-series green
     type: "line",
     data: [1, 3, 5, 7, 10, 14],
   },
@@ -184,7 +191,7 @@ const LIFETIME_STATS = [
     key: "creators",
     num: "31",
     label: "Creators Worked With",
-    dot: "#3C5759",
+    dot: colors.slate,
     type: "bar",
     data: [3, 8, 14, 20, 26, 31],
   },
@@ -192,7 +199,7 @@ const LIFETIME_STATS = [
     key: "content",
     num: "148",
     label: "Content Pieces",
-    dot: "#7B68C8",
+    dot: "#7B68C8", // no brand token — semantic chart-series purple
     type: "line",
     data: [10, 35, 60, 90, 120, 148],
   },
@@ -200,25 +207,25 @@ const LIFETIME_STATS = [
     key: "reach",
     num: "2.4M",
     label: "Est. Reach",
-    dot: "#D4A843",
+    dot: "#D4A843", // no brand token — semantic chart-series gold
     type: "line",
     data: [0.3, 0.8, 1.2, 1.6, 2.0, 2.4],
   },
 ];
 
 const STATUS_CONFIG = {
-  active: { label: "Active", color: "#4A9B7F", bg: "rgba(74,155,127,0.12)" },
-  paused: { label: "Paused", color: "#D4A843", bg: "rgba(212,168,67,0.12)" },
-  draft: { label: "Draft", color: "#959D90", bg: "rgba(149,157,144,0.12)" },
+  active: { label: "Active", color: "#4A9B7F", bg: "rgba(74,155,127,0.12)" }, // no brand token — semantic status green
+  paused: { label: "Paused", color: "#D4A843", bg: "rgba(212,168,67,0.12)" }, // no brand token — semantic status amber
+  draft: { label: "Draft", color: colors.sage, bg: "rgba(100,107,98,0.12)" },
 };
 
 const SAMPLE_IDS = new Set(SAMPLE_LISTINGS.map((s) => s.id));
 
 const TIER_CONFIG = {
-  "UGC Beginner": { color: "#959D90", bg: "rgba(149,157,144,0.12)" },
-  "UGC Pro": { color: "#3C5759", bg: "rgba(60,87,89,0.12)" },
-  "Micro Influencer": { color: "#7B68C8", bg: "rgba(123,104,200,0.12)" },
-  Influencer: { color: "#C86868", bg: "rgba(200,104,104,0.12)" },
+  "UGC Beginner": { color: colors.sage, bg: "rgba(100,107,98,0.12)" },
+  "UGC Pro": { color: colors.slate, bg: "rgba(60,87,89,0.12)" },
+  "Micro Influencer": { color: "#7B68C8", bg: "rgba(123,104,200,0.12)" }, // no brand token — semantic tier purple
+  Influencer: { color: "#C86868", bg: "rgba(200,104,104,0.12)" }, // no brand token — semantic tier red
 };
 
 const TIER_LABELS = {
@@ -283,7 +290,7 @@ function ListingCard({
   const photos =
     listing.photos && listing.photos.length > 0
       ? listing.photos
-      : [{ type: "gradient", colors: ["#D1EBDB", "#3C5759"] }];
+      : [{ type: "gradient", colors: [colors.mint, colors.slate] }];
 
   const viewabilityConfig = React.useRef({ itemVisiblePercentThreshold: 50 });
   const onViewableItemsChanged = React.useRef(({ viewableItems }) => {
@@ -311,7 +318,7 @@ function ListingCard({
   return (
     <View style={styles.listingCardWrap}>
       <TouchableOpacity
-        style={styles.listingCard}
+        style={styles.listingCardShadow}
         activeOpacity={0.88}
         onPress={() =>
           router.push({
@@ -320,6 +327,7 @@ function ListingCard({
           })
         }
       >
+      <Glass variant="card" contentStyle={styles.listingCardContent}>
       {/* Photo Swiper */}
       <View style={styles.photoContainer}>
         <FlatList
@@ -399,6 +407,7 @@ function ListingCard({
           </React.Fragment>
         ))}
       </View>
+      </Glass>
       </TouchableOpacity>
 
       {/* 3-dot menu — outside the card's overflow:hidden so the dropdown isn't clipped */}
@@ -628,7 +637,7 @@ function ImpactChartModal({ stat, visible, onClose }) {
 const chartModalStyles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(25,37,36,0.45)",
+    backgroundColor: "rgba(25,37,36,0.45)", // ink @ 45%, no dedicated alpha token
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
@@ -636,26 +645,31 @@ const chartModalStyles = StyleSheet.create({
   card: {
     width: "100%",
     maxWidth: 380,
-    backgroundColor: "#fff",
-    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
     padding: 20,
   },
   header: { flexDirection: "row", alignItems: "flex-start", marginBottom: 16 },
   dot: { width: 8, height: 8, borderRadius: 4, marginBottom: 6 },
-  total: { fontSize: 30, fontWeight: "800", color: "#192524" },
-  subtitle: { fontSize: 12, color: "#959D90", marginTop: 2 },
+  total: {
+    fontFamily: fonts.displayExtrabold,
+    fontSize: 30,
+    color: colors.ink,
+    letterSpacing: track(30, tracking.display),
+  },
+  subtitle: { fontFamily: fonts.body, fontSize: 12, color: colors.sage, marginTop: 2 },
   closeBtn: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: "rgba(25,37,36,0.07)",
+    backgroundColor: "rgba(25,37,36,0.07)", // ink @ 7%, no dedicated alpha token
     alignItems: "center",
     justifyContent: "center",
   },
-  closeText: { fontSize: 13, color: "#192524" },
+  closeText: { fontSize: 13, color: colors.ink },
   monthsRow: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 24, marginTop: 4 },
-  monthText: { fontSize: 10, color: "#959D90" },
-  previewNote: { fontSize: 11, color: "#959D90", textAlign: "center", marginTop: 12 },
+  monthText: { fontFamily: fonts.body, fontSize: 10, color: colors.sage },
+  previewNote: { fontFamily: fonts.body, fontSize: 11, color: colors.sage, textAlign: "center", marginTop: 12 },
 });
 
 // ─── MAIN SCREEN ─────────────────────────────────────────────
@@ -750,7 +764,7 @@ export default function DashboardScreen() {
       : listings.filter((l) => displayStatus(l.status) === listingFilter);
 
   return (
-    <ThemedBackground>
+    <AtmosphericBackground>
       <StatusBar style="dark" />
       <View style={[styles.safe, { paddingTop: insets.top }]}>
         <ScrollView
@@ -908,15 +922,17 @@ export default function DashboardScreen() {
                 <Text style={styles.sectionSub}>What needs your attention</Text>
               </View>
             </View>
-            <View style={styles.feedCard}>
-              {SAMPLE_ACTIVITY.map((item, i) => (
-                <ActivityItem
-                  key={item.id}
-                  item={item}
-                  isLast={i === SAMPLE_ACTIVITY.length - 1}
-                  router={router}
-                />
-              ))}
+            <View style={styles.feedCardShadow}>
+              <Glass variant="card">
+                {SAMPLE_ACTIVITY.map((item, i) => (
+                  <ActivityItem
+                    key={item.id}
+                    item={item}
+                    isLast={i === SAMPLE_ACTIVITY.length - 1}
+                    router={router}
+                  />
+                ))}
+              </Glass>
             </View>
           </View>
 
@@ -932,20 +948,22 @@ export default function DashboardScreen() {
               {LIFETIME_STATS.map((s) => (
                 <TouchableOpacity
                   key={s.label}
-                  style={styles.statCard}
+                  style={styles.statCardShadow}
                   activeOpacity={0.85}
                   onPress={() => setExpandedStat(s)}
                 >
-                  <View style={[styles.dot8, { backgroundColor: s.dot }]} />
-                  <Text style={styles.statNum}>{s.num}</Text>
-                  <Text style={styles.statLabel}>{s.label}</Text>
-                  <View style={{ marginTop: 8 }}>
-                    {s.type === "bar" ? (
-                      <MiniBarChart data={s.data} color={s.dot} />
-                    ) : (
-                      <MiniLineChart data={s.data} color={s.dot} />
-                    )}
-                  </View>
+                  <Glass variant="card" contentStyle={styles.statCardContent}>
+                    <View style={[styles.dot8, { backgroundColor: s.dot }]} />
+                    <Text style={styles.statNum}>{s.num}</Text>
+                    <Text style={styles.statLabel}>{s.label}</Text>
+                    <View style={{ marginTop: 8 }}>
+                      {s.type === "bar" ? (
+                        <MiniBarChart data={s.data} color={s.dot} />
+                      ) : (
+                        <MiniLineChart data={s.data} color={s.dot} />
+                      )}
+                    </View>
+                  </Glass>
                 </TouchableOpacity>
               ))}
             </View>
@@ -969,7 +987,7 @@ export default function DashboardScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setPricingToolOpen(false)}
       >
-        <View style={{ flex: 1, backgroundColor: "#EFECE9" }}>
+        <View style={{ flex: 1, backgroundColor: colors.bone }}>
           <View style={[styles.pricingModalHeader, { paddingTop: insets.top || 16 }]}>
             <TouchableOpacity onPress={() => setPricingToolOpen(false)}>
               <Text style={styles.pricingModalDone}>Done</Text>
@@ -984,23 +1002,11 @@ export default function DashboardScreen() {
         visible={!!expandedStat}
         onClose={() => setExpandedStat(null)}
       />
-    </ThemedBackground>
+    </AtmosphericBackground>
   );
 }
 
 // ─── STYLES ──────────────────────────────────────────────────
-const GLASS = {
-  backgroundColor: "rgba(255,255,255,0.55)",
-  borderRadius: 20,
-  borderWidth: 1,
-  borderColor: "rgba(255,255,255,0.75)",
-  shadowColor: "#3C5759",
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.1,
-  shadowRadius: 16,
-  elevation: 3,
-};
-
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "transparent" },
   scrollContent: {},
@@ -1013,26 +1019,22 @@ const styles = StyleSheet.create({
     gap: 6,
     height: 40,
     paddingHorizontal: 14,
-    borderRadius: 9999,
+    borderRadius: radii.pill,
     backgroundColor: "rgba(255,255,255,0.85)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.9)",
-    shadowColor: "#192524",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 5,
+    ...shadows.md,
   },
-  pricingFabDollar: { fontSize: 15, fontWeight: "800", color: "#192524" },
-  pricingFabText: { fontSize: 12.5, fontWeight: "700", color: "#192524" },
+  pricingFabDollar: { fontFamily: fonts.displayExtrabold, fontSize: 15, color: colors.ink },
+  pricingFabText: { fontFamily: fonts.bodySemibold, fontSize: 12.5, color: colors.ink },
   pricingModalHeader: {
     paddingHorizontal: 20,
     paddingBottom: 12,
     alignItems: "flex-end",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(25,37,36,0.08)",
+    borderBottomColor: colors.hairline,
   },
-  pricingModalDone: { fontSize: 15, fontWeight: "600", color: "#3C5759" },
+  pricingModalDone: { fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.slate },
 
   header: {
     flexDirection: "row",
@@ -1042,12 +1044,12 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 12,
   },
-  greeting: { fontSize: 13, color: "#959D90" },
+  greeting: { fontFamily: fonts.body, fontSize: 13, color: colors.sage },
   headerTitle: {
+    fontFamily: fonts.displayExtrabold,
     fontSize: 28,
-    fontWeight: "800",
-    color: "#192524",
-    letterSpacing: -0.5,
+    color: colors.ink,
+    letterSpacing: track(28, tracking.display),
     marginTop: 2,
   },
 
@@ -1065,7 +1067,7 @@ const styles = StyleSheet.create({
   statsStrip: {
     alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.45)",
-    borderRadius: 18,
+    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.75)",
     paddingHorizontal: 4,
@@ -1075,8 +1077,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     alignItems: "center",
   },
-  quickStatNum: { fontSize: 20, fontWeight: "800", color: "#192524" },
-  quickStatLabel: { fontSize: 10, color: "#959D90", marginTop: 1 },
+  quickStatNum: {
+    fontFamily: fonts.displayExtrabold,
+    fontSize: 20,
+    color: colors.ink,
+    letterSpacing: track(20, tracking.display),
+  },
+  quickStatLabel: { fontFamily: fonts.body, fontSize: 10, color: colors.sage, marginTop: 1 },
   statDividerV: { width: 1, height: 28, backgroundColor: "rgba(60,87,89,0.1)" },
 
   section: { paddingHorizontal: 20, paddingTop: 28 },
@@ -1087,20 +1094,20 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sectionTitle: {
+    fontFamily: fonts.display,
     fontSize: 20,
-    fontWeight: "700",
-    color: "#192524",
-    letterSpacing: -0.3,
+    color: colors.ink,
+    letterSpacing: track(20, tracking.display),
   },
-  sectionSub: { fontSize: 12, color: "#959D90", marginTop: 2 },
+  sectionSub: { fontFamily: fonts.body, fontSize: 12, color: colors.sage, marginTop: 2 },
 
   primaryBtn: {
-    backgroundColor: "#3C5759",
+    backgroundColor: colors.slate,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
   },
-  primaryBtnText: { fontSize: 13, fontWeight: "600", color: "#EFECE9" },
+  primaryBtnText: { fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.bone },
 
   filterRow: { maxHeight: 40, marginBottom: 14 },
   filterContent: { gap: 8, alignItems: "center" },
@@ -1112,9 +1119,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(60,87,89,0.15)",
   },
-  filterChipActive: { backgroundColor: "#3C5759", borderColor: "#3C5759" },
-  filterChipText: { fontSize: 12, fontWeight: "500", color: "#3C5759" },
-  filterChipTextActive: { color: "#EFECE9" },
+  filterChipActive: { backgroundColor: colors.slate, borderColor: colors.slate },
+  filterChipText: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.slate },
+  filterChipTextActive: { color: colors.bone },
   browseMarketplaceBtn: {
     alignSelf: "flex-start",
     paddingHorizontal: 14,
@@ -1125,10 +1132,13 @@ const styles = StyleSheet.create({
     borderColor: "rgba(60,87,89,0.15)",
     marginBottom: 14,
   },
-  browseMarketplaceText: { fontSize: 12.5, fontWeight: "600", color: "#3C5759" },
+  browseMarketplaceText: { fontFamily: fonts.bodySemibold, fontSize: 12.5, color: colors.slate },
 
   listingCardWrap: { position: "relative", marginBottom: 16 },
-  listingCard: { ...GLASS, overflow: "hidden", padding: 16 },
+  // Shadow lives on this outer node — Glass's own View sets overflow:"hidden",
+  // which would otherwise clip an RN shadow drawn on the same layer.
+  listingCardShadow: { ...shadows.md, borderRadius: radii.lg },
+  listingCardContent: { padding: 16 },
   cardMenuWrap: { position: "absolute", top: 12, right: 12, zIndex: 10 },
   cardMenuBtn: {
     width: 30,
@@ -1137,13 +1147,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.9)",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#192524",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 3,
+    ...shadows.sm,
   },
-  cardMenuDots: { fontSize: 16, fontWeight: "800", color: "#192524", lineHeight: 16 },
+  cardMenuDots: { fontSize: 16, color: colors.ink, lineHeight: 16 },
   cardMenuDropdown: {
     position: "absolute",
     top: 36,
@@ -1152,18 +1158,14 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.98)",
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(25,37,36,0.08)",
+    borderColor: colors.hairline,
     paddingVertical: 4,
-    shadowColor: "#192524",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 20,
-    elevation: 8,
+    ...shadows.lg,
   },
   cardMenuItem: { paddingHorizontal: 16, paddingVertical: 10 },
-  cardMenuItemText: { fontSize: 13, fontWeight: "500", color: "#192524" },
-  cardMenuItemDanger: { color: "#C86868" },
-  cardMenuItemMuted: { color: "#959D90" },
+  cardMenuItemText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.ink },
+  cardMenuItemDanger: { color: "#C86868" }, // no brand token — semantic danger red, flagged
+  cardMenuItemMuted: { color: colors.sage },
   photoContainer: {
     width: "100%",
     height: 180,
@@ -1187,7 +1189,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: "rgba(255,255,255,0.45)",
   },
-  dotSmallActive: { backgroundColor: "#FFFFFF", width: 16 },
+  dotSmallActive: { backgroundColor: colors.surface, width: 16 },
   listingCardTop: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1202,12 +1204,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 10,
   },
-  statusLabel: { fontSize: 11, fontWeight: "500" },
-  listingLocation: { fontSize: 11, color: "#959D90" },
+  statusLabel: { fontFamily: fonts.bodyMedium, fontSize: 11 },
+  listingLocation: { fontFamily: fonts.body, fontSize: 11, color: colors.sage },
   listingTitle: {
+    fontFamily: fonts.display,
     fontSize: 15,
-    fontWeight: "700",
-    color: "#192524",
+    color: colors.ink,
     marginBottom: 10,
     lineHeight: 21,
   },
@@ -1218,8 +1220,8 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   tierBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  tierText: { fontSize: 11, fontWeight: "500" },
-  compType: { fontSize: 11, color: "#959D90" },
+  tierText: { fontFamily: fonts.bodyMedium, fontSize: 11 },
+  compType: { fontFamily: fonts.body, fontSize: 11, color: colors.sage },
   listingStats: {
     flexDirection: "row",
     alignItems: "center",
@@ -1228,14 +1230,14 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   listingStat: { flex: 1, alignItems: "center" },
-  listingStatNum: { fontSize: 15, fontWeight: "700", color: "#192524" },
-  listingStatLabel: { fontSize: 10, color: "#959D90", marginTop: 1 },
+  listingStatNum: { fontFamily: fonts.display, fontSize: 15, color: colors.ink },
+  listingStatLabel: { fontFamily: fonts.body, fontSize: 10, color: colors.sage, marginTop: 1 },
 
   emptyState: { alignItems: "center", paddingVertical: 40 },
   emptyIcon: { fontSize: 36, marginBottom: 10 },
-  emptyText: { fontSize: 14, color: "#959D90", marginBottom: 16 },
+  emptyText: { fontFamily: fonts.body, fontSize: 14, color: colors.sage, marginBottom: 16 },
 
-  feedCard: { ...GLASS, overflow: "hidden" },
+  feedCardShadow: { ...shadows.md, borderRadius: radii.lg },
   activityItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -1252,19 +1254,19 @@ const styles = StyleSheet.create({
   },
   activityContent: { flex: 1 },
   activityText: {
+    fontFamily: fonts.bodyMedium,
     fontSize: 13,
-    fontWeight: "500",
-    color: "#192524",
+    color: colors.ink,
     lineHeight: 18,
   },
-  activitySub: { fontSize: 11, color: "#959D90", marginTop: 2 },
+  activitySub: { fontFamily: fonts.body, fontSize: 11, color: colors.sage, marginTop: 2 },
   activityCta: {
     backgroundColor: "rgba(60,87,89,0.1)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
   },
-  activityCtaText: { fontSize: 12, fontWeight: "500", color: "#3C5759" },
+  activityCtaText: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.slate },
   activityDivider: {
     height: 1,
     backgroundColor: "rgba(60,87,89,0.06)",
@@ -1272,14 +1274,15 @@ const styles = StyleSheet.create({
   },
 
   statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  statCard: { ...GLASS, width: "47.5%", padding: 16 },
+  statCardShadow: { ...shadows.md, borderRadius: radii.lg, width: "47.5%" },
+  statCardContent: { padding: 16 },
   dot8: { width: 8, height: 8, borderRadius: 4, marginBottom: 10 },
   dot6: { width: 6, height: 6, borderRadius: 3 },
   statNum: {
+    fontFamily: fonts.displayExtrabold,
     fontSize: 26,
-    fontWeight: "800",
-    color: "#192524",
-    letterSpacing: -0.5,
+    color: colors.ink,
+    letterSpacing: track(26, tracking.display),
   },
-  statLabel: { fontSize: 12, color: "#959D90", marginTop: 3 },
+  statLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.sage, marginTop: 3 },
 });
