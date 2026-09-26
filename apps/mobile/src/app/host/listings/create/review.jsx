@@ -4,8 +4,13 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronDown, ChevronUp, Eye, DollarSign } from "lucide-react-native";
 import ListingCreationShell from "@/components/ListingCreationShell";
 import ListingDraftStore from "@/utils/ListingDraftStore";
+import { colors as theme, fonts, tracking, track } from "@/config/theme";
 
 // Simple confetti particle component
+// Falls with randomized per-particle timing — a decorative one-off effect,
+// not a UI transition, so it intentionally doesn't route through
+// durations.*/motion.* (those durations are far shorter than a good confetti
+// fall needs).
 const ConfettiParticle = ({ delay, duration, startX }) => {
   const translateY = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
@@ -41,8 +46,8 @@ const ConfettiParticle = ({ delay, duration, startX }) => {
     ]).start();
   }, []);
 
-  const colors = ["#D1EBDB", "#3C5759", "#EFECE9", "#D0D5CE"];
-  const color = colors[Math.floor(Math.random() * colors.length)];
+  const confettiColors = [theme.mint, theme.slate, theme.bone, theme.stone];
+  const color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
 
   return (
     <Animated.View
@@ -265,12 +270,13 @@ export default function CreateListingReview() {
               marginBottom: 8,
             }}
           >
-            <Eye color="#3C5759" size={24} />
+            <Eye color={theme.slate} size={24} />
             <Text
               style={{
+                fontFamily: fonts.display,
                 fontSize: 28,
-                fontWeight: "700",
-                color: "#192524",
+                color: theme.ink,
+                letterSpacing: track(28, tracking.display),
               }}
             >
               Review & publish
@@ -278,8 +284,9 @@ export default function CreateListingReview() {
           </View>
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 15,
-              color: "#3C5759",
+              color: theme.slate,
               marginBottom: 32,
               lineHeight: 22,
             }}
@@ -290,10 +297,10 @@ export default function CreateListingReview() {
 
           <View
             style={{
-              backgroundColor: "#fff",
+              backgroundColor: theme.surface,
               borderRadius: 20,
               borderWidth: 1,
-              borderColor: "#D0D5CE",
+              borderColor: theme.stone,
               overflow: "hidden",
               marginBottom: 24,
             }}
@@ -302,20 +309,21 @@ export default function CreateListingReview() {
               style={{
                 padding: 20,
                 borderBottomWidth: 1,
-                borderBottomColor: "#EFECE9",
+                borderBottomColor: theme.bone,
               }}
             >
               <Text
                 style={{
+                  fontFamily: fonts.display,
                   fontSize: 24,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: theme.ink,
+                  letterSpacing: track(24, tracking.display),
                   marginBottom: 6,
                 }}
               >
                 {draft.title}
               </Text>
-              <Text style={{ fontSize: 15, color: "#3C5759" }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 15, color: theme.slate }}>
                 {draft.location_city}, {draft.location_country}
               </Text>
             </View>
@@ -324,7 +332,7 @@ export default function CreateListingReview() {
               style={{
                 padding: 20,
                 borderBottomWidth: 1,
-                borderBottomColor: "#EFECE9",
+                borderBottomColor: theme.bone,
               }}
             >
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
@@ -333,14 +341,14 @@ export default function CreateListingReview() {
                     paddingHorizontal: 12,
                     paddingVertical: 6,
                     borderRadius: 16,
-                    backgroundColor: "#EFECE9",
+                    backgroundColor: theme.bone,
                   }}
                 >
                   <Text
                     style={{
+                      fontFamily: fonts.bodySemibold,
                       fontSize: 13,
-                      fontWeight: "600",
-                      color: "#192524",
+                      color: theme.ink,
                     }}
                   >
                     {getTierLabel(draft.creator_tier_required)}
@@ -351,14 +359,14 @@ export default function CreateListingReview() {
                     paddingHorizontal: 12,
                     paddingVertical: 6,
                     borderRadius: 16,
-                    backgroundColor: "#D1EBDB",
+                    backgroundColor: theme.mint,
                   }}
                 >
                   <Text
                     style={{
+                      fontFamily: fonts.bodySemibold,
                       fontSize: 13,
-                      fontWeight: "600",
-                      color: "#192524",
+                      color: theme.ink,
                     }}
                   >
                     {getCompensationDisplay()}
@@ -369,14 +377,14 @@ export default function CreateListingReview() {
                     paddingHorizontal: 12,
                     paddingVertical: 6,
                     borderRadius: 16,
-                    backgroundColor: "#EFECE9",
+                    backgroundColor: theme.bone,
                   }}
                 >
                   <Text
                     style={{
+                      fontFamily: fonts.bodySemibold,
                       fontSize: 13,
-                      fontWeight: "600",
-                      color: "#192524",
+                      color: theme.ink,
                     }}
                   >
                     {draft.deliverable_load.charAt(0).toUpperCase() +
@@ -391,14 +399,15 @@ export default function CreateListingReview() {
               style={{
                 padding: 20,
                 borderBottomWidth: 1,
-                borderBottomColor: "#EFECE9",
+                borderBottomColor: theme.bone,
               }}
             >
               <Text
                 style={{
+                  fontFamily: fonts.display,
                   fontSize: 18,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: theme.ink,
+                  letterSpacing: track(18, tracking.display),
                   marginBottom: 12,
                 }}
               >
@@ -407,30 +416,30 @@ export default function CreateListingReview() {
               <View style={{ marginBottom: 12 }}>
                 <Text
                   style={{
+                    fontFamily: fonts.bodySemibold,
                     fontSize: 14,
-                    fontWeight: "700",
-                    color: "#3C5759",
+                    color: theme.slate,
                     marginBottom: 6,
                   }}
                 >
                   Add-ons
                 </Text>
                 <Text
-                  style={{ fontSize: 15, color: "#192524", marginBottom: 4 }}
+                  style={{ fontFamily: fonts.body, fontSize: 15, color: theme.ink, marginBottom: 4 }}
                 >
                   • {getCompensationDisplay()}
                 </Text>
                 {draft.perks.map((perk, idx) => (
                   <Text
                     key={idx}
-                    style={{ fontSize: 15, color: "#192524", marginBottom: 4 }}
+                    style={{ fontFamily: fonts.body, fontSize: 15, color: theme.ink, marginBottom: 4 }}
                   >
                     • {perk}
                   </Text>
                 ))}
                 {draft.affiliate_code && (
                   <Text
-                    style={{ fontSize: 15, color: "#192524", marginBottom: 4 }}
+                    style={{ fontFamily: fonts.body, fontSize: 15, color: theme.ink, marginBottom: 4 }}
                   >
                     • Affiliate code: {draft.affiliate_code}
                   </Text>
@@ -439,15 +448,15 @@ export default function CreateListingReview() {
               <View>
                 <Text
                   style={{
+                    fontFamily: fonts.bodySemibold,
                     fontSize: 14,
-                    fontWeight: "700",
-                    color: "#3C5759",
+                    color: theme.slate,
                     marginBottom: 6,
                   }}
                 >
                   What you deliver
                 </Text>
-                <Text style={{ fontSize: 15, color: "#192524" }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 15, color: theme.ink }}>
                   {getTotalDeliverables()} total deliverables across{" "}
                   {draft.deliverables.length} format
                   {draft.deliverables.length > 1 ? "s" : ""}
@@ -466,14 +475,14 @@ export default function CreateListingReview() {
                           paddingHorizontal: 10,
                           paddingVertical: 5,
                           borderRadius: 12,
-                          backgroundColor: "#EFECE9",
+                          backgroundColor: theme.bone,
                         }}
                       >
                         <Text
                           style={{
+                            fontFamily: fonts.bodySemibold,
                             fontSize: 12,
-                            fontWeight: "600",
-                            color: "#192524",
+                            color: theme.ink,
                           }}
                         >
                           {tag}
@@ -489,14 +498,15 @@ export default function CreateListingReview() {
               style={{
                 padding: 20,
                 borderBottomWidth: 1,
-                borderBottomColor: "#EFECE9",
+                borderBottomColor: theme.bone,
               }}
             >
               <Text
                 style={{
+                  fontFamily: fonts.display,
                   fontSize: 18,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: theme.ink,
+                  letterSpacing: track(18, tracking.display),
                   marginBottom: 12,
                 }}
               >
@@ -504,31 +514,31 @@ export default function CreateListingReview() {
               </Text>
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 14,
-                  fontWeight: "600",
-                  color: "#192524",
+                  color: theme.ink,
                   marginBottom: 4,
                 }}
               >
                 Collaboration Window
               </Text>
               <Text
-                style={{ fontSize: 14, color: "#3C5759", marginBottom: 12 }}
+                style={{ fontFamily: fonts.body, fontSize: 14, color: theme.slate, marginBottom: 12 }}
               >
                 {draft.collaboration_window.startDate} -{" "}
                 {draft.collaboration_window.endDate}
               </Text>
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 14,
-                  fontWeight: "600",
-                  color: "#192524",
+                  color: theme.ink,
                   marginBottom: 4,
                 }}
               >
                 Deliverables Due
               </Text>
-              <Text style={{ fontSize: 14, color: "#3C5759" }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 14, color: theme.slate }}>
                 {draft.turnaround_time_days} days after stay
               </Text>
             </View>
@@ -537,14 +547,15 @@ export default function CreateListingReview() {
               style={{
                 padding: 20,
                 borderBottomWidth: 1,
-                borderBottomColor: "#EFECE9",
+                borderBottomColor: theme.bone,
               }}
             >
               <Text
                 style={{
+                  fontFamily: fonts.display,
                   fontSize: 18,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: theme.ink,
+                  letterSpacing: track(18, tracking.display),
                   marginBottom: 12,
                 }}
               >
@@ -555,22 +566,22 @@ export default function CreateListingReview() {
                   <View
                     key={idx}
                     style={{
-                      backgroundColor: "#EFECE9",
+                      backgroundColor: theme.bone,
                       borderRadius: 12,
                       padding: 12,
                     }}
                   >
                     <Text
                       style={{
+                        fontFamily: fonts.display,
                         fontSize: 15,
-                        fontWeight: "700",
-                        color: "#192524",
+                        color: theme.ink,
                         marginBottom: 4,
                       }}
                     >
                       {item.quantity}x {item.type}
                     </Text>
-                    <Text style={{ fontSize: 13, color: "#3C5759" }}>
+                    <Text style={{ fontFamily: fonts.body, fontSize: 13, color: theme.slate }}>
                       {item.description}
                     </Text>
                   </View>
@@ -578,8 +589,9 @@ export default function CreateListingReview() {
                 {draft.deliverables.length > 2 && (
                   <Text
                     style={{
+                      fontFamily: fonts.body,
                       fontSize: 13,
-                      color: "#3C5759",
+                      color: theme.slate,
                       textAlign: "center",
                       paddingVertical: 4,
                     }}
@@ -593,9 +605,10 @@ export default function CreateListingReview() {
             <View style={{ padding: 20 }}>
               <Text
                 style={{
+                  fontFamily: fonts.display,
                   fontSize: 18,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: theme.ink,
+                  letterSpacing: track(18, tracking.display),
                   marginBottom: 12,
                 }}
               >
@@ -605,30 +618,30 @@ export default function CreateListingReview() {
                 <View>
                   <Text
                     style={{
+                      fontFamily: fonts.bodySemibold,
                       fontSize: 14,
-                      fontWeight: "600",
-                      color: "#192524",
+                      color: theme.ink,
                       marginBottom: 4,
                     }}
                   >
                     Revision policy
                   </Text>
-                  <Text style={{ fontSize: 13, color: "#3C5759" }}>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 13, color: theme.slate }}>
                     {draft.revision_policy}
                   </Text>
                 </View>
                 <View>
                   <Text
                     style={{
+                      fontFamily: fonts.bodySemibold,
                       fontSize: 14,
-                      fontWeight: "600",
-                      color: "#192524",
+                      color: theme.ink,
                       marginBottom: 4,
                     }}
                   >
                     Usage rights
                   </Text>
-                  <Text style={{ fontSize: 13, color: "#3C5759" }}>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 13, color: theme.slate }}>
                     {draft.usage_rights}
                   </Text>
                 </View>
@@ -636,6 +649,10 @@ export default function CreateListingReview() {
             </View>
           </View>
 
+          {/* Fee-disclosure callout: amber "warning" palette, no brand-token
+              equivalent (the 9-color palette has no yellow/amber) — a third,
+              distinct amber family in this lane alongside #D4A843 and
+              #F5D547. Flagged for design review; left as literals. */}
           <TouchableOpacity
             onPress={() => setShowFees(!showFees)}
             style={{
@@ -659,7 +676,7 @@ export default function CreateListingReview() {
               >
                 <DollarSign color="#D97706" size={20} />
                 <Text
-                  style={{ fontSize: 16, fontWeight: "700", color: "#192524" }}
+                  style={{ fontFamily: fonts.display, fontSize: 16, color: theme.ink }}
                 >
                   Host-only: Pricing & Fees
                 </Text>
@@ -682,21 +699,21 @@ export default function CreateListingReview() {
               >
                 <View style={{ marginBottom: 8 }}>
                   <Text
-                    style={{ fontSize: 13, color: "#3C5759", marginBottom: 4 }}
+                    style={{ fontFamily: fonts.body, fontSize: 13, color: theme.slate, marginBottom: 4 }}
                   >
                     Platform fee
                   </Text>
                   <Text
                     style={{
+                      fontFamily: fonts.display,
                       fontSize: 16,
-                      fontWeight: "700",
-                      color: "#192524",
+                      color: theme.ink,
                     }}
                   >
                     ${fee.calculatedFee || fee.amount}
                   </Text>
                   <Text
-                    style={{ fontSize: 12, color: "#959D90", marginTop: 2 }}
+                    style={{ fontFamily: fonts.body, fontSize: 12, color: theme.sage, marginTop: 2 }}
                   >
                     {fee.description}
                   </Text>
@@ -711,9 +728,9 @@ export default function CreateListingReview() {
                 >
                   <Text
                     style={{
+                      fontFamily: fonts.bodySemibold,
                       fontSize: 12,
                       color: "#D97706",
-                      fontWeight: "600",
                     }}
                   >
                     ⚠️ Creators don't see these fees
@@ -728,12 +745,12 @@ export default function CreateListingReview() {
             style={{
               paddingVertical: 16,
               borderRadius: 12,
-              backgroundColor: "#EFECE9",
+              backgroundColor: theme.bone,
               alignItems: "center",
               marginBottom: 20,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: "600", color: "#192524" }}>
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: theme.ink }}>
               Save draft
             </Text>
           </TouchableOpacity>
