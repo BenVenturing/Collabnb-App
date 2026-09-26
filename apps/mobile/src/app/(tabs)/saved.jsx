@@ -1,6 +1,6 @@
 // Creator V1 screen (namespaced to avoid host collisions)
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -9,33 +9,20 @@ import {
   Image,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Plus, MoreVertical } from "lucide-react-native";
-import SavedStore from "@/utils/SavedStore";
+import { useSavedCollections } from "@/hooks/useSavedCollections";
 
 export default function CreatorSavedScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [lists, setLists] = useState([]);
+  const { isSignedIn, collections: lists, listingsById, isLoading, createList } = useSavedCollections();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newListName, setNewListName] = useState("");
-
-  useEffect(() => {
-    // Load initial state
-    const state = SavedStore.getState();
-    setLists(state.lists);
-
-    // Subscribe to changes
-    const unsubscribe = SavedStore.subscribe(() => {
-      const state = SavedStore.getState();
-      setLists(state.lists);
-    });
-
-    return unsubscribe;
-  }, []);
 
   const handleCreateList = async () => {
     if (!newListName.trim()) {
@@ -43,18 +30,89 @@ export default function CreatorSavedScreen() {
       return;
     }
 
-    await SavedStore.createList(newListName.trim());
+    await createList(newListName.trim());
     setNewListName("");
     setShowCreateModal(false);
   };
 
   const getTotalSavedCount = () => {
-    return lists.reduce((sum, list) => sum + list.items.length, 0);
+    return lists.reduce((sum, list) => sum + list.listing_ids.length, 0);
   };
 
   const getListPreviewImages = (list) => {
-    return list.items.slice(0, 4).map((item) => item.snapshot.image);
+    return list.listing_ids
+      .slice(0, 4)
+      .map((id) => listingsById.get(String(id))?.image)
+      .filter(Boolean);
   };
+
+  if (!isSignedIn) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#fff" }}>
+        <StatusBar style="dark" />
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 40,
+          }}
+        >
+          <Text style={{ fontSize: 80, marginBottom: 16, opacity: 0.2 }}>♡</Text>
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: "600",
+              color: "#192524",
+              textAlign: "center",
+              marginBottom: 8,
+            }}
+          >
+            Sign in to see your wishlists
+          </Text>
+          <Text
+            style={{
+              fontSize: 15,
+              color: "#3C5759",
+              textAlign: "center",
+              marginBottom: 24,
+            }}
+          >
+            Saved collaborations sync to your account once you're signed in.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push("/signin")}
+            style={{
+              backgroundColor: "#3C5759",
+              borderRadius: 12,
+              paddingVertical: 14,
+              paddingHorizontal: 32,
+            }}
+          >
+            <Text style={{ fontSize: 15, fontWeight: "600", color: "#fff" }}>
+              Sign in
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#fff",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <StatusBar style="dark" />
+        <ActivityIndicator color="#3C5759" />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
@@ -200,8 +258,8 @@ export default function CreatorSavedScreen() {
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
             {lists.map((list) => (
               <TouchableOpacity
-                key={list.id}
-                onPress={() => router.push(`/saved/${list.id}`)}
+                key={list._id}
+                onPress={() => router.push(`/saved/${list._id}`)}
                 style={{ width: "47%", marginBottom: 8 }}
               >
                 {/* Preview Grid */}
@@ -214,7 +272,7 @@ export default function CreatorSavedScreen() {
                     marginBottom: 12,
                   }}
                 >
-                  {list.items.length === 0 ? (
+                  {list.listing_ids.length === 0 ? (
                     <View
                       style={{
                         flex: 1,
@@ -224,9 +282,9 @@ export default function CreatorSavedScreen() {
                     >
                       <Text style={{ fontSize: 40, opacity: 0.3 }}>♡</Text>
                     </View>
-                  ) : list.items.length === 1 ? (
+                  ) : list.listing_ids.length === 1 ? (
                     <Image
-                      source={{ uri: list.items[0].snapshot.image }}
+                      source={{ uri: listingsById.get(String(list.listing_ids[0]))?.image }}
                       style={{ width: "100%", height: "100%" }}
                       resizeMode="cover"
                     />
@@ -251,8 +309,8 @@ export default function CreatorSavedScreen() {
                           resizeMode="cover"
                         />
                       ))}
-                      {list.items.length < 4 &&
-                        Array.from({ length: 4 - list.items.length }).map(
+                      {list.listing_ids.length < 4 &&
+                        Array.from({ length: 4 - list.listing_ids.length }).map(
                           (_, idx) => (
                             <View
                               key={`empty-${idx}`}
@@ -283,7 +341,7 @@ export default function CreatorSavedScreen() {
                   {list.name}
                 </Text>
                 <Text style={{ fontSize: 13, color: "#3C5759" }}>
-                  {list.items.length} saved
+                  {list.listing_ids.length} saved
                 </Text>
               </TouchableOpacity>
             ))}

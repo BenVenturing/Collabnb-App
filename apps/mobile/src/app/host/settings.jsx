@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth as useClerkAuth } from "@clerk/clerk-expo";
 import { X, ChevronRight } from "lucide-react-native";
 import ThemedBackground from "@/components/ThemedBackground";
 import {
@@ -20,6 +21,7 @@ import {
   THEMES,
 } from "@/utils/ThemeStore";
 import useRoleStore from "@/utils/RoleStore";
+import { useVerification } from "@/hooks/useVerification";
 
 const SAMPLE_HOST = {
   name: "Ben",
@@ -35,6 +37,8 @@ export default function HostSettingsScreen() {
   const { setRole } = useRoleStore();
   const [selectedTheme, setSelectedTheme] = useState("sand");
   const [vibeExpanded, setVibeExpanded] = useState(false);
+  const { signOut: clerkSignOut } = useClerkAuth();
+  const { isVerified, isLoading: verificationLoading, requestVerification } = useVerification();
 
   useEffect(() => {
     getTheme().then((id) => {
@@ -55,6 +59,7 @@ export default function HostSettingsScreen() {
         style: "destructive",
         onPress: async () => {
           try {
+            await clerkSignOut();
             await AsyncStorage.multiRemove([
               "@role",
               "@host_draft",
@@ -71,6 +76,35 @@ export default function HostSettingsScreen() {
         },
       },
     ]);
+  };
+
+  const handleVerification = () => {
+    if (verificationLoading) return;
+    Alert.alert(
+      "Account Verification",
+      isVerified
+        ? "Your account is verified."
+        : "Submit a re-verification request. Your current verified status (if any) will remain active during review.",
+      [
+        { text: "Cancel", style: "cancel" },
+        isVerified
+          ? null
+          : {
+              text: "Request",
+              onPress: async () => {
+                try {
+                  await requestVerification();
+                  Alert.alert(
+                    "Request Submitted",
+                    "Re-verification request sent — the Collabnb team will review your account.",
+                  );
+                } catch (error) {
+                  Alert.alert("Error", "Couldn't send that request. Please try again.");
+                }
+              },
+            },
+      ].filter(Boolean),
+    );
   };
 
   const handleSwitchToCreator = async () => {
@@ -410,7 +444,7 @@ export default function HostSettingsScreen() {
             },
             {
               label: "Verification",
-              onPress: () => console.log("verification"),
+              onPress: handleVerification,
             },
           ].map((row, i, arr) => (
             <View key={row.label}>

@@ -1,5 +1,6 @@
 import { ClerkProvider, ClerkLoaded, useAuth as useClerkAuth, useUser } from "@clerk/clerk-expo";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { useQuery } from "convex/react";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
@@ -16,6 +17,8 @@ import {
 import clerkTokenCache from "@/config/clerkTokenCache";
 import convexClient from "@/config/convexClient";
 import { useAuthStore } from "@/utils/auth/store";
+import { api } from "@/convex/_generated/api";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -33,7 +36,8 @@ const queryClient = new QueryClient({
 });
 
 // Mirrors the signed-in Clerk user into the legacy auth store so screens not
-// yet migrated off it (e.g. src/services/webMessaging.js) keep working.
+// yet migrated off it (host/(tabs)/creators.jsx's mock-creator messaging,
+// via src/services/webMessaging.js) keep working.
 function AuthStoreBridge() {
   const { isSignedIn, user } = useUser();
 
@@ -51,6 +55,16 @@ function AuthStoreBridge() {
     useAuthStore.setState({ auth, isReady: true });
   }, [isSignedIn, user]);
 
+  return null;
+}
+
+// Registers this device for push once the signed-in Clerk user resolves to a
+// Convex profile, and routes notification taps — see usePushNotifications.
+function PushNotificationsBridge() {
+  const { isSignedIn, user } = useUser();
+  const email = isSignedIn ? user?.primaryEmailAddress?.emailAddress : null;
+  const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  usePushNotifications(isSignedIn ? profile : null);
   return null;
 }
 
@@ -92,6 +106,7 @@ export default function RootLayout() {
         <AuthStoreBridge />
         {convexClient ? (
           <ConvexProviderWithClerk client={convexClient} useAuth={useClerkAuth}>
+            <PushNotificationsBridge />
             <AppShell />
           </ConvexProviderWithClerk>
         ) : (

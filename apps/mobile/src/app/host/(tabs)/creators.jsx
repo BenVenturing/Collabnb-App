@@ -36,6 +36,7 @@ import {
 import MessagingStore from "@/utils/MessagingStore";
 import SavedCreatorsStore from "@/utils/SavedCreatorsStore";
 import ListingDraftStore from "@/utils/ListingDraftStore";
+import { addInvitedProposal } from "@/utils/ProposalsStore";
 import {
   mockCreators,
   mockReviews,
@@ -100,6 +101,7 @@ export default function HostCreatorsScreen() {
         listing,
         prefilledText: `Hi ${creator.name} — I'd love to collaborate. Here's a proposal for you:`,
       });
+      await addInvitedProposal({ creator, listing });
     } else {
       await MessagingStore.sendMessage(
         thread.id,
@@ -135,6 +137,7 @@ export default function HostCreatorsScreen() {
         listing,
         prefilledText: `Hi ${creator.name} — I'd love to collaborate. Here's a proposal for you:`,
       });
+      await addInvitedProposal({ creator, listing });
     }
 
     setShowListingPicker(false);

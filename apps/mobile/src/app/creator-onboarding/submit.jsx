@@ -1,7 +1,7 @@
 // Creator Onboarding — Step 4: Review & Submit
 // Collabnb Design System
 
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,12 +16,34 @@ import {
   Image as ImageIcon,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useMutation, useQuery } from "convex/react";
+import { useUser } from "@clerk/clerk-expo";
+import { api } from "@/convex/_generated/api";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
+
+// Website's profiles.updateProfile stores bare handles (e.g. "jane"), not
+// full URLs — mirrors RoleSwitchSheet.jsx's `.replace(/^@/, '')` convention.
+function extractHandle(url) {
+  if (!url?.trim()) return undefined;
+  const cleaned = url
+    .trim()
+    .replace(/^https?:\/\/(www\.)?/i, "")
+    .replace(/^(instagram\.com|tiktok\.com|youtube\.com)\//i, "")
+    .replace(/^@/, "")
+    .split(/[/?]/)[0];
+  return cleaned || undefined;
+}
 
 export default function CreatorSubmitApplicationScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  const updateProfile = useMutation(api.profiles.updateProfile);
 
   const {
     profilePhoto,
@@ -39,10 +61,32 @@ export default function CreatorSubmitApplicationScreen() {
     loadDraft();
   }, []);
 
-  const handleSubmit = () => {
-    // Mark as pending in the store (persisted to AsyncStorage)
-    updateField("creatorApprovalStatus", "pending");
-    setIsSubmitted(true);
+  const handleSubmit = async () => {
+    if (!profile?._id) {
+      Alert.alert("Error", "We couldn't find your account. Please try again.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await updateProfile({
+        profileId: String(profile._id),
+        updates: {
+          full_name: displayName || undefined,
+          username: username || undefined,
+          avatar_url: profilePhoto || undefined,
+          instagram_handle: extractHandle(instagramUrl),
+          tiktok_handle: extractHandle(tiktokUrl),
+          youtube_handle: extractHandle(youtubeUrl),
+          portfolio_images: (portfolioItems || []).map((item) => item.uri),
+        },
+      });
+      updateField("creatorApprovalStatus", "pending");
+      setIsSubmitted(true);
+    } catch (err) {
+      Alert.alert("Submission failed", err?.message || "Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleReturnToBrowse = () => {
@@ -467,17 +511,23 @@ export default function CreatorSubmitApplicationScreen() {
       >
         <TouchableOpacity
           onPress={handleSubmit}
+          disabled={submitting}
           style={{
             backgroundColor: "#3C5759",
             borderRadius: 16,
             paddingVertical: 16,
             alignItems: "center",
             marginBottom: 12,
+            opacity: submitting ? 0.7 : 1,
           }}
         >
-          <Text style={{ color: "#EFECE9", fontSize: 16, fontWeight: "700" }}>
-            Submit application
-          </Text>
+          {submitting ? (
+            <ActivityIndicator color="#EFECE9" />
+          ) : (
+            <Text style={{ color: "#EFECE9", fontSize: 16, fontWeight: "700" }}>
+              Submit application
+            </Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity

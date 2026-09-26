@@ -36,46 +36,48 @@ export default function LinksSection({ personalLink, socialLinks }) {
           elevation: 2,
         }}
       >
-        <TouchableOpacity
-          onPress={() => openLink(personalLink.url)}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            padding: 16,
-            borderBottomWidth: 1,
-            borderBottomColor: "rgba(255, 255, 255, 0.25)",
-          }}
-        >
-          <View
+        {personalLink && (
+          <TouchableOpacity
+            onPress={() => openLink(personalLink.url)}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: "#D1EBDB",
+              flexDirection: "row",
               alignItems: "center",
-              justifyContent: "center",
-              marginRight: 12,
+              padding: 16,
+              borderBottomWidth: socialLinks.length > 0 ? 1 : 0,
+              borderBottomColor: "rgba(255, 255, 255, 0.25)",
             }}
           >
-            <personalLink.icon color="#192524" size={20} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text
+            <View
               style={{
-                fontSize: 15,
-                fontWeight: "600",
-                color: "#192524",
-                marginBottom: 2,
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "#D1EBDB",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 12,
               }}
             >
-              {personalLink.title}
-            </Text>
-            <Text style={{ fontSize: 13, color: "#959D90" }}>
-              beacons.ai/benventuring
-            </Text>
-          </View>
-          <ExternalLink color="#3C5759" size={18} />
-        </TouchableOpacity>
+              <personalLink.icon color="#192524" size={20} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: "600",
+                  color: "#192524",
+                  marginBottom: 2,
+                }}
+              >
+                {personalLink.title}
+              </Text>
+              <Text style={{ fontSize: 13, color: "#959D90" }} numberOfLines={1}>
+                {personalLink.url}
+              </Text>
+            </View>
+            <ExternalLink color="#3C5759" size={18} />
+          </TouchableOpacity>
+        )}
 
         {socialLinks.map((link, index) => (
           <TouchableOpacity

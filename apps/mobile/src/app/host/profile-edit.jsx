@@ -15,6 +15,7 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
 
 const PROFILE_KEY = "@collabnb_host_profile_v1";
 
@@ -93,6 +94,29 @@ export default function HostProfileEditScreen() {
   const triggerConfetti = () => {
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 1500);
+  };
+
+  const handleChangePhoto = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "Permission Required",
+        "Please grant photo library access to update your photo.",
+      );
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets?.[0]?.uri) {
+      const updated = { ...profile, avatarUri: result.assets[0].uri };
+      setProfile(updated);
+      await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(updated));
+      triggerConfetti();
+    }
   };
 
   const activeField =
@@ -229,16 +253,12 @@ export default function HostProfileEditScreen() {
             }}
           >
             <Image
-              source={{ uri: PHOTO_URI }}
+              source={{ uri: profile.avatarUri || PHOTO_URI }}
               style={{ width: "100%", height: "100%" }}
               resizeMode="cover"
             />
           </View>
-          <TouchableOpacity
-            onPress={() =>
-              Alert.alert("Update Photo", "Photo picker coming soon.")
-            }
-          >
+          <TouchableOpacity onPress={handleChangePhoto}>
             <Text
               style={{
                 fontFamily: "Inter-Medium",

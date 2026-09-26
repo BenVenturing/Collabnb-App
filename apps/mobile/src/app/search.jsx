@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,6 +17,8 @@ import {
   MapPin,
   SlidersHorizontal,
 } from "lucide-react-native";
+
+const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
 
 const RECENT_SEARCHES = [
   {
@@ -79,13 +82,48 @@ export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [geoResults, setGeoResults] = useState([]);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const debounceRef = useRef(null);
 
-  const filteredDestinations = SUGGESTED_DESTINATIONS.filter(
-    (dest) =>
-      searchQuery === "" ||
-      dest.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      dest.subtitle.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  // Live place autocomplete via Mapbox Geocoding — same endpoint/token as the
+  // website's nav search (Explore.jsx's mapDestination fly-to).
+  useEffect(() => {
+    if (!MAPBOX_TOKEN || searchQuery.trim().length < 3) {
+      setGeoResults([]);
+      setGeoLoading(false);
+      return;
+    }
+    setGeoLoading(true);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const r = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${MAPBOX_TOKEN}&types=country,region,place,locality,district&limit=6`
+        );
+        const d = await r.json();
+        setGeoResults(
+          (d?.features || []).map((f) => ({ id: f.id, title: f.text, subtitle: f.place_name, location: f.place_name }))
+        );
+      } catch {
+        setGeoResults([]);
+      } finally {
+        setGeoLoading(false);
+      }
+    }, 350);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchQuery]);
+
+  const useLiveResults = Boolean(MAPBOX_TOKEN) && searchQuery.trim().length >= 3;
+
+  const filteredDestinations = useLiveResults
+    ? geoResults
+    : SUGGESTED_DESTINATIONS.filter(
+        (dest) =>
+          searchQuery === "" ||
+          dest.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          dest.subtitle.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
 
   const handleDestinationSelect = (location) => {
     router.push({
@@ -262,16 +300,15 @@ export default function SearchScreen() {
             paddingHorizontal: 20,
           }}
         >
-          <Text
-            style={{
-              fontSize: 14,
-              fontWeight: "700",
-              color: "#192524",
-              marginBottom: 12,
-            }}
-          >
-            Suggested destinations
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <Text style={{ fontSize: 14, fontWeight: "700", color: "#192524" }}>
+              {useLiveResults ? "Destinations" : "Suggested destinations"}
+            </Text>
+            {geoLoading && <ActivityIndicator size="small" color="#959D90" />}
+          </View>
+          {useLiveResults && !geoLoading && geoResults.length === 0 && (
+            <Text style={{ fontSize: 14, color: "#959D90", paddingVertical: 8 }}>No places found.</Text>
+          )}
           <View style={{ gap: 2 }}>
             {filteredDestinations.map((dest) => (
               <TouchableOpacity
@@ -295,7 +332,7 @@ export default function SearchScreen() {
                     marginRight: 16,
                   }}
                 >
-                  <Text style={{ fontSize: 24 }}>{dest.icon}</Text>
+                  {dest.icon ? <Text style={{ fontSize: 24 }}>{dest.icon}</Text> : <MapPin color="#3C5759" size={20} />}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text

@@ -200,7 +200,7 @@ export default function CreateListingDeliverables() {
   };
 
   const handleSaveExit = () => {
-    router.push("/host/(tabs)/listings");
+    router.push("/host/(tabs)/dashboard");
   };
 
   const isValid =

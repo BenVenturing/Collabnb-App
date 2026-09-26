@@ -19,7 +19,7 @@ import useRoleStore from "@/utils/RoleStore";
 import useHostOnboardingStore from "@/utils/HostOnboardingStore";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
 import ListingDraftStore from "@/utils/ListingDraftStore";
-import MessagingStore from "@/utils/MessagingStore";
+import { useConversations } from "@/hooks/useConversations";
 
 const SAMPLE_HOST = {
   name: "Ben",
@@ -45,6 +45,7 @@ export default function HostProfileScreen() {
     useHostOnboardingStore();
   const { creatorApprovalStatus, loadDraft: loadCreatorDraft } =
     useCreatorOnboardingStore();
+  const { unreadCount } = useConversations();
 
   const [showRoleSwitchModal, setShowRoleSwitchModal] = useState(false);
   const [pendingTargetRole, setPendingTargetRole] = useState(null);
@@ -72,13 +73,10 @@ export default function HostProfileScreen() {
       const unpublished = listings.filter(
         (l) => l.status === "unpublished",
       ).length;
-      await MessagingStore.init();
-      const threads = MessagingStore.getThreads();
-      const unread = threads.reduce((sum, t) => sum + (t.unreadCount || 0), 0);
       setStats({
         publishedListings: published,
         unpublishedListings: unpublished,
-        unreadMessages: unread,
+        unreadMessages: unreadCount,
         lastUpdated: new Date(),
       });
     } catch (error) {
@@ -86,7 +84,7 @@ export default function HostProfileScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [unreadCount]);
 
   useFocusEffect(
     useCallback(() => {

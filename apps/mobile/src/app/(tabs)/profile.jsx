@@ -1,20 +1,17 @@
-import { View, ScrollView, Text, TouchableOpacity, Image } from "react-native";
+import { View, ScrollView, Text, TouchableOpacity, Image, ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQuery } from "convex/react";
+import { useUser } from "@clerk/clerk-expo";
+import { api } from "@/convex/_generated/api";
 import useHostOnboardingStore from "@/utils/HostOnboardingStore";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
-import { useProfileStats } from "@/hooks/useProfileStats";
 import { useRoleSwitch } from "@/hooks/useRoleSwitch";
 import { getCreatorTier } from "@/utils/profileHelpers";
-import {
-  portfolioItems,
-  socialLinks,
-  personalLink,
-  specialties,
-} from "@/data/profileData";
+import { Instagram, Camera, Youtube, Globe } from "lucide-react-native";
 import ThemedBackground from "@/components/ThemedBackground";
 import ProfileInfoCard from "@/components/Profile/ProfileInfoCard";
 import LinksSection from "@/components/Profile/LinksSection";
@@ -24,35 +21,68 @@ import RoleSwitchModal from "@/components/Profile/RoleSwitchModal";
 import { Settings } from "lucide-react-native";
 
 const LOCATION_PREF_KEY = "@collabnb_creator_location_prefs_v1";
-
-const SAMPLE_CREATOR = {
-  name: "Benjamin",
-  handle: "@ben.venturing",
-  bio: "Travel & lifestyle creator documenting unique stays and hidden gems around the world. Passionate about authentic content that inspires people to explore.",
-  bioLink: "beacons.ai/benventuring",
-  photo: {
-    uri: "https://ucarecdn.com/6d425040-e4c3-46f0-a774-91ac597ebe24/-/format/auto/",
-  },
-  tier: "Micro Influencer",
-  followers: "28.4k",
-  engagement: "6.2%",
-  collabs: 12,
-  platforms: ["Instagram", "TikTok", "YouTube"],
-  location: "Asheville, NC",
-  verified: true,
+const DEFAULT_PHOTO = {
+  uri: "https://ucarecdn.com/6d425040-e4c3-46f0-a774-91ac597ebe24/-/format/auto/",
 };
+
+function buildSocialLinks(profile) {
+  const links = [];
+  if (profile.instagram_handle) {
+    links.push({
+      platform: "Instagram",
+      username: `@${profile.instagram_handle}`,
+      url: `https://instagram.com/${profile.instagram_handle}`,
+      icon: Instagram,
+    });
+  }
+  if (profile.tiktok_handle) {
+    links.push({
+      platform: "TikTok",
+      username: `@${profile.tiktok_handle}`,
+      url: `https://tiktok.com/@${profile.tiktok_handle}`,
+      icon: Camera,
+    });
+  }
+  if (profile.youtube_handle) {
+    links.push({
+      platform: "YouTube",
+      username: `@${profile.youtube_handle}`,
+      url: `https://youtube.com/@${profile.youtube_handle}`,
+      icon: Youtube,
+    });
+  }
+  return links;
+}
 
 export default function CreatorProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { loadDraft: loadHostDraft } = useHostOnboardingStore();
   const { loadDraft: loadCreatorDraft } = useCreatorOnboardingStore();
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+
+  const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  const collabs = useQuery(
+    api.collaborations.getByCreator,
+    profile?._id ? { creatorId: String(profile._id) } : "skip",
+  );
 
   const [showSettings, setShowSettings] = useState(false);
   const [showVerificationTooltip, setShowVerificationTooltip] = useState(false);
   const [collabPrefs, setCollabPrefs] = useState(null);
 
-  const { stats } = useProfileStats();
+  const stats = {
+    followers: profile?.follower_count ?? 0,
+    engagement: profile?.engagement_rate ?? 0,
+    collabs: profile?.collab_count ?? (collabs?.length ?? 0),
+  };
+  const socialLinks = profile ? buildSocialLinks(profile) : [];
+  const personalLink = profile?.portfolio
+    ? { title: "My Link-in-Bio", url: profile.portfolio, icon: Globe }
+    : null;
+  const specialties = profile?.niches || [];
+
   const {
     showRoleSwitchModal,
     setShowRoleSwitchModal,
@@ -89,6 +119,15 @@ export default function CreatorProfileScreen() {
     attemptRoleSwitch("host");
   };
   const handleVerificationPress = (show) => setShowVerificationTooltip(show);
+
+  if (profile === undefined) {
+    return (
+      <ThemedBackground style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <StatusBar style="dark" />
+        <ActivityIndicator color="#3C5759" />
+      </ThemedBackground>
+    );
+  }
 
   return (
     <ThemedBackground style={{ flex: 1 }}>
@@ -134,7 +173,7 @@ export default function CreatorProfileScreen() {
           }}
         >
           <Image
-            source={SAMPLE_CREATOR.photo}
+            source={profile?.avatar_url ? { uri: profile.avatar_url } : DEFAULT_PHOTO}
             style={{ width: "100%", height: "100%" }}
             resizeMode="cover"
           />
@@ -148,17 +187,19 @@ export default function CreatorProfileScreen() {
         contentInsetAdjustmentBehavior="never"
       >
         <ProfileInfoCard
-          name={SAMPLE_CREATOR.name}
-          creatorTier={SAMPLE_CREATOR.tier}
-          bio={SAMPLE_CREATOR.bio}
+          name={profile?.full_name || "Your profile"}
+          creatorTier={profile?.tier || getCreatorTier(stats.followers)}
+          bio={profile?.bio || ""}
           stats={stats}
           showVerificationTooltip={showVerificationTooltip}
           onVerificationPress={handleVerificationPress}
           isSelfView={true}
         />
 
-        <LinksSection personalLink={personalLink} socialLinks={socialLinks} />
-        <SpecialtiesSection specialties={specialties} />
+        {(personalLink || socialLinks.length > 0) && (
+          <LinksSection personalLink={personalLink} socialLinks={socialLinks} />
+        )}
+        {specialties.length > 0 && <SpecialtiesSection specialties={specialties} />}
 
         {/* Collab Preferences — only shown when prefs are saved */}
         {collabPrefs && (
@@ -256,63 +297,64 @@ export default function CreatorProfileScreen() {
           >
             Past Collabs
           </Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {portfolioItems.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={{
-                  width: (400 - 56) / 3,
-                  height: (400 - 56) / 3,
-                  borderRadius: 12,
-                  overflow: "hidden",
-                  backgroundColor: "#E5E7EB",
-                }}
-              >
-                <Image
-                  source={{ uri: item.uri }}
-                  style={{ width: "100%", height: "100%" }}
-                  resizeMode="cover"
-                />
-                <View
+          {collabs === undefined ? (
+            <ActivityIndicator color="#3C5759" />
+          ) : collabs.length === 0 ? (
+            <Text style={{ fontSize: 13, color: "#959D90" }}>
+              No past collaborations yet
+            </Text>
+          ) : (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {collabs.map((collab) => (
+                <TouchableOpacity
+                  key={collab._id}
+                  onPress={() =>
+                    router.push({ pathname: "/listing-detail", params: { id: collab.listing_id } })
+                  }
                   style={{
-                    position: "absolute",
-                    top: 8,
-                    left: 8,
-                    backgroundColor: "rgba(25,37,36,0.55)",
-                    borderRadius: 6,
-                    paddingHorizontal: 7,
-                    paddingVertical: 3,
+                    width: (400 - 56) / 3,
+                    height: (400 - 56) / 3,
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    backgroundColor: "#E5E7EB",
                   }}
                 >
-                  <Text
-                    style={{
-                      fontSize: 9,
-                      fontWeight: "700",
-                      color: "#EFECE9",
-                      letterSpacing: 1,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    SAMPLE
-                  </Text>
-                </View>
-                {item.type === "video" && (
-                  <View
-                    style={{
-                      position: "absolute",
-                      top: 8,
-                      right: 8,
-                      backgroundColor: "rgba(0,0,0,0.6)",
-                      borderRadius: 12,
-                      padding: 4,
-                    }}
-                  >
-                    <Text style={{ color: "#fff", fontSize: 10 }}>▶️</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
+                  {collab.image && (
+                    <Image
+                      source={{ uri: collab.image }}
+                      style={{ width: "100%", height: "100%" }}
+                      resizeMode="cover"
+                    />
+                  )}
+                  {collab.is_sample && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: 8,
+                        left: 8,
+                        backgroundColor: "rgba(25,37,36,0.55)",
+                        borderRadius: 6,
+                        paddingHorizontal: 7,
+                        paddingVertical: 3,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 9,
+                          fontWeight: "700",
+                          color: "#EFECE9",
+                          letterSpacing: 1,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        SAMPLE
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
 

@@ -246,6 +246,32 @@ class ListingDraftStore {
     }
   }
 
+  // Save the in-progress draft as a draft-status listing (host taps "Save
+  // Draft" mid-flow instead of publishing). Reuses publishListing's shape so
+  // the dashboard/creators/profile screens read it the same way.
+  async saveDraftListing() {
+    try {
+      const listing = {
+        id: `listing_${Date.now()}`,
+        ...this.draft,
+        status: "draft",
+        images: this.draft.images || [],
+      };
+
+      const stored = await AsyncStorage.getItem(LISTINGS_KEY);
+      const listings = stored ? JSON.parse(stored) : [];
+      listings.unshift(listing);
+      await AsyncStorage.setItem(LISTINGS_KEY, JSON.stringify(listings));
+
+      await this.clearDraft();
+
+      return listing;
+    } catch (error) {
+      console.error("Failed to save draft listing:", error);
+      throw error;
+    }
+  }
+
   // Update an existing listing
   async updateExistingListing(listingId, updates) {
     try {

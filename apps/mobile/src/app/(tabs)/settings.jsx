@@ -21,6 +21,7 @@ import {
   THEMES,
 } from "@/utils/ThemeStore";
 import { useRoleSwitch } from "@/hooks/useRoleSwitch";
+import { useVerification } from "@/hooks/useVerification";
 
 const SAMPLE_CREATOR = {
   name: "Benjamin",
@@ -35,17 +36,14 @@ export default function CreatorSettingsScreen() {
   const router = useRouter();
   const [selectedTheme, setSelectedTheme] = useState("sand");
   const [vibeExpanded, setVibeExpanded] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState("not_submitted");
 
   const { attemptRoleSwitch } = useRoleSwitch();
   const { signOut: clerkSignOut } = useClerkAuth();
+  const { isVerified, isLoading: verificationLoading, requestVerification } = useVerification();
 
   useEffect(() => {
     getTheme().then((id) => {
       if (id) setSelectedTheme(id);
-    });
-    AsyncStorage.getItem("@verification_status").then((v) => {
-      if (v) setVerificationStatus(v);
     });
   }, []);
 
@@ -81,25 +79,31 @@ export default function CreatorSettingsScreen() {
     ]);
   };
 
-  const handleVerification = async () => {
+  const handleVerification = () => {
+    if (verificationLoading) return;
     Alert.alert(
       "Account Verification",
-      `Current status: ${verificationStatus === "not_submitted" ? "Not Submitted" : verificationStatus === "pending" ? "Pending Review" : "Verified"}`,
+      isVerified
+        ? "Your account is verified."
+        : "Submit a re-verification request. Your current verified status (if any) will remain active during review.",
       [
         { text: "Cancel", style: "cancel" },
-        verificationStatus === "not_submitted"
-          ? {
-              text: "Submit Request",
+        isVerified
+          ? null
+          : {
+              text: "Request",
               onPress: async () => {
-                await AsyncStorage.setItem("@verification_status", "pending");
-                setVerificationStatus("pending");
-                Alert.alert(
-                  "Request Submitted",
-                  "Your verification request is under review.",
-                );
+                try {
+                  await requestVerification();
+                  Alert.alert(
+                    "Request Submitted",
+                    "Re-verification request sent — the Collabnb team will review your account.",
+                  );
+                } catch (error) {
+                  Alert.alert("Error", "Couldn't send that request. Please try again.");
+                }
               },
-            }
-          : { text: "OK" },
+            },
       ].filter(Boolean),
     );
   };

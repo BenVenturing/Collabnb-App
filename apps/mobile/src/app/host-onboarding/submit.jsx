@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Alert, TextInput } from "react-native";
+import { View, Text, ScrollView, Alert, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -12,13 +12,20 @@ import {
   DollarSign,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
+import { useMutation, useQuery } from "convex/react";
+import { useUser } from "@clerk/clerk-expo";
+import { api } from "@/convex/_generated/api";
 import useHostOnboardingStore from "@/utils/HostOnboardingStore";
 import HostOnboardingShell from "@/components/HostOnboardingShell";
-import { TouchableOpacity } from "react-native";
 
 export default function HostSubmitScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  const updateProfile = useMutation(api.profiles.updateProfile);
 
   const {
     workEmail,
@@ -26,6 +33,7 @@ export default function HostSubmitScreen() {
     instagramUrl,
     websiteUrl,
     fullName,
+    businessName,
     contactEmail,
     createFirstListing,
     collaborationType,
@@ -43,6 +51,7 @@ export default function HostSubmitScreen() {
   const [isSkipped, setIsSkipped] = useState(false);
   const [showListingSection, setShowListingSection] = useState(false);
   const [showPricingSection, setShowPricingSection] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadDraft();
@@ -52,10 +61,31 @@ export default function HostSubmitScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const handleSubmit = () => {
-    updateField("hostApprovalStatus", "pending");
-    triggerConfetti();
-    setIsSubmitted(true);
+  const handleSubmit = async () => {
+    if (!profile?._id) {
+      Alert.alert("Error", "We couldn't find your account. Please try again.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      // Same fields the website's finishRoleSwitchProfile persists for a
+      // host — website reuses the `portfolio` string field for "Website".
+      await updateProfile({
+        profileId: String(profile._id),
+        updates: {
+          full_name: fullName || undefined,
+          business_name: businessName || undefined,
+          portfolio: websiteUrl || undefined,
+        },
+      });
+      updateField("hostApprovalStatus", "pending");
+      triggerConfetti();
+      setIsSubmitted(true);
+    } catch (err) {
+      Alert.alert("Submission failed", err?.message || "Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSkip = () => {
@@ -258,6 +288,7 @@ export default function HostSubmitScreen() {
       onBack={() => router.back()}
       nextLabel="Submit for review"
       showBackButton={false}
+      nextDisabled={submitting}
     >
       <StatusBar style="dark" />
 
@@ -762,17 +793,23 @@ export default function HostSubmitScreen() {
       >
         <TouchableOpacity
           onPress={handleSubmit}
+          disabled={submitting}
           style={{
             backgroundColor: "#000000",
             borderRadius: 12,
             paddingVertical: 16,
             alignItems: "center",
             marginBottom: 12,
+            opacity: submitting ? 0.7 : 1,
           }}
         >
-          <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600" }}>
-            Submit for review
-          </Text>
+          {submitting ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600" }}>
+              Submit for review
+            </Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity

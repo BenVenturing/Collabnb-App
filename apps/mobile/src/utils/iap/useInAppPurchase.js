@@ -2,6 +2,8 @@ import Purchases, { LOG_LEVEL, PRODUCT_CATEGORY } from 'react-native-purchases';
 import { Platform } from 'react-native';
 import { useCallback, useRef, useState } from 'react';
 import { useInAppPurchaseStore } from './store';
+import convexClient from '@/config/convexClient';
+import { api } from '@/convex/_generated/api';
 
 export const RETRY_ATTEMPTS = 3;
 export const RETRY_DELAY_MS = 1500;
@@ -40,38 +42,46 @@ export async function loadOfferings(setOfferings) {
   }
 }
 
-export async function fetchSubscriptionStatus(setIsSubscribed) {
+// Server-side truth, not RevenueCat's local cache — this is the same
+// api.gates.getMyAccess check the web app and useAccessGate() use, so it
+// reflects a Stripe web subscription too (RevenueCat webhook -> Convex ->
+// here), not just this device's IAP state.
+export async function fetchSubscriptionStatus(setIsSubscribed, profileId) {
+  if (!profileId || !convexClient) {
+    setIsSubscribed(false);
+    return;
+  }
   try {
-    const response = await fetch('/api/revenue-cat/get-subscription-status', {
-      method: 'POST',
-    });
-    if (!response.ok) {
-      throw new Error('Failed to check subscription status');
-    }
-    const data = await response.json();
-    setIsSubscribed(data.hasAccess);
+    const access = await convexClient.query(api.gates.getMyAccess, { profileId });
+    setIsSubscribed(Boolean(access?.canAccess));
   } catch (error) {
     console.error('Error fetching subscription status:', error);
     setIsSubscribed(false);
   }
 }
 
+// profileId is our Convex profiles._id — passed as RevenueCat's appUserID so
+// the RevenueCat webhook (convex/http.ts) can update this exact profile
+// without a separate id-mapping step. Call only once profileId is known
+// (subscribe.jsx waits for the profile query) so RC never configures
+// anonymously and needs a later logIn() alias.
 export async function initiatePurchases({
   isConfigured,
   setIsReady,
   setOfferings,
   setIsSubscribed,
+  profileId,
 }) {
   if (isConfigured.current) return;
   try {
     Purchases.setLogLevel(LOG_LEVEL.INFO);
     const apiKey = getRevenueCatAPIKey();
     if (apiKey) {
-      Purchases.configure({ apiKey });
+      Purchases.configure(profileId ? { apiKey, appUserID: profileId } : { apiKey });
       isConfigured.current = true;
       await Promise.allSettled([
         loadOfferings(setOfferings),
-        fetchSubscriptionStatus(setIsSubscribed),
+        fetchSubscriptionStatus(setIsSubscribed, profileId),
       ]);
     } else {
       console.warn('No RevenueCat API key found for platform:', Platform.OS);
@@ -97,10 +107,14 @@ export function getSubscriptionsFromOfferings(offerings) {
   );
 }
 
-export async function executePurchase({ pkg, setIsSubscribed }) {
+export async function executePurchase({ pkg, setIsSubscribed, profileId }) {
   try {
     const { customerInfo } = await Purchases.purchasePackage(pkg);
-    await fetchSubscriptionStatus(setIsSubscribed);
+    // The RevenueCat webhook writes to Convex asynchronously — this refetch
+    // can briefly race it and read stale state. The screen closes on
+    // `success` regardless (RC's own purchase confirmation is authoritative
+    // for the UI), so this is only for the in-memory isSubscribed flag.
+    await fetchSubscriptionStatus(setIsSubscribed, profileId);
     return { success: true, customerInfo };
   } catch (error) {
     if (error.userCancelled) {
@@ -111,10 +125,10 @@ export async function executePurchase({ pkg, setIsSubscribed }) {
   }
 }
 
-export async function executeRestore(setIsSubscribed) {
+export async function executeRestore(setIsSubscribed, profileId) {
   try {
     const customerInfo = await Purchases.restorePurchases();
-    await fetchSubscriptionStatus(setIsSubscribed);
+    await fetchSubscriptionStatus(setIsSubscribed, profileId);
     return {
       success: Object.keys(customerInfo.entitlements.active).length > 0,
       customerInfo,
@@ -125,7 +139,7 @@ export async function executeRestore(setIsSubscribed) {
   }
 }
 
-export function useInAppPurchase() {
+export function useInAppPurchase(profileId) {
   const {
     isReady,
     offerings,
@@ -144,8 +158,9 @@ export function useInAppPurchase() {
         setIsReady,
         setOfferings,
         setIsSubscribed,
+        profileId,
       }),
-    [setIsReady, setOfferings, setIsSubscribed]
+    [setIsReady, setOfferings, setIsSubscribed, profileId]
   );
 
   const getAvailablePackages = useCallback(
@@ -162,22 +177,22 @@ export function useInAppPurchase() {
     async ({ pkg }) => {
       setIsPurchasing(true);
       try {
-        return await executePurchase({ pkg, setIsSubscribed });
+        return await executePurchase({ pkg, setIsSubscribed, profileId });
       } finally {
         setIsPurchasing(false);
       }
     },
-    [setIsPurchasing, setIsSubscribed]
+    [setIsPurchasing, setIsSubscribed, profileId]
   );
 
   const restorePurchases = useCallback(async () => {
     setIsPurchasing(true);
     try {
-      return await executeRestore(setIsSubscribed);
+      return await executeRestore(setIsSubscribed, profileId);
     } finally {
       setIsPurchasing(false);
     }
-  }, [setIsPurchasing, setIsSubscribed]);
+  }, [setIsPurchasing, setIsSubscribed, profileId]);
 
   return {
     isReady,

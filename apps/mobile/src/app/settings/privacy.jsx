@@ -1,13 +1,104 @@
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Switch,
+} from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useState } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { useUser } from "@clerk/clerk-expo";
 import { ChevronLeft, Shield } from "lucide-react-native";
 import { BlurView } from "expo-blur";
+import { api } from "@/convex/_generated/api";
+
+function PrivacyToggleRow({ label, sublabel, value, onChange, disabled }) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingVertical: 18,
+        paddingHorizontal: 20,
+      }}
+    >
+      <View style={{ flex: 1, marginRight: 16 }}>
+        <Text
+          style={{
+            fontSize: 16,
+            fontWeight: "600",
+            color: "#192524",
+            marginBottom: 4,
+          }}
+        >
+          {label}
+        </Text>
+        <Text style={{ fontSize: 13, color: "#3C5759", lineHeight: 18 }}>
+          {sublabel}
+        </Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onChange}
+        trackColor={{ false: "#D0D5CE", true: "#D1EBDB" }}
+        thumbColor={value ? "#3C5759" : "#959D90"}
+        disabled={disabled}
+      />
+    </View>
+  );
+}
 
 export default function PrivacySecurityScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  const allProfiles = useQuery(api.profiles.getAll);
+  const updateProfileMutation = useMutation(api.profiles.updateProfile);
+  const blockUserMutation = useMutation(api.profiles.blockUser);
+  const unblockUserMutation = useMutation(api.profiles.unblockUser);
+  const [blockQuery, setBlockQuery] = useState("");
+
+  const profileId = profile?._id ? String(profile._id) : null;
+  const profileVisible = profile?.profile_visible !== false;
+  const showActivity = profile?.show_activity_to_hosts !== false;
+
+  const blockedIds = profile?.blocked_user_ids ?? [];
+  const blockedProfiles = (allProfiles ?? []).filter((p) =>
+    blockedIds.includes(String(p._id)),
+  );
+  const blockResults =
+    blockQuery.trim().length >= 2
+      ? (allProfiles ?? [])
+          .filter(
+            (p) =>
+              String(p._id) !== profileId &&
+              !blockedIds.includes(String(p._id)) &&
+              p.full_name?.toLowerCase().includes(blockQuery.trim().toLowerCase()),
+          )
+          .slice(0, 5)
+      : [];
+
+  const handleBlock = (targetId) => {
+    if (!profileId) return;
+    setBlockQuery("");
+    blockUserMutation({ profileId, targetId }).catch((error) => {
+      console.error("Failed to block user:", error);
+    });
+  };
+
+  const handleUnblock = (targetId) => {
+    if (!profileId) return;
+    unblockUserMutation({ profileId, targetId }).catch((error) => {
+      console.error("Failed to unblock user:", error);
+    });
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#EFECE9" }}>
@@ -80,6 +171,192 @@ export default function PrivacySecurityScreen() {
             We're committed to protecting your personal information
           </Text>
         </View>
+
+        {profile?.role === "creator" && (
+          <BlurView
+            intensity={60}
+            tint="light"
+            style={{
+              borderRadius: 16,
+              overflow: "hidden",
+              borderWidth: 1,
+              borderColor: "rgba(255, 255, 255, 0.5)",
+              backgroundColor: "rgba(255, 255, 255, 0.3)",
+              marginBottom: 16,
+            }}
+          >
+            <PrivacyToggleRow
+              label={profileVisible ? "Profile is visible to hosts" : "Profile is hidden"}
+              sublabel={
+                profileVisible
+                  ? "Hosts can find you on the Creators page and message you."
+                  : "You won't appear in host search and hosts can't message you. Existing conversations stay open."
+              }
+              value={profileVisible}
+              onChange={() =>
+                profileId &&
+                updateProfileMutation({
+                  profileId,
+                  updates: { profile_visible: !profileVisible },
+                })
+              }
+              disabled={!profileId}
+            />
+          </BlurView>
+        )}
+
+        <BlurView
+          intensity={60}
+          tint="light"
+          style={{
+            borderRadius: 16,
+            overflow: "hidden",
+            borderWidth: 1,
+            borderColor: "rgba(255, 255, 255, 0.5)",
+            backgroundColor: "rgba(255, 255, 255, 0.3)",
+            marginBottom: 16,
+          }}
+        >
+          <PrivacyToggleRow
+            label="Show my activity to hosts"
+            sublabel="Applications, response time, and recent activity"
+            value={showActivity}
+            onChange={() =>
+              profileId &&
+              updateProfileMutation({
+                profileId,
+                updates: { show_activity_to_hosts: !showActivity },
+              })
+            }
+            disabled={!profileId}
+          />
+        </BlurView>
+
+        <Text
+          style={{
+            fontFamily: "Inter-Medium",
+            fontSize: 11,
+            color: "#959D90",
+            letterSpacing: 1.2,
+            paddingBottom: 10,
+            textTransform: "uppercase",
+          }}
+        >
+          Blocked People
+        </Text>
+        <View style={{ position: "relative", marginBottom: 12 }}>
+          <TextInput
+            value={blockQuery}
+            onChangeText={setBlockQuery}
+            placeholder="Search by name to block someone…"
+            placeholderTextColor="#959D90"
+            style={{
+              borderWidth: 1,
+              borderColor: "rgba(60,87,89,0.18)",
+              borderRadius: 12,
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              fontSize: 15,
+              color: "#192524",
+              backgroundColor: "rgba(255,255,255,0.62)",
+            }}
+          />
+          {blockResults.length > 0 && (
+            <View
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                marginTop: 4,
+                backgroundColor: "#fff",
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: "rgba(60,87,89,0.15)",
+                overflow: "hidden",
+                zIndex: 20,
+                elevation: 4,
+              }}
+            >
+              {blockResults.map((p) => (
+                <TouchableOpacity
+                  key={p._id}
+                  onPress={() => handleBlock(String(p._id))}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#192524" }}>
+                    {p.full_name}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#959D90" }}>Block</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {blockedProfiles.length === 0 ? (
+          <Text style={{ fontSize: 13, color: "#959D90", marginBottom: 16 }}>
+            You haven't blocked anyone. Blocked people can't message you or see
+            your profile.
+          </Text>
+        ) : (
+          <BlurView
+            intensity={60}
+            tint="light"
+            style={{
+              borderRadius: 16,
+              overflow: "hidden",
+              borderWidth: 1,
+              borderColor: "rgba(255, 255, 255, 0.5)",
+              backgroundColor: "rgba(255, 255, 255, 0.3)",
+              marginBottom: 16,
+            }}
+          >
+            {blockedProfiles.map((p, i) => (
+              <View key={p._id}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    paddingVertical: 16,
+                    paddingHorizontal: 18,
+                  }}
+                >
+                  <View style={{ flex: 1, marginRight: 12 }}>
+                    <Text style={{ fontSize: 15, fontWeight: "600", color: "#192524" }}>
+                      {p.full_name}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#959D90", marginTop: 2 }}>
+                      Blocked — can't message you or view your profile
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => handleUnblock(String(p._id))}>
+                    <Text style={{ fontSize: 13, fontWeight: "600", color: "#C86868" }}>
+                      Unblock
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {i < blockedProfiles.length - 1 && (
+                  <View
+                    style={{
+                      height: 1,
+                      backgroundColor: "rgba(149, 157, 144, 0.2)",
+                      marginLeft: 18,
+                    }}
+                  />
+                )}
+              </View>
+            ))}
+          </BlurView>
+        )}
 
         <BlurView
           intensity={60}

@@ -121,7 +121,7 @@ export default function CreateListingOffer() {
   };
 
   const handleSaveExit = () => {
-    router.push("/host/(tabs)/listings");
+    router.push("/host/(tabs)/dashboard");
   };
 
   return (

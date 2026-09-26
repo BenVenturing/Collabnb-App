@@ -14,16 +14,102 @@ import {
   FlatList,
   Modal,
   TextInput,
-  Switch,
   Image,
+  Share,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
+import MapView, { Marker } from "react-native-maps";
+import { Share2, Heart, Quote, Star, Check, Plus } from "lucide-react-native";
+import { useQuery, useMutation } from "convex/react";
+import { useUser } from "@clerk/clerk-expo";
+import { api } from "@/convex/_generated/api";
 import ListingDraftStore from "@/utils/ListingDraftStore";
-import { submitApplication } from "@/utils/ApplicationStore";
-import { getWebListing } from "@/services/webCatalog";
+import { AmenityIcon } from "@/lib/amenityIcons";
+
+// Mirrors the compensation/deliverables formatting in (tabs)/index.jsx so a
+// listing reads the same way on Explore and here — keep the two in sync.
+function compensationLabel(l) {
+  const cash = l.cash_amount;
+  if (typeof cash === "number" && cash > 0) {
+    return cash >= 1000 ? `$${(cash / 1000).toFixed(cash % 1000 ? 1 : 0)}k` : `$${cash}`;
+  }
+  const m = String(l.compensation || "").match(/\$([\d,]+)/);
+  if (m) return `$${m[1]}`;
+  if (l.compensation_type === "hybrid") return "Stay + cash";
+  if (l.compensation_type === "free_stay" || l.compensation_type === "free") return "Complimentary stay";
+  return l.collab_type || "Collab";
+}
+
+function deliverablesLabel(l) {
+  if (typeof l.deliverables === "string" && l.deliverables) return l.deliverables;
+  if (l.deliverables_list?.length) {
+    return l.deliverables_list.map((d) => `${d.quantity}× ${d.type}`).join(", ");
+  }
+  if (l.deliverable_count) return `${l.deliverable_count} deliverables`;
+  return "";
+}
+
+// Real Convex listing → the flat shape this screen renders. Field names here
+// predate the Convex migration; kept as-is so the rest of the screen (built
+// against them) doesn't need a wider rewrite.
+function normalizeRealListing(l) {
+  const images = l.gallery_images?.length ? l.gallery_images : l.image ? [l.image] : [];
+  return {
+    id: String(l._id),
+    title: l.title,
+    location: l.location_city && l.location_country ? `${l.location_city}, ${l.location_country}` : l.location,
+    type: l.property_type || "Boutique stay",
+    description: l.about || `A Collabnb opportunity in ${l.location_city || l.location || "a great location"}.`,
+    host: l.host_name || "Collabnb host",
+    host_id: l.host_id ? String(l.host_id) : undefined,
+    tierRequired: l.creator_tier || l.creator_track,
+    compensation: compensationLabel(l),
+    deliverablesLoad: l.deliverable_count || l.deliverables_list?.length || 0,
+    // Array of bullet strings for the "What we're looking for" list — distinct
+    // from deliverablesRaw, the compact summary string the apply flow stores.
+    deliverables: l.deliverables_list?.length
+      ? l.deliverables_list.map((d) => `${d.quantity}× ${d.type}`)
+      : deliverablesLabel(l)
+        ? [deliverablesLabel(l)]
+        : [],
+    deliverablesRaw: deliverablesLabel(l),
+    dates: l.dates_available || "Dates confirmed with host",
+    status: l.status,
+    coverImage: images[0],
+    image: images[0],
+    collab_type: l.collab_type,
+    due_days: l.due_days,
+    isSample: l.is_sample === true,
+    amenities: l.amenities || [],
+    what_you_get: l.what_you_get || [],
+    what_you_deliver: l.what_you_deliver || "",
+    requirements: l.requirements || [],
+    creator_tier: l.creator_tier,
+    locationFull: l.location_full || l.location,
+    lat: l.lat,
+    lng: l.lng,
+  };
+}
+
+// listings.getById strips most fields server-side for limited-access viewers
+// (unverified/trial-ended creators) and sets _redacted: true — mirrors web's
+// RedactedListingDetail. Only the fields the backend still returns are used.
+function normalizeRedactedListing(l) {
+  return {
+    id: String(l._id),
+    location:
+      l.location_city && l.location_country
+        ? `${l.location_city}, ${l.location_country}`
+        : l.location,
+    compensation: compensationLabel(l),
+    deliverables: deliverablesLabel(l),
+    dates: l.dates_available,
+  };
+}
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -210,33 +296,121 @@ const SAMPLE_LISTING_DATA = {
 };
 
 // ─── APPLY MODAL ─────────────────────────────────────────────
-function ApplyModal({ visible, onClose, listing, listingId }) {
+// Mirrors the real apply flow in Collabnb Website/app/src/pages/ListingDetail.jsx
+// (default pitch message, checkAndIncrement rate limit, collaborations.create +
+// pitches.create + threads.create) instead of the app-upload version's
+// fictional "counter proposal" toggle, which has no web equivalent.
+function defaultPitch(listing, creatorProfile) {
+  const handle = creatorProfile?.instagram_handle || creatorProfile?.tiktok_handle || creatorProfile?.username;
+  const followers = creatorProfile?.follower_count;
+  const followerStr = followers >= 1000 ? ` with ${Math.round(followers / 1000)}K followers` : "";
+  const tierStr = creatorProfile?.tier || "travel creator";
+  const nameStr = creatorProfile?.full_name || "I";
+
+  return `Hi! I'm ${nameStr}${handle ? ` (@${handle})` : ""}${followerStr ? `, a ${tierStr}${followerStr}` : ""}.
+
+I'd love to collaborate on ${listing.title} in ${listing.location}.
+
+I'm available during ${listing.dates} and can deliver ${listing.deliverablesRaw || "the requested content"} within ${listing.due_days || 30} days of my stay. Looking forward to creating great content that showcases your property!
+
+Let's make something great together.`;
+}
+
+function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
   const insets = useSafeAreaInsets();
-  const [counterOn, setCounterOn] = useState(false);
-  const [counterNote, setCounterNote] = useState("");
+  const [pitch, setPitch] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+
+  const checkAndIncrementCvx = useMutation(api.pitches.checkAndIncrement);
+  const createCollabCvx = useMutation(api.collaborations.create);
+  const createThreadCvx = useMutation(api.threads.create);
+  const createPitchCvx = useMutation(api.pitches.create);
+
+  useEffect(() => {
+    if (visible && listing && !pitch) setPitch(defaultPitch(listing, creatorProfile));
+  }, [visible, listing]);
 
   const handleSubmit = async () => {
+    if (!creatorProfile?._id) {
+      setError("Your profile is still loading — try again in a moment.");
+      return;
+    }
     setSubmitting(true);
-    await submitApplication({
-      listingId: listingId,
-      listingTitle: listing.title,
-      listingLocation: listing.location,
-      compensation: listing.compensation,
-      tierRequired: listing.tierRequired,
-      isCounter: counterOn,
-      counterNote: counterOn ? counterNote : null,
-      hostName: listing.host,
-    });
-    setSubmitting(false);
-    setSubmitted(true);
+    setError("");
+
+    const creatorId = String(creatorProfile._id);
+    const threadKey = `thread_${listingId}_${creatorId}`;
+
+    try {
+      const { allowed } = await checkAndIncrementCvx({ userId: creatorId });
+      if (!allowed) {
+        setError("You've reached your monthly application limit — try again next month.");
+        setSubmitting(false);
+        return;
+      }
+
+      let collaborationId;
+      try {
+        collaborationId = await createCollabCvx({
+          listingId,
+          propertyName: listing.title,
+          location: listing.location,
+          hostName: listing.host,
+          image: listing.image,
+          deliverables: listing.deliverablesRaw,
+          listingDescription: listing.description,
+          pitchMessage: pitch,
+          hostId: listing.host_id,
+        });
+      } catch {
+        // Non-fatal — the pitch below is still the source of truth for the host.
+      }
+
+      createThreadCvx({
+        listingTitle: listing.title,
+        hostName: listing.host,
+        tag: "Application",
+        lastMessage: pitch.slice(0, 100),
+        participantId: listing.host_id,
+        threadKey,
+      }).catch(() => {});
+
+      await createPitchCvx({
+        listingId,
+        listingTitle: listing.title,
+        hostId: listing.host_id,
+        creatorId,
+        creatorName: creatorProfile.full_name || "Creator",
+        creatorUsername: creatorProfile.username,
+        creatorAvatar: creatorProfile.avatar_url,
+        creatorTier: creatorProfile.tier,
+        creatorFollowers: creatorProfile.follower_count,
+        creatorEngagement: creatorProfile.engagement_rate,
+        creatorPlatforms: [
+          creatorProfile.instagram_handle && "Instagram",
+          creatorProfile.tiktok_handle && "TikTok",
+          creatorProfile.youtube_handle && "YouTube",
+        ].filter(Boolean),
+        message: pitch,
+        type: "application",
+        threadKey,
+        collaborationId: collaborationId ? String(collaborationId) : undefined,
+      });
+
+      setSubmitting(false);
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitting(false);
+      setError(err?.data || err?.message || "Could not submit your application — try again.");
+    }
   };
 
   const handleClose = () => {
     setSubmitted(false);
-    setCounterOn(false);
-    setCounterNote("");
+    setError("");
+    setPitch("");
     onClose();
   };
 
@@ -283,7 +457,60 @@ function ApplyModal({ visible, onClose, listing, listingId }) {
           </Text>
         </View>
 
-        {submitted ? (
+        {error ? (
+          // Error State
+          <View
+            style={{
+              flex: 1,
+              alignItems: "center",
+              justifyContent: "center",
+              paddingHorizontal: 40,
+            }}
+          >
+            <Text style={{ fontSize: 48, marginBottom: 16 }}>✕</Text>
+            <Text
+              style={{
+                fontSize: 22,
+                fontWeight: "700",
+                color: "#192524",
+                marginBottom: 8,
+                textAlign: "center",
+              }}
+            >
+              Couldn't submit
+            </Text>
+            <Text
+              style={{
+                fontSize: 15,
+                color: "#3C5759",
+                textAlign: "center",
+                lineHeight: 22,
+                marginBottom: 32,
+              }}
+            >
+              {error}
+            </Text>
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#3C5759",
+                paddingVertical: 14,
+                paddingHorizontal: 32,
+                borderRadius: 24,
+                marginBottom: 12,
+              }}
+              onPress={() => setError("")}
+            >
+              <Text style={{ fontSize: 16, fontWeight: "600", color: "#fff" }}>
+                Back to application
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleClose}>
+              <Text style={{ fontSize: 14, fontWeight: "600", color: "#959D90" }}>
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : submitted ? (
           // Success State
           <View
             style={{
@@ -426,63 +653,33 @@ function ApplyModal({ visible, onClose, listing, listingId }) {
               }}
             />
 
-            {/* Counter Proposal Toggle */}
-            <View
-              style={{
-                backgroundColor: "rgba(255,255,255,0.55)",
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.75)",
-                padding: 16,
-                marginBottom: 24,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 8,
-                }}
+            {/* Pitch Message — what the host actually sees; mirrors web's
+                editable default-pitch textarea in ListingDetail.jsx */}
+            <View style={{ marginBottom: 24 }}>
+              <Text
+                style={{ fontSize: 15, fontWeight: "600", color: "#192524", marginBottom: 8 }}
               >
-                <Text
-                  style={{ fontSize: 15, fontWeight: "600", color: "#192524" }}
-                >
-                  Make a counter proposal
-                </Text>
-                <Switch
-                  value={counterOn}
-                  onValueChange={setCounterOn}
-                  trackColor={{ false: "#D0D5CE", true: "#3C5759" }}
-                  thumbColor={counterOn ? "#EFECE9" : "#FFFFFF"}
-                />
-              </View>
-              <Text style={{ fontSize: 13, color: "#959D90", lineHeight: 19 }}>
-                Adjust deliverables & compensation to your needs
+                Your message
               </Text>
-
-              {counterOn && (
-                <TextInput
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.55)",
-                    borderRadius: 14,
-                    borderWidth: 1,
-                    borderColor: "rgba(60,87,89,0.2)",
-                    padding: 14,
-                    fontSize: 14,
-                    color: "#192524",
-                    minHeight: 100,
-                    lineHeight: 21,
-                    marginTop: 12,
-                  }}
-                  value={counterNote}
-                  onChangeText={setCounterNote}
-                  multiline
-                  placeholder="Describe your counter offer — what would you change?"
-                  placeholderTextColor="#959D90"
-                  textAlignVertical="top"
-                />
-              )}
+              <TextInput
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.55)",
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: "rgba(60,87,89,0.2)",
+                  padding: 14,
+                  fontSize: 14,
+                  color: "#192524",
+                  minHeight: 180,
+                  lineHeight: 21,
+                }}
+                value={pitch}
+                onChangeText={setPitch}
+                multiline
+                placeholder="Introduce yourself and explain why you're a great fit..."
+                placeholderTextColor="#959D90"
+                textAlignVertical="top"
+              />
             </View>
 
             {/* Divider */}
@@ -501,15 +698,21 @@ function ApplyModal({ visible, onClose, listing, listingId }) {
                 paddingVertical: 16,
                 borderRadius: 24,
                 alignItems: "center",
-                opacity: submitting ? 0.6 : 1,
+                opacity: submitting || !pitch.trim() ? 0.6 : 1,
               }}
               onPress={handleSubmit}
-              disabled={submitting}
+              disabled={submitting || !pitch.trim()}
             >
               <Text style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}>
                 {submitting ? "Submitting..." : "Submit Application"}
               </Text>
             </TouchableOpacity>
+
+            <Text
+              style={{ fontSize: 13, color: "#959D90", textAlign: "center", marginTop: 16 }}
+            >
+              Hosts typically respond in 24–72 hours.
+            </Text>
           </ScrollView>
         )}
       </View>
@@ -679,13 +882,25 @@ function PhotoGallery({ onBack, onEdit, isHost, listingId, coverImage }) {
 }
 
 // ─── HOST AVATAR ─────────────────────────────────────────────
-function HostAvatar({ name }) {
+function HostAvatar({ name, avatarUrl }) {
+  const [imgError, setImgError] = useState(false);
   const initials = name
     .split(" ")
     .map((n) => n[0])
     .join("")
     .toUpperCase()
     .slice(0, 2);
+
+  if (avatarUrl && !imgError) {
+    return (
+      <Image
+        source={{ uri: avatarUrl }}
+        onError={() => setImgError(true)}
+        style={{ width: 48, height: 48, borderRadius: 24 }}
+      />
+    );
+  }
+
   return (
     <View
       style={{
@@ -704,6 +919,258 @@ function HostAvatar({ name }) {
   );
 }
 
+// ─── REDACTED LISTING (limited-access teaser) ──────────────────
+function RedactedListingDetail({ listing, onBack, onSubscribe }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      <StatusBar style="dark" />
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        {/* Blurred hero */}
+        <View style={{ height: 300, position: "relative", overflow: "hidden" }}>
+          <LinearGradient
+            colors={["#192524", "#3C5759"]}
+            start={{ x: 0.15, y: 0 }}
+            end={{ x: 0.85, y: 1 }}
+            style={{ width: "100%", height: "100%" }}
+          />
+          <BlurView
+            intensity={40}
+            tint="dark"
+            style={{
+              position: "absolute",
+              inset: 0,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ fontSize: 28, marginBottom: 8 }}>🔒</Text>
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>
+              Photos hidden
+            </Text>
+          </BlurView>
+          <TouchableOpacity
+            onPress={onBack}
+            style={{
+              position: "absolute",
+              top: insets.top + 8,
+              left: 16,
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: "rgba(0,0,0,0.4)",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ color: "#fff", fontSize: 18 }}>‹</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ padding: 20 }}>
+          {/* Blurred title placeholder */}
+          <View
+            style={{
+              height: 24,
+              width: "58%",
+              backgroundColor: "rgba(25,37,36,0.12)",
+              borderRadius: 6,
+              marginBottom: 12,
+            }}
+          />
+
+          {listing.location && (
+            <Text style={{ fontSize: 15, color: "#3C5759", fontWeight: "600", marginBottom: 20 }}>
+              📍 {listing.location}
+            </Text>
+          )}
+
+          {/* Offer stats — visible */}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
+            {listing.compensation && (
+              <View style={{ flex: 1, minWidth: 100, backgroundColor: "#F7F7F5", borderRadius: 16, padding: 14 }}>
+                <Text style={{ fontSize: 11, fontWeight: "700", color: "#959D90", marginBottom: 4, textTransform: "uppercase" }}>
+                  Compensation
+                </Text>
+                <Text style={{ fontSize: 14, fontWeight: "700", color: "#192524" }}>{listing.compensation}</Text>
+              </View>
+            )}
+            {listing.deliverables && (
+              <View style={{ flex: 1, minWidth: 100, backgroundColor: "#F7F7F5", borderRadius: 16, padding: 14 }}>
+                <Text style={{ fontSize: 11, fontWeight: "700", color: "#959D90", marginBottom: 4, textTransform: "uppercase" }}>
+                  Deliverables
+                </Text>
+                <Text style={{ fontSize: 14, fontWeight: "700", color: "#192524" }}>{listing.deliverables}</Text>
+              </View>
+            )}
+            {listing.dates && (
+              <View style={{ flex: 1, minWidth: 100, backgroundColor: "#F7F7F5", borderRadius: 16, padding: 14 }}>
+                <Text style={{ fontSize: 11, fontWeight: "700", color: "#959D90", marginBottom: 4, textTransform: "uppercase" }}>
+                  Dates
+                </Text>
+                <Text style={{ fontSize: 14, fontWeight: "700", color: "#192524" }}>{listing.dates}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Blurred description placeholder */}
+          <View style={{ marginBottom: 28 }}>
+            {[92, 97, 85, 72, 60].map((w, i) => (
+              <View
+                key={i}
+                style={{
+                  height: 12,
+                  width: `${w}%`,
+                  backgroundColor: "rgba(25,37,36,0.08)",
+                  borderRadius: 5,
+                  marginBottom: 10,
+                }}
+              />
+            ))}
+          </View>
+
+          <TouchableOpacity
+            onPress={onSubscribe}
+            style={{
+              backgroundColor: "#192524",
+              paddingVertical: 16,
+              borderRadius: 999,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
+              Subscribe to unlock
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+// ─── SAVE TO COLLECTION MODAL ───────────────────────────────
+function SaveCollectionModal({ visible, onClose, listingId, collections, onToggle, onCreateAndSave }) {
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+
+  const handleCreate = () => {
+    const name = newName.trim();
+    if (!name) return;
+    onCreateAndSave(name);
+    setNewName("");
+    setCreating(false);
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={onClose}
+        style={{ flex: 1, backgroundColor: "rgba(25,37,36,0.45)", justifyContent: "flex-end" }}
+      >
+        <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              padding: 20,
+              paddingBottom: 32,
+              maxHeight: "70%",
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <Text style={{ fontSize: 17, fontWeight: "700", color: "#192524" }}>Save to collection</Text>
+              <TouchableOpacity
+                onPress={onClose}
+                style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: "#F0F0F0", alignItems: "center", justifyContent: "center" }}
+              >
+                <Text style={{ fontSize: 14, color: "#3C5759" }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 320 }}>
+              {collections.map((col) => {
+                const isIn = col.listing_ids.includes(listingId);
+                return (
+                  <TouchableOpacity
+                    key={String(col._id)}
+                    onPress={() => onToggle(String(col._id))}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      paddingVertical: 14,
+                      paddingHorizontal: 14,
+                      borderRadius: 16,
+                      backgroundColor: isIn ? "rgba(209,235,219,0.4)" : "transparent",
+                      marginBottom: 4,
+                    }}
+                  >
+                    <Text style={{ fontSize: 15, fontWeight: "600", color: "#192524" }}>{col.name}</Text>
+                    {isIn && <Check size={18} color="#2d6a4f" strokeWidth={2.5} />}
+                  </TouchableOpacity>
+                );
+              })}
+              {collections.length === 0 && (
+                <Text style={{ fontSize: 14, color: "#959D90", paddingVertical: 8 }}>
+                  No collections yet — create one below.
+                </Text>
+              )}
+            </ScrollView>
+
+            {creating ? (
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+                <TextInput
+                  value={newName}
+                  onChangeText={setNewName}
+                  placeholder="Collection name"
+                  autoFocus
+                  style={{
+                    flex: 1,
+                    borderWidth: 1,
+                    borderColor: "#E5E5E0",
+                    borderRadius: 14,
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    fontSize: 15,
+                    color: "#192524",
+                  }}
+                />
+                <TouchableOpacity
+                  onPress={handleCreate}
+                  style={{ backgroundColor: "#192524", borderRadius: 14, paddingHorizontal: 18, alignItems: "center", justifyContent: "center" }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={() => setCreating(true)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  marginTop: 12,
+                  paddingVertical: 12,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: "#E5E5E0",
+                  borderStyle: "dashed",
+                }}
+              >
+                <Plus size={16} color="#3C5759" />
+                <Text style={{ fontSize: 14, fontWeight: "600", color: "#3C5759" }}>New collection</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
 // ─── MAIN SCREEN ─────────────────────────────────────────────
 export default function ListingDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -713,54 +1180,91 @@ export default function ListingDetailScreen() {
   const listingId = params.listingId || params.id || "l1";
   const isHost = params.isHost === "true";
 
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+
+  const convexListing = useQuery(api.listings.getById, {
+    id: listingId,
+    viewerId: profile?._id ? String(profile._id) : undefined,
+  });
+
+  // Real host's Clerk-synced profile (avatar/name) — same source as web's
+  // "Listed by" row. listings.getById strips host_id for redacted listings,
+  // so this naturally skips for limited-access viewers.
+  const hostProfile = useQuery(
+    api.profiles.getById,
+    convexListing?.host_id ? { id: String(convexListing.host_id) } : "skip",
+  );
+
+  // A creator's own collaborations double as the "have I applied to this
+  // listing" check — same product model as CollabContext.hasApplied on web.
+  const myCollabs = useQuery(
+    api.collaborations.getByCreator,
+    profile?._id ? { creatorId: String(profile._id) } : "skip",
+  );
+  const hasApplied = (myCollabs || []).some((c) => c.listing_id === listingId);
+
+  // Reviews creators left on past collaborations for this listing — same
+  // query web's ReviewsCarousel uses, so both platforms show the same set.
+  const listingReviews = useQuery(
+    api.reviews.getForListing,
+    convexListing && !convexListing._redacted ? { listingId } : "skip",
+  );
+
+  // Save-to-collection — real Convex collections (api.collections.*), the
+  // same backing store as web, so a save here shows up there and vice versa.
+  const myCollections = useQuery(
+    api.collections.getByUser,
+    profile?._id ? { creatorId: String(profile._id) } : "skip",
+  );
+  const createCollectionCvx = useMutation(api.collections.create);
+  const toggleSaveCvx = useMutation(api.collections.toggleSave);
+  const isSaved = (myCollections || []).some((c) => c.listing_ids.includes(listingId));
+
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [redacted, setRedacted] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [applyVisible, setApplyVisible] = useState(false);
+  const [saveModalVisible, setSaveModalVisible] = useState(false);
 
   useEffect(() => {
-    loadListing();
-  }, [listingId]);
-
-  const loadListing = async () => {
-    try {
-      setLoading(true);
-      const webListing = await getWebListing(listingId);
-      if (webListing) {
-        setListing({
-          title: webListing.title,
-          location: `${webListing.location_city}, ${webListing.location_country}`,
-          type: "Boutique stay",
-          description: `A Collabnb opportunity in ${webListing.location_city}. Review the deliverables and collaboration terms before applying.`,
-          host: "Collabnb host",
-          tierRequired: webListing.min_creator_tier,
-          compensation: webListing.compensation_type === "free" ? "Complimentary stay" : webListing.compensation_type === "paid" ? `$${webListing.value_score} paid collaboration` : `Stay + $${webListing.value_score} value`,
-          deliverablesLoad: webListing.deliverable_load,
-          deliverables: webListing.deliverables_supported,
-          dates: "Dates confirmed with host",
-          status: "active",
-          coverImage: webListing.cover_image_placeholder,
-          valueScore: webListing.value_score,
-        });
-        return;
-      }
-      const rawListingFromStore =
-        await ListingDraftStore.getListingById(listingId);
-      const isSampleData =
-        !rawListingFromStore || Object.keys(rawListingFromStore).length === 0;
-      const merged = {
-        ...SAMPLE_LISTING_DATA[listingId],
-        ...rawListingFromStore,
-      };
-      setListing(merged);
-    } catch (error) {
-      console.error("[ListingDetail] Error loading listing:", error);
-      const fallback = SAMPLE_LISTING_DATA[listingId] || SAMPLE_LISTING_DATA.l1;
-      setListing(fallback);
-    } finally {
+    if (convexListing === undefined) return; // still loading
+    if (convexListing?._redacted) {
+      // Limited-access viewer (unverified/trial-ended creator) — backend
+      // already stripped title/host/images, so render the teaser instead
+      // of a half-blank screen.
+      setRedacted(true);
+      setListing(normalizeRedactedListing(convexListing));
       setLoading(false);
+      return;
     }
-  };
+    if (convexListing) {
+      setRedacted(false);
+      setListing(normalizeRealListing(convexListing));
+      setLoading(false);
+      return;
+    }
+    // Not a real published Convex listing — e.g. a host previewing a draft
+    // that only exists in ListingDraftStore, or a stale sample id.
+    setRedacted(false);
+    (async () => {
+      try {
+        const rawListingFromStore = await ListingDraftStore.getListingById(listingId);
+        const merged = {
+          ...SAMPLE_LISTING_DATA[listingId],
+          ...rawListingFromStore,
+        };
+        setListing(merged);
+      } catch (error) {
+        console.error("[ListingDetail] Error loading listing:", error);
+        setListing(SAMPLE_LISTING_DATA[listingId] || SAMPLE_LISTING_DATA.l1);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [convexListing, listingId]);
 
   if (loading) {
     return (
@@ -775,6 +1279,16 @@ export default function ListingDetailScreen() {
           <ActivityIndicator size="large" color="#3C5759" />
         </View>
       </View>
+    );
+  }
+
+  if (redacted && listing) {
+    return (
+      <RedactedListingDetail
+        listing={listing}
+        onBack={() => router.back()}
+        onSubscribe={() => router.push("/(tabs)/profile")}
+      />
     );
   }
 
@@ -831,6 +1345,14 @@ export default function ListingDetailScreen() {
 
   const handleApply = () => {
     setApplyVisible(true);
+  };
+
+  const handleShare = () => {
+    Share.share({
+      title: listing.title,
+      message: `${listing.title} on Collabnb — https://collabnb.com/listing/${listingId}`,
+      url: `https://collabnb.com/listing/${listingId}`,
+    }).catch(() => {});
   };
 
   const descriptionLines = listing.description?.split("\n") || [];
@@ -914,6 +1436,52 @@ export default function ListingDetailScreen() {
               </Text>
             </View>
           </View>
+
+          {!isHost && (
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
+              <TouchableOpacity
+                onPress={handleShare}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 999,
+                  backgroundColor: "#F7F7F5",
+                  borderWidth: 1,
+                  borderColor: "#EDEDEA",
+                }}
+              >
+                <Share2 size={13} color="#3C5759" strokeWidth={2} />
+                <Text style={{ fontSize: 13, fontWeight: "600", color: "#3C5759" }}>Share</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setSaveModalVisible(true)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 999,
+                  backgroundColor: isSaved ? "rgba(192,57,43,0.08)" : "#F7F7F5",
+                  borderWidth: 1,
+                  borderColor: isSaved ? "rgba(192,57,43,0.2)" : "#EDEDEA",
+                }}
+              >
+                <Heart
+                  size={13}
+                  color={isSaved ? "#c0392b" : "#3C5759"}
+                  fill={isSaved ? "#c0392b" : "none"}
+                  strokeWidth={2}
+                />
+                <Text style={{ fontSize: 13, fontWeight: "600", color: isSaved ? "#c0392b" : "#3C5759" }}>
+                  {isSaved ? "Saved" : "Save"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         <View
@@ -923,12 +1491,15 @@ export default function ListingDetailScreen() {
         {/* SECTION 2 — Host Info Row */}
         <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <HostAvatar name={listing.host || "Host"} />
+            <HostAvatar
+              name={hostProfile?.full_name || listing.host || "Host"}
+              avatarUrl={hostProfile?.avatar_url}
+            />
             <View style={{ flex: 1 }}>
               <Text
                 style={{ fontSize: 15, fontWeight: "700", color: "#192524" }}
               >
-                Listed by {listing.host || "Host"}
+                Listed by {hostProfile?.full_name || listing.host || "Host"}
               </Text>
               <Text style={{ fontSize: 13, color: "#959D90" }}>
                 Collabnb Host
@@ -1026,6 +1597,41 @@ export default function ListingDetailScreen() {
         <View
           style={{ height: 1, backgroundColor: "#F0F0F0", marginBottom: 20 }}
         />
+
+        {/* SECTION 4B — Amenities */}
+        {listing.amenities?.length > 0 && (
+          <>
+            <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+              <Text
+                style={{ fontSize: 18, fontWeight: "700", color: "#192524", marginBottom: 14 }}
+              >
+                What this place offers
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                {listing.amenities.map(({ icon, label }, i) => (
+                  <View
+                    key={`${label}-${i}`}
+                    style={{
+                      width: "50%",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 10,
+                      marginBottom: 14,
+                      paddingRight: 8,
+                    }}
+                  >
+                    <AmenityIcon icon={icon} size={18} />
+                    <Text style={{ fontSize: 14, color: "#3C5759", flex: 1 }}>{label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <View
+              style={{ height: 1, backgroundColor: "#F0F0F0", marginBottom: 20 }}
+            />
+          </>
+        )}
 
         {/* SECTION 5 — What We're Looking For */}
         {listing.deliverables && listing.deliverables.length > 0 && (
@@ -1200,6 +1806,130 @@ export default function ListingDetailScreen() {
             </View>
           </View>
         </View>
+
+        {/* SECTION 8 — Requirements */}
+        {listing.requirements?.length > 0 && (
+          <>
+            <View
+              style={{ height: 1, backgroundColor: "#F0F0F0", marginTop: 4, marginBottom: 20 }}
+            />
+            <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: "#192524", marginBottom: 14 }}>
+                Requirements
+              </Text>
+              <View style={{ gap: 10 }}>
+                {listing.requirements.map((req, i) => (
+                  <View key={i} style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
+                    <View
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: "#3C5759",
+                        marginTop: 7,
+                      }}
+                    />
+                    <Text style={{ fontSize: 14, color: "#3C5759", flex: 1, lineHeight: 20 }}>
+                      {req}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* SECTION 9 — Location */}
+        {typeof listing.lat === "number" && typeof listing.lng === "number" && (
+          <>
+            <View
+              style={{ height: 1, backgroundColor: "#F0F0F0", marginBottom: 20 }}
+            />
+            <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: "#192524", marginBottom: 4 }}>
+                Location
+              </Text>
+              {listing.locationFull && (
+                <Text style={{ fontSize: 13, color: "#959D90", marginBottom: 12 }}>
+                  {listing.locationFull}
+                </Text>
+              )}
+              <View
+                style={{
+                  height: 200,
+                  borderRadius: 20,
+                  overflow: "hidden",
+                  borderWidth: 1,
+                  borderColor: "#F0F0F0",
+                }}
+              >
+                <MapView
+                  style={{ width: "100%", height: "100%" }}
+                  scrollEnabled={false}
+                  zoomEnabled={false}
+                  pitchEnabled={false}
+                  rotateEnabled={false}
+                  initialRegion={{
+                    latitude: listing.lat,
+                    longitude: listing.lng,
+                    latitudeDelta: 0.05,
+                    longitudeDelta: 0.05,
+                  }}
+                >
+                  <Marker coordinate={{ latitude: listing.lat, longitude: listing.lng }} />
+                </MapView>
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* SECTION 10 — Reviews */}
+        <View
+          style={{ height: 1, backgroundColor: "#F0F0F0", marginBottom: 20 }}
+        />
+        <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
+          <Text style={{ fontSize: 18, fontWeight: "700", color: "#192524", marginBottom: 14 }}>
+            Reviews
+          </Text>
+          {listingReviews?.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
+              {listingReviews.map((r, i) => (
+                <View
+                  key={i}
+                  style={{
+                    width: 240,
+                    backgroundColor: "#F7F7F5",
+                    borderRadius: 16,
+                    padding: 16,
+                  }}
+                >
+                  <Quote size={16} color="#959D90" strokeWidth={1.75} style={{ marginBottom: 8 }} />
+                  <Text style={{ fontSize: 13, color: "#3C5759", lineHeight: 19, marginBottom: 12, minHeight: 57 }}>
+                    {r.comment}
+                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#192524" }}>
+                      {r.reviewer_name || "Creator"}
+                    </Text>
+                    <View style={{ flexDirection: "row", gap: 1 }}>
+                      {Array.from({ length: 5 }).map((_, si) => (
+                        <Star
+                          key={si}
+                          size={11}
+                          strokeWidth={0}
+                          fill={si < r.rating ? "#d9a441" : "#E5E5E0"}
+                          color={si < r.rating ? "#d9a441" : "#E5E5E0"}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={{ fontSize: 14, color: "#959D90" }}>No reviews yet.</Text>
+          )}
+        </View>
       </ScrollView>
 
       {/* BOTTOM ACTION BAR */}
@@ -1252,16 +1982,17 @@ export default function ListingDetailScreen() {
             </View>
             <TouchableOpacity
               style={{
-                backgroundColor: "#3C5759",
+                backgroundColor: hasApplied ? "#D0D5CE" : "#3C5759",
                 paddingVertical: 14,
                 paddingHorizontal: 24,
                 borderRadius: 24,
                 alignItems: "center",
               }}
-              onPress={handleApply}
+              onPress={hasApplied ? undefined : handleApply}
+              disabled={hasApplied}
             >
-              <Text style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}>
-                Apply Now
+              <Text style={{ fontSize: 16, fontWeight: "700", color: hasApplied ? "#3C5759" : "#fff" }}>
+                {hasApplied ? "Applied ✓" : "Apply Now"}
               </Text>
             </TouchableOpacity>
           </>
@@ -1274,6 +2005,21 @@ export default function ListingDetailScreen() {
         onClose={() => setApplyVisible(false)}
         listing={listing}
         listingId={listingId}
+        creatorProfile={profile}
+      />
+
+      {/* Save-to-collection Modal */}
+      <SaveCollectionModal
+        visible={saveModalVisible}
+        onClose={() => setSaveModalVisible(false)}
+        listingId={listingId}
+        collections={myCollections || []}
+        onToggle={(collectionId) => toggleSaveCvx({ collectionId, listingId }).catch(() => {})}
+        onCreateAndSave={async (name) => {
+          if (!profile?._id) return;
+          const collectionId = await createCollectionCvx({ name, creatorId: String(profile._id) });
+          toggleSaveCvx({ collectionId: String(collectionId), listingId }).catch(() => {});
+        }}
       />
     </View>
   );

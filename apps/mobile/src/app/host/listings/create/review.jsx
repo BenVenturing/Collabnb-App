@@ -204,23 +204,35 @@ export default function CreateListingReview() {
       [
         {
           text: "View Listings",
-          onPress: () => router.replace("/host/(tabs)/listings"),
+          onPress: () => router.replace("/host/(tabs)/dashboard"),
         },
       ],
     );
   };
 
   const handleSaveDraft = async () => {
-    Alert.alert(
-      "Draft Saved",
-      "You can continue editing later from your Listings tab.",
-      [
-        {
-          text: "OK",
-          onPress: () => router.push("/host/(tabs)/listings"),
-        },
-      ],
-    );
+    try {
+      if (params.editMode === "true" && params.id) {
+        await ListingDraftStore.updateExistingListing(params.id, {
+          ...draft,
+          status: "draft",
+        });
+      } else {
+        await ListingDraftStore.saveDraftListing();
+      }
+      Alert.alert(
+        "Draft Saved",
+        "You can continue editing later from your dashboard.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.push("/host/(tabs)/dashboard"),
+          },
+        ],
+      );
+    } catch (error) {
+      Alert.alert("Error", "Failed to save draft. Please try again.");
+    }
   };
 
   const isEditMode = params.editMode === "true";
@@ -231,7 +243,7 @@ export default function CreateListingReview() {
         currentStep={4}
         totalSteps={4}
         onBack={() => router.back()}
-        onSaveExit={() => router.push("/host/(tabs)/listings")}
+        onSaveExit={() => router.push("/host/(tabs)/dashboard")}
         onNext={handlePublish}
         nextLabel={
           publishing

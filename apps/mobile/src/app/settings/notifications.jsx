@@ -2,74 +2,68 @@ import { View, Text, ScrollView, TouchableOpacity, Switch } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { useUser } from "@clerk/clerk-expo";
 import { ChevronLeft, Bell } from "lucide-react-native";
 import { BlurView } from "expo-blur";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { api } from "@/convex/_generated/api";
 
-const DEFAULT_SETTINGS = {
+const DEFAULT_PREFS = {
   messages: true,
-  deliverables: true,
-  applicationUpdates: false,
+  contractUpdates: true,
+  newListings: false,
+  collabReminders: true,
   marketing: false,
 };
+
+const notificationOptions = [
+  {
+    key: "messages",
+    title: "Messages",
+    description: "New messages and replies in your inbox",
+  },
+  {
+    key: "contractUpdates",
+    title: "Contract Updates",
+    description: "When a contract is signed, updated, or needs action",
+  },
+  {
+    key: "newListings",
+    title: "New Listings",
+    description: "Properties that match your preferences",
+  },
+  {
+    key: "collabReminders",
+    title: "Collab Reminders",
+    description: "Upcoming deadlines and pending deliverables",
+  },
+  {
+    key: "marketing",
+    title: "Marketing Updates",
+    description: "News, tips, and special offers from Collabnb",
+  },
+];
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  const updateProfileMutation = useMutation(api.profiles.updateProfile);
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
+  const profileId = profile?._id ? String(profile._id) : null;
+  const settings = { ...DEFAULT_PREFS, ...profile?.notification_prefs };
 
-  const loadSettings = async () => {
-    try {
-      const saved = await AsyncStorage.getItem("@notifications_settings");
-      if (saved) {
-        setSettings(JSON.parse(saved));
-      }
-    } catch (error) {
-      console.error("Failed to load notification settings:", error);
-    }
-  };
-
-  const updateSetting = async (key, value) => {
-    const newSettings = { ...settings, [key]: value };
-    setSettings(newSettings);
-    try {
-      await AsyncStorage.setItem(
-        "@notifications_settings",
-        JSON.stringify(newSettings),
-      );
-    } catch (error) {
+  const updateSetting = (key, value) => {
+    if (!profileId) return;
+    updateProfileMutation({
+      profileId,
+      updates: { notification_prefs: { ...settings, [key]: value } },
+    }).catch((error) => {
       console.error("Failed to save notification settings:", error);
-    }
+    });
   };
-
-  const notificationOptions = [
-    {
-      key: "messages",
-      title: "New Messages",
-      description: "Get notified when you receive a new message",
-    },
-    {
-      key: "applicationUpdates",
-      title: "Application Updates",
-      description: "Coming soon - updates on collaboration applications",
-      disabled: true,
-    },
-    {
-      key: "deliverables",
-      title: "Deliverables Due Reminders",
-      description: "Reminders when collaboration deadlines are approaching",
-    },
-    {
-      key: "marketing",
-      title: "Marketing Updates",
-      description: "News, tips, and special offers from Collabnb",
-    },
-  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: "#EFECE9" }}>
@@ -163,7 +157,7 @@ export default function NotificationsScreen() {
                 borderBottomWidth:
                   index < notificationOptions.length - 1 ? 1 : 0,
                 borderBottomColor: "rgba(149, 157, 144, 0.2)",
-                opacity: option.disabled ? 0.5 : 1,
+                opacity: profileId ? 1 : 0.5,
               }}
             >
               <View
@@ -199,7 +193,7 @@ export default function NotificationsScreen() {
                   onValueChange={(value) => updateSetting(option.key, value)}
                   trackColor={{ false: "#D0D5CE", true: "#D1EBDB" }}
                   thumbColor={settings[option.key] ? "#3C5759" : "#959D90"}
-                  disabled={option.disabled}
+                  disabled={!profileId}
                 />
               </View>
             </View>

@@ -5,7 +5,7 @@
 // File: /host/(tabs)/proposals.jsx
 // ============================================================
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -19,9 +19,83 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import ThemedBackground from "@/components/ThemedBackground";
 
 const STORAGE_KEY = "@collabnb_proposals_v1";
+
+// ─── Contract negotiation ──────────────────────────────────────
+const CONTRACT_FIELDS = [
+  { key: "nights", label: "Nights", placeholder: "e.g. 3 nights" },
+  {
+    key: "compensation",
+    label: "Compensation",
+    placeholder: "e.g. $500 + 2 nights free",
+  },
+  {
+    key: "deliverables",
+    label: "Deliverables",
+    placeholder: "e.g. 2 Reels, 4 Stories",
+  },
+  {
+    key: "turnaround",
+    label: "Turnaround",
+    placeholder: "e.g. 14 days after checkout",
+  },
+  { key: "affiliate", label: "Affiliate %", placeholder: "e.g. 10%" },
+  {
+    key: "extra_terms",
+    label: "Extra Terms",
+    placeholder: "Any additional terms...",
+  },
+];
+
+function getLatestContractFields(proposal) {
+  const history = proposal?.contractHistory;
+  if (history?.length) return { ...history[history.length - 1].fields };
+  const empty = {};
+  CONTRACT_FIELDS.forEach((f) => {
+    empty[f.key] = f.key === "deliverables" ? proposal?.deliverables || "" : "";
+  });
+  return empty;
+}
+
+function generateContractHtml(proposal) {
+  const fields = getLatestContractFields(proposal);
+  const signatures = proposal.signatures || {};
+  const rows = CONTRACT_FIELDS.filter((f) => fields[f.key])
+    .map(
+      (f) =>
+        `<tr><td style="font-weight:700;width:140px;padding:10px 14px;border-bottom:1px solid #eee;">${f.label}</td><td style="padding:10px 14px;border-bottom:1px solid #eee;">${fields[f.key]}</td></tr>`,
+    )
+    .join("");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Collabnb Contract</title>
+<style>body{font-family:Georgia,serif;max-width:680px;margin:48px auto;color:#192524;line-height:1.6}h1{font-size:22px;margin:0 0 4px}p.meta{color:#666;font-size:13px;margin:0 0 32px}table{width:100%;border-collapse:collapse;margin:24px 0}h2{font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#666;margin:28px 0 8px}.sig-row{display:flex;gap:40px;margin-top:40px}.sig-box{flex:1;border-top:1px solid #ccc;padding-top:12px}.sig-name{font-size:20px;font-style:italic;margin-bottom:4px}.sig-label{font-size:11px;color:#666}</style></head>
+<body>
+<h1>Collaboration Agreement</h1>
+<p class="meta">${proposal.listing} · ${proposal.creatorName} (${proposal.handle}) · ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>
+<h2>Terms</h2><table>${rows}</table>
+${proposal.contractHistory?.length ? `<p style="font-size:12px;color:#666;margin-top:8px;">Negotiated over ${proposal.contractHistory.length} round${proposal.contractHistory.length > 1 ? "s" : ""}.</p>` : ""}
+<h2>Signatures</h2>
+<div class="sig-row">
+  <div class="sig-box"><div class="sig-name">${signatures.hostSignature || "___________________________"}</div><div class="sig-label">Host · ${signatures.hostSignedAt ? new Date(signatures.hostSignedAt).toLocaleDateString() : "Not yet signed"}</div></div>
+  <div class="sig-box"><div class="sig-name">${signatures.creatorSignature || "___________________________"}</div><div class="sig-label">${proposal.creatorName} (Creator) · ${signatures.creatorSignedAt ? new Date(signatures.creatorSignedAt).toLocaleDateString() : "Not yet signed"}</div></div>
+</div>
+</body></html>`;
+}
+
+async function exportContractPdf(proposal) {
+  const html = generateContractHtml(proposal);
+  const { uri } = await Print.printToFileAsync({ html });
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(uri, {
+      mimeType: "application/pdf",
+      dialogTitle: "Collabnb Contract",
+    });
+  }
+}
 
 const STAGES = [
   {
@@ -276,8 +350,212 @@ function ArchiveCard({ proposal, onPress }) {
   );
 }
 
+// ─── CONTRACT HISTORY ────────────────────────────────────────
+function ContractHistoryTimeline({ history }) {
+  if (!history?.length) return null;
+  const last = history[history.length - 1];
+  return (
+    <View style={styles.historyWrap}>
+      <Text style={styles.modalLabel}>NEGOTIATION HISTORY</Text>
+      <View style={styles.historyRow}>
+        <View style={styles.historyPill}>
+          <Text style={styles.historyPillText}>Creator pitch</Text>
+        </View>
+        {history.map((entry, i) => (
+          <React.Fragment key={i}>
+            <Text style={styles.historyArrow}>→</Text>
+            <View
+              style={[
+                styles.historyPill,
+                entry.modifiedBy === "host"
+                  ? styles.historyPillHost
+                  : styles.historyPillCreator,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.historyPillText,
+                  entry.modifiedBy === "host"
+                    ? styles.historyPillTextHost
+                    : styles.historyPillTextCreator,
+                ]}
+              >
+                {entry.modifiedBy === "host" ? "Host" : "Creator"} v
+                {entry.version}
+                {i === history.length - 1 ? " · latest" : ""}
+              </Text>
+            </View>
+          </React.Fragment>
+        ))}
+      </View>
+      {!!last?.note && <Text style={styles.historyNote}>"{last.note}"</Text>}
+    </View>
+  );
+}
+
+// ─── COUNTER OFFER MODAL ─────────────────────────────────────
+function CounterOfferModal({ proposal, visible, onSend, onClose }) {
+  const [fields, setFields] = useState({});
+  const [note, setNote] = useState("");
+
+  useEffect(() => {
+    if (proposal) {
+      setFields(getLatestContractFields(proposal));
+      setNote("");
+    }
+  }, [proposal]);
+
+  if (!proposal) return null;
+  const version = (proposal.contractHistory?.length ?? 0) + 1;
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
+      <View style={styles.sheetOverlay}>
+        <View style={styles.sheetCard}>
+          <View style={styles.sheetHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sheetTitle}>Negotiate terms</Text>
+              <Text style={styles.sheetSub}>
+                {proposal.creatorName} · {proposal.listing} · round {version}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={onClose} style={styles.sheetClose}>
+              <Text style={styles.sheetCloseText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            style={{ maxHeight: 420 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {CONTRACT_FIELDS.map((f) => (
+              <View key={f.key} style={{ marginBottom: 12 }}>
+                <Text style={styles.fieldLabel}>{f.label}</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={fields[f.key] || ""}
+                  onChangeText={(v) =>
+                    setFields((prev) => ({ ...prev, [f.key]: v }))
+                  }
+                  placeholder={f.placeholder}
+                  placeholderTextColor="#959D90"
+                />
+              </View>
+            ))}
+            <Text style={styles.fieldLabel}>Note</Text>
+            <TextInput
+              style={[styles.fieldInput, { minHeight: 60 }]}
+              value={note}
+              onChangeText={setNote}
+              placeholder="Explain what changed and why..."
+              placeholderTextColor="#959D90"
+              multiline
+              textAlignVertical="top"
+            />
+          </ScrollView>
+          <View style={styles.sheetActions}>
+            <TouchableOpacity style={styles.sheetCancelBtn} onPress={onClose}>
+              <Text style={styles.sheetCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.sheetSendBtn}
+              onPress={() => onSend(proposal.id, fields, note)}
+            >
+              <Text style={styles.sheetSendText}>Send counter-offer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── SIGN CONTRACT MODAL ──────────────────────────────────────
+function SignContractModal({ proposal, visible, onSign, onClose }) {
+  const [name, setName] = useState("");
+  if (!proposal) return null;
+  const fields = getLatestContractFields(proposal);
+  const roundCount = proposal.contractHistory?.length ?? 0;
+  const ready = name.trim().length >= 2;
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
+      <View style={styles.sheetOverlay}>
+        <View style={styles.sheetCard}>
+          <View style={styles.sheetHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sheetTitle}>Sign contract</Text>
+              <Text style={styles.sheetSub}>Signing as Host</Text>
+            </View>
+            <TouchableOpacity onPress={onClose} style={styles.sheetClose}>
+              <Text style={styles.sheetCloseText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.signTermsCard}>
+            <Text style={styles.modalLabel}>CONTRACT TERMS</Text>
+            {CONTRACT_FIELDS.filter((f) => fields[f.key]).map((f) => (
+              <View key={f.key} style={styles.signTermRow}>
+                <Text style={styles.signTermLabel}>{f.label}</Text>
+                <Text style={styles.signTermValue}>{fields[f.key]}</Text>
+              </View>
+            ))}
+            {roundCount > 0 && (
+              <Text style={styles.signRoundsNote}>
+                Terms finalized after {roundCount} negotiation round
+                {roundCount > 1 ? "s" : ""}.
+              </Text>
+            )}
+          </View>
+          <Text style={styles.signAgreementText}>
+            By typing your name below, you agree to the terms above as a
+            binding e-signature.
+          </Text>
+          <Text style={styles.fieldLabel}>Your name</Text>
+          <TextInput
+            style={styles.signNameInput}
+            value={name}
+            onChangeText={setName}
+            placeholder="Type your full name"
+            placeholderTextColor="#959D90"
+          />
+          <View style={styles.sheetActions}>
+            <TouchableOpacity style={styles.sheetCancelBtn} onPress={onClose}>
+              <Text style={styles.sheetCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.sheetSignBtn, !ready && { opacity: 0.5 }]}
+              disabled={!ready}
+              onPress={() => onSign(proposal.id, name.trim())}
+            >
+              <Text style={styles.sheetSendText}>✎ Sign</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 // ─── DETAIL MODAL ────────────────────────────────────────────
-function DetailModal({ proposal, visible, onClose, onStageChange, onSave }) {
+function DetailModal({
+  proposal,
+  visible,
+  onClose,
+  onStageChange,
+  onSave,
+  onOpenCounter,
+  onOpenSign,
+  onExportPdf,
+}) {
   const router = useRouter();
   const [note, setNote] = useState("");
   const [stayDates, setStayDates] = useState("");
@@ -303,6 +581,11 @@ function DetailModal({ proposal, visible, onClose, onStageChange, onSave }) {
   };
 
   const handleMessage = () => {
+    // Inbox and message threads are Convex-backed (see useConversations /
+    // messages/[threadId].jsx); MessagingStore is a separate local mock that
+    // never reaches them, and threads.create isn't idempotent, so we can't
+    // safely open/create a specific thread from here yet. Land on the inbox
+    // list instead of a broken or duplicate thread.
     router.push("/host/(tabs)/inbox");
   };
 
@@ -409,6 +692,34 @@ function DetailModal({ proposal, visible, onClose, onStageChange, onSave }) {
             </View>
           </View>
 
+          {/* Contract */}
+          <View style={styles.modalSection}>
+            <Text style={styles.modalLabel}>CONTRACT</Text>
+            <ContractHistoryTimeline history={proposal.contractHistory} />
+            <View style={styles.contractActionsRow}>
+              <TouchableOpacity
+                style={styles.contractActionBtn}
+                onPress={() => onOpenCounter(proposal)}
+              >
+                <Text style={styles.contractActionText}>🔄 Negotiate</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.contractActionBtn}
+                onPress={() => onOpenSign(proposal)}
+              >
+                <Text style={styles.contractActionText}>
+                  {proposal.signatures?.hostSignedAt ? "✓ Signed" : "✎ Sign"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.contractActionBtn}
+                onPress={() => onExportPdf(proposal)}
+              >
+                <Text style={styles.contractActionText}>⬇ PDF</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* Stay dates */}
           <View style={styles.modalSection}>
             <Text style={styles.modalLabel}>STAY DATES</Text>
@@ -492,19 +803,25 @@ function DetailModal({ proposal, visible, onClose, onStageChange, onSave }) {
 
 // ─── MAIN SCREEN ─────────────────────────────────────────────
 export default function ProposalsScreen() {
+  const router = useRouter();
   const [proposals, setProposals] = useState(SAMPLE_PROPOSALS);
   const [selected, setSelected] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [view, setView] = useState("pipeline");
   const [tierFilter, setTierFilter] = useState("all");
+  const [declinedOpen, setDeclinedOpen] = useState(false);
+  const [counterTarget, setCounterTarget] = useState(null);
+  const [signTarget, setSignTarget] = useState(null);
 
-  useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((s) => {
-        if (s) setProposals(JSON.parse(s));
-      })
-      .catch(() => {});
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      AsyncStorage.getItem(STORAGE_KEY)
+        .then((s) => {
+          if (s) setProposals(JSON.parse(s));
+        })
+        .catch(() => {});
+    }, []),
+  );
 
   const persist = async (updated) => {
     setProposals(updated);
@@ -529,12 +846,69 @@ export default function ProposalsScreen() {
     setSelected((prev) => (prev ? { ...prev, ...fields } : prev));
   };
 
+  const STAGE_ORDER = ["invited", "applied", "negotiating", "confirmed", "live"];
+
+  const handleCounterSend = async (id, fields, note) => {
+    const updated = proposals.map((p) => {
+      if (p.id !== id) return p;
+      const history = p.contractHistory || [];
+      const nextHistory = [
+        ...history,
+        { version: history.length + 1, modifiedBy: "host", fields, note },
+      ];
+      const curIdx = STAGE_ORDER.indexOf(p.stage);
+      const negotiatingIdx = STAGE_ORDER.indexOf("negotiating");
+      const nextStage =
+        curIdx >= 0 && curIdx < negotiatingIdx ? "negotiating" : p.stage;
+      return {
+        ...p,
+        contractHistory: nextHistory,
+        stage: nextStage,
+        lastUpdate: "just now",
+      };
+    });
+    await persist(updated);
+    setSelected((prev) =>
+      prev ? updated.find((p) => p.id === prev.id) : prev,
+    );
+    setCounterTarget(null);
+  };
+
+  const handleSign = async (id, name) => {
+    const updated = proposals.map((p) => {
+      if (p.id !== id) return p;
+      const signatures = {
+        ...(p.signatures || {}),
+        hostSignature: name,
+        hostSignedAt: new Date().toISOString(),
+      };
+      const locked = !!(signatures.hostSignature && signatures.creatorSignature);
+      return { ...p, signatures, locked, lastUpdate: "just now" };
+    });
+    await persist(updated);
+    setSelected((prev) =>
+      prev ? updated.find((p) => p.id === prev.id) : prev,
+    );
+    setSignTarget(null);
+  };
+
+  const handleExportPdf = async (proposal) => {
+    try {
+      await exportContractPdf(proposal);
+    } catch (error) {
+      console.error("Failed to export contract PDF:", error);
+    }
+  };
+
   const filtered =
     tierFilter === "all"
       ? proposals
       : proposals.filter((p) => p.tier === tierFilter);
-  const active = filtered.filter((p) => p.stage !== "completed");
+  const active = filtered.filter(
+    (p) => p.stage !== "completed" && p.stage !== "declined",
+  );
   const archived = filtered.filter((p) => p.stage === "completed");
+  const declined = filtered.filter((p) => p.stage === "declined");
   const byStage = (id) => active.filter((p) => p.stage === id);
 
   const TIERS = [
@@ -558,7 +932,10 @@ export default function ProposalsScreen() {
               {byStage("live").length} live
             </Text>
           </View>
-          <TouchableOpacity style={styles.inviteBtn}>
+          <TouchableOpacity
+            style={styles.inviteBtn}
+            onPress={() => router.push("/host/(tabs)/creators")}
+          >
             <Text style={styles.inviteBtnText}>+ Invite</Text>
           </TouchableOpacity>
         </View>
@@ -629,49 +1006,76 @@ export default function ProposalsScreen() {
 
         {/* Pipeline */}
         {view === "pipeline" && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.board}
-          >
-            {ACTIVE_STAGES.map((stage) => {
-              const cards = byStage(stage.id);
-              return (
-                <View key={stage.id} style={styles.pipelineCol}>
-                  <View
-                    style={[styles.colHeader, { backgroundColor: stage.bg }]}
-                  >
-                    <Text>{stage.emoji}</Text>
-                    <Text style={[styles.colLabel, { color: stage.color }]}>
-                      {stage.label}
-                    </Text>
+          <>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.board}
+            >
+              {ACTIVE_STAGES.map((stage) => {
+                const cards = byStage(stage.id);
+                return (
+                  <View key={stage.id} style={styles.pipelineCol}>
                     <View
-                      style={[
-                        styles.colCount,
-                        { backgroundColor: stage.color },
-                      ]}
+                      style={[styles.colHeader, { backgroundColor: stage.bg }]}
                     >
-                      <Text style={styles.colCountText}>{cards.length}</Text>
+                      <Text>{stage.emoji}</Text>
+                      <Text style={[styles.colLabel, { color: stage.color }]}>
+                        {stage.label}
+                      </Text>
+                      <View
+                        style={[
+                          styles.colCount,
+                          { backgroundColor: stage.color },
+                        ]}
+                      >
+                        <Text style={styles.colCountText}>{cards.length}</Text>
+                      </View>
                     </View>
+                    {cards.length === 0 ? (
+                      <Text style={styles.emptyColText}>None here</Text>
+                    ) : (
+                      cards.map((p) => (
+                        <ProposalCard
+                          key={p.id}
+                          proposal={p}
+                          onPress={() => {
+                            setSelected(p);
+                            setModalVisible(true);
+                          }}
+                        />
+                      ))
+                    )}
                   </View>
-                  {cards.length === 0 ? (
-                    <Text style={styles.emptyColText}>None here</Text>
-                  ) : (
-                    cards.map((p) => (
-                      <ProposalCard
-                        key={p.id}
-                        proposal={p}
-                        onPress={() => {
-                          setSelected(p);
-                          setModalVisible(true);
-                        }}
-                      />
-                    ))
-                  )}
-                </View>
-              );
-            })}
-          </ScrollView>
+                );
+              })}
+            </ScrollView>
+
+            {/* Declined — kept out of the pipeline columns, tucked below */}
+            {declined.length > 0 && (
+              <View style={styles.declinedSection}>
+                <TouchableOpacity
+                  style={styles.declinedHeader}
+                  onPress={() => setDeclinedOpen((v) => !v)}
+                >
+                  <Text style={styles.declinedHeaderText}>
+                    {declinedOpen ? "▾" : "▸"} Declined ({declined.length})
+                  </Text>
+                </TouchableOpacity>
+                {declinedOpen &&
+                  declined.map((p) => (
+                    <ProposalCard
+                      key={p.id}
+                      proposal={p}
+                      onPress={() => {
+                        setSelected(p);
+                        setModalVisible(true);
+                      }}
+                    />
+                  ))}
+              </View>
+            )}
+          </>
         )}
 
         {/* Archive */}
@@ -705,6 +1109,23 @@ export default function ProposalsScreen() {
           onClose={() => setModalVisible(false)}
           onStageChange={handleStageChange}
           onSave={handleSave}
+          onOpenCounter={setCounterTarget}
+          onOpenSign={setSignTarget}
+          onExportPdf={handleExportPdf}
+        />
+
+        <CounterOfferModal
+          proposal={counterTarget}
+          visible={!!counterTarget}
+          onSend={handleCounterSend}
+          onClose={() => setCounterTarget(null)}
+        />
+
+        <SignContractModal
+          proposal={signTarget}
+          visible={!!signTarget}
+          onSign={handleSign}
+          onClose={() => setSignTarget(null)}
         />
       </SafeAreaView>
     </ThemedBackground>
@@ -859,6 +1280,10 @@ const styles = StyleSheet.create({
   tierBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
   tierText: { fontSize: 10, fontWeight: "600" },
 
+  declinedSection: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 16 },
+  declinedHeader: { paddingVertical: 10 },
+  declinedHeaderText: { fontSize: 12, fontWeight: "600", color: "#959D90" },
+
   archiveList: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 },
   archiveCard: { ...GLASS, padding: 14, marginBottom: 10 },
   archiveSub: { fontSize: 11, color: "#959D90" },
@@ -936,6 +1361,137 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.5)",
   },
   stageBtnText: { fontSize: 12, fontWeight: "500" },
+
+  // Contract history
+  historyWrap: { marginBottom: 10 },
+  historyRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center" },
+  historyArrow: { color: "#D0D5CE", fontSize: 11, marginHorizontal: 3 },
+  historyPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+    backgroundColor: "rgba(25,37,36,0.06)",
+    marginVertical: 2,
+  },
+  historyPillHost: { backgroundColor: "rgba(123,104,200,0.1)" },
+  historyPillCreator: { backgroundColor: "rgba(74,155,127,0.1)" },
+  historyPillText: { fontSize: 11, fontWeight: "600", color: "#959D90" },
+  historyPillTextHost: { color: "#5b4db8" },
+  historyPillTextCreator: { color: "#2d7d5e" },
+  historyNote: {
+    fontSize: 11,
+    color: "#3C5759",
+    fontStyle: "italic",
+    marginTop: 7,
+  },
+
+  // Contract quick actions (within detail modal)
+  contractActionsRow: { flexDirection: "row", gap: 8 },
+  contractActionBtn: {
+    flex: 1,
+    ...GLASS,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  contractActionText: { fontSize: 12, fontWeight: "600", color: "#192524" },
+
+  // Bottom-sheet modals shared by Negotiate/Sign
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(25,37,36,0.5)",
+    justifyContent: "flex-end",
+  },
+  sheetCard: {
+    backgroundColor: "#EFECE9",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 32,
+    maxHeight: "88%",
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  sheetTitle: { fontSize: 17, fontWeight: "700", color: "#192524" },
+  sheetSub: { fontSize: 12, color: "#959D90", marginTop: 3 },
+  sheetClose: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(25,37,36,0.07)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetCloseText: { fontSize: 13, color: "#3C5759" },
+  fieldLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#959D90",
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  fieldInput: {
+    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: "rgba(25,37,36,0.12)",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: "#192524",
+  },
+  sheetActions: { flexDirection: "row", gap: 10, marginTop: 16 },
+  sheetCancelBtn: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 9999,
+    borderWidth: 1.5,
+    borderColor: "rgba(25,37,36,0.15)",
+    alignItems: "center",
+  },
+  sheetCancelText: { fontSize: 14, fontWeight: "600", color: "#3C5759" },
+  sheetSendBtn: {
+    flex: 2,
+    paddingVertical: 13,
+    borderRadius: 9999,
+    backgroundColor: "#192524",
+    alignItems: "center",
+  },
+  sheetSignBtn: {
+    flex: 2,
+    paddingVertical: 13,
+    borderRadius: 9999,
+    backgroundColor: "#4A9B7F",
+    alignItems: "center",
+  },
+  sheetSendText: { fontSize: 14, fontWeight: "700", color: "#fff" },
+
+  // Sign modal contract summary
+  signTermsCard: { ...GLASS, padding: 14, marginBottom: 14 },
+  signTermRow: { flexDirection: "row", gap: 8, marginBottom: 5 },
+  signTermLabel: { fontSize: 12, color: "#959D90", minWidth: 100 },
+  signTermValue: { fontSize: 12, fontWeight: "600", color: "#192524", flex: 1 },
+  signRoundsNote: { fontSize: 11, color: "#959D90", marginTop: 8 },
+  signAgreementText: {
+    fontSize: 12.5,
+    color: "#3C5759",
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  signNameInput: {
+    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: "rgba(25,37,36,0.12)",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    fontStyle: "italic",
+    color: "#192524",
+  },
+
   inputCard: { ...GLASS, padding: 14 },
   inputField: { fontSize: 14, color: "#192524" },
   noteCard: { ...GLASS, padding: 14 },
