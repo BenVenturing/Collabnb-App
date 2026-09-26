@@ -9,6 +9,8 @@ import {
   FileText,
   Send,
 } from "lucide-react-native";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 export default function HostOnboardingOverview() {
   const router = useRouter();
@@ -44,7 +46,7 @@ export default function HostOnboardingOverview() {
   ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#EFECE9" }}>
+    <AtmosphericBackground>
       <StatusBar style="dark" />
 
       {/* Top Header */}
@@ -68,7 +70,7 @@ export default function HostOnboardingOverview() {
             marginLeft: -8,
           }}
         >
-          <X size={24} color="#192524" />
+          <X size={24} color={colors.ink} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -81,7 +83,7 @@ export default function HostOnboardingOverview() {
             marginRight: -8,
           }}
         >
-          <HelpCircle size={24} color="#3C5759" />
+          <HelpCircle size={24} color={colors.slate} />
         </TouchableOpacity>
       </View>
 
@@ -98,9 +100,10 @@ export default function HostOnboardingOverview() {
         >
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 32,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(32, tracking.display),
               marginBottom: 12,
               lineHeight: 38,
             }}
@@ -109,8 +112,9 @@ export default function HostOnboardingOverview() {
           </Text>
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 17,
-              color: "#3C5759",
+              color: colors.slate,
               lineHeight: 26,
             }}
           >
@@ -125,12 +129,13 @@ export default function HostOnboardingOverview() {
             <View
               key={index}
               style={{
-                backgroundColor: "#FFFFFF",
+                backgroundColor: colors.surface,
                 borderRadius: 16,
                 padding: 20,
                 borderWidth: 1,
+                // colors.slate at 10% opacity
                 borderColor: "rgba(60, 87, 89, 0.1)",
-                shadowColor: "#192524",
+                shadowColor: colors.ink,
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.05,
                 shadowRadius: 8,
@@ -144,12 +149,12 @@ export default function HostOnboardingOverview() {
                     width: 48,
                     height: 48,
                     borderRadius: 24,
-                    backgroundColor: "#D1EBDB",
+                    backgroundColor: colors.mint,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <step.icon size={24} color="#3C5759" strokeWidth={2.5} />
+                  <step.icon size={24} color={colors.slate} strokeWidth={2.5} />
                 </View>
 
                 {/* Content */}
@@ -163,9 +168,10 @@ export default function HostOnboardingOverview() {
                   >
                     <Text
                       style={{
+                        fontFamily: fonts.bodySemibold,
                         fontSize: 13,
-                        fontWeight: "700",
-                        color: "#959D90",
+                        color: colors.sage,
+                        letterSpacing: track(13, tracking.eyebrow),
                         marginRight: 8,
                       }}
                     >
@@ -174,9 +180,9 @@ export default function HostOnboardingOverview() {
                   </View>
                   <Text
                     style={{
+                      fontFamily: fonts.bodySemibold,
                       fontSize: 18,
-                      fontWeight: "600",
-                      color: "#192524",
+                      color: colors.ink,
                       marginBottom: 6,
                     }}
                   >
@@ -184,8 +190,9 @@ export default function HostOnboardingOverview() {
                   </Text>
                   <Text
                     style={{
+                      fontFamily: fonts.body,
                       fontSize: 15,
-                      color: "#3C5759",
+                      color: colors.slate,
                       lineHeight: 22,
                     }}
                   >
@@ -201,17 +208,19 @@ export default function HostOnboardingOverview() {
         <View style={{ paddingHorizontal: 24, paddingTop: 32 }}>
           <View
             style={{
+              // colors.mint at 50% opacity
               backgroundColor: "rgba(209, 235, 219, 0.5)",
               borderWidth: 1,
-              borderColor: "#D1EBDB",
+              borderColor: colors.mint,
               borderRadius: 12,
               padding: 16,
             }}
           >
             <Text
               style={{
+                fontFamily: fonts.body,
                 fontSize: 14,
-                color: "#3C5759",
+                color: colors.slate,
                 lineHeight: 20,
               }}
             >
@@ -229,9 +238,9 @@ export default function HostOnboardingOverview() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: "#D0D5CE",
+          borderTopColor: colors.stone,
           paddingHorizontal: 24,
           paddingTop: 16,
           paddingBottom: insets.bottom + 16,
@@ -240,17 +249,17 @@ export default function HostOnboardingOverview() {
         <TouchableOpacity
           onPress={() => router.push("/host-onboarding/property")}
           style={{
-            backgroundColor: "#192524",
+            backgroundColor: colors.ink,
             borderRadius: 12,
             paddingVertical: 16,
             alignItems: "center",
           }}
         >
-          <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600" }}>
+          <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface, fontSize: 16 }}>
             Get started
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </AtmosphericBackground>
   );
 }

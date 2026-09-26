@@ -15,18 +15,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useUpload } from "@/utils/useUpload";
-import { LinearGradient } from "expo-linear-gradient";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
-
-// ✅ Vibe colors
-const VIBE_COLORS = {
-  plain: "#EFECE9",
-  forest: "#E4EEE6",
-  dusk: "#E6E1EB",
-  sand: "#F3EDE3",
-  ocean: "#E3EDF2",
-  rose: "#F1E4E6",
-};
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 export default function CreatorBasicInfoScreen() {
   const insets = useSafeAreaInsets();
@@ -39,9 +30,6 @@ export default function CreatorBasicInfoScreen() {
     updateMultipleFields,
     loadDraft,
   } = useCreatorOnboardingStore();
-
-  const [vibe, setVibe] = useState("dusk");
-  const vibeColor = VIBE_COLORS[vibe];
 
   const [localPhoto, setLocalPhoto] = useState(profilePhoto || null);
   const [localName, setLocalName] = useState(displayName || "");
@@ -137,7 +125,7 @@ export default function CreatorBasicInfoScreen() {
   const isFormValid = localPhoto && localName.trim() && localUsername.trim();
 
   return (
-    <LinearGradient colors={[vibeColor, "#FFFFFF"]} style={{ flex: 1 }}>
+    <AtmosphericBackground>
       <StatusBar style="dark" />
 
       {/* Header */}
@@ -146,9 +134,10 @@ export default function CreatorBasicInfoScreen() {
           paddingTop: insets.top + 16,
           paddingHorizontal: 20,
           paddingBottom: 16,
-          backgroundColor: "rgba(255,255,255,0.85)", // ✅ glass
+          // colors.surface at 85% opacity
+          backgroundColor: "rgba(255,255,255,0.85)",
           borderBottomWidth: 1,
-          borderBottomColor: "#D0D5CE",
+          borderBottomColor: colors.stone,
         }}
       >
         <View
@@ -159,15 +148,15 @@ export default function CreatorBasicInfoScreen() {
           }}
         >
           <TouchableOpacity onPress={() => router.back()}>
-            <ChevronLeft color="#3C5759" size={24} />
+            <ChevronLeft color={colors.slate} size={24} />
           </TouchableOpacity>
           <Text
             style={{
               flex: 1,
               textAlign: "center",
+              fontFamily: fonts.bodySemibold,
               fontSize: 16,
-              fontWeight: "600",
-              color: "#192524",
+              color: colors.ink,
               marginRight: 24,
             }}
           >
@@ -179,7 +168,7 @@ export default function CreatorBasicInfoScreen() {
         <View
           style={{
             height: 4,
-            backgroundColor: "#D0D5CE",
+            backgroundColor: colors.stone,
             borderRadius: 2,
             overflow: "hidden",
           }}
@@ -188,7 +177,7 @@ export default function CreatorBasicInfoScreen() {
             style={{
               width: "25%",
               height: "100%",
-              backgroundColor: "#3C5759",
+              backgroundColor: colors.slate,
             }}
           />
         </View>
@@ -197,7 +186,7 @@ export default function CreatorBasicInfoScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingBottom: insets.bottom + 24, // ✅ FIXED GAP
+          paddingBottom: insets.bottom + 24,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -205,9 +194,10 @@ export default function CreatorBasicInfoScreen() {
         <View style={{ paddingHorizontal: 20, paddingTop: 32 }}>
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 28,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(28, tracking.display),
               marginBottom: 8,
             }}
           >
@@ -215,8 +205,9 @@ export default function CreatorBasicInfoScreen() {
           </Text>
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 15,
-              color: "#3C5759",
+              color: colors.slate,
               lineHeight: 22,
               marginBottom: 32,
             }}
@@ -228,7 +219,14 @@ export default function CreatorBasicInfoScreen() {
 
         {/* Profile Photo */}
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
-          <Text style={{ fontSize: 15, fontWeight: "600", marginBottom: 12 }}>
+          <Text
+            style={{
+              fontFamily: fonts.bodySemibold,
+              fontSize: 15,
+              color: colors.ink,
+              marginBottom: 12,
+            }}
+          >
             Profile Photo *
           </Text>
 
@@ -238,7 +236,7 @@ export default function CreatorBasicInfoScreen() {
                 width: 120,
                 height: 120,
                 borderRadius: 60,
-                backgroundColor: "#D0D5CE",
+                backgroundColor: colors.stone,
                 alignItems: "center",
                 justifyContent: "center",
                 alignSelf: "center",
@@ -252,7 +250,7 @@ export default function CreatorBasicInfoScreen() {
                   style={{ width: "100%", height: "100%", borderRadius: 60 }}
                 />
               ) : (
-                <Camera color="#959D90" size={32} />
+                <Camera color={colors.sage} size={32} />
               )}
             </View>
           </TouchableOpacity>
@@ -274,17 +272,23 @@ export default function CreatorBasicInfoScreen() {
           },
         ].map((field, i) => (
           <View key={i} style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-            <Text style={{ marginBottom: 8 }}>{field.label}</Text>
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.ink, marginBottom: 8 }}>
+              {field.label}
+            </Text>
             <TextInput
               value={field.value}
               onChangeText={field.setter}
               placeholder={field.placeholder}
+              placeholderTextColor={colors.sage}
               style={{
-                backgroundColor: "rgba(255,255,255,0.85)", // ✅ glass
+                // colors.surface at 85% opacity
+                backgroundColor: "rgba(255,255,255,0.85)",
                 borderRadius: 12,
                 padding: 14,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
+                fontFamily: fonts.body,
+                color: colors.ink,
               }}
             />
           </View>
@@ -297,31 +301,32 @@ export default function CreatorBasicInfoScreen() {
           paddingHorizontal: 20,
           paddingTop: 16,
           paddingBottom: insets.bottom + 12,
-          backgroundColor: "rgba(255,255,255,0.9)", // ✅ glass
+          // colors.surface at 90% opacity
+          backgroundColor: "rgba(255,255,255,0.9)",
           borderTopWidth: 1,
-          borderTopColor: "#D0D5CE",
+          borderTopColor: colors.stone,
         }}
       >
         <TouchableOpacity
           onPress={handleContinue}
           disabled={!isFormValid}
           style={{
-            backgroundColor: isFormValid ? "#3C5759" : "#D0D5CE",
+            backgroundColor: isFormValid ? colors.slate : colors.stone,
             padding: 16,
             borderRadius: 12,
             alignItems: "center",
             marginBottom: 10,
           }}
         >
-          <Text style={{ color: "#fff", fontWeight: "600" }}>Continue</Text>
+          <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface }}>Continue</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleSaveDraft}>
-          <Text style={{ textAlign: "center", color: "#3C5759" }}>
+          <Text style={{ fontFamily: fonts.bodyMedium, textAlign: "center", color: colors.slate }}>
             Save draft
           </Text>
         </TouchableOpacity>
       </View>
-    </LinearGradient>
+    </AtmosphericBackground>
   );
 }

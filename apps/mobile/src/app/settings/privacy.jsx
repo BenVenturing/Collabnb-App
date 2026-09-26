@@ -13,8 +13,10 @@ import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { ChevronLeft, Shield } from "lucide-react-native";
-import { BlurView } from "expo-blur";
 import { api } from "@/convex/_generated/api";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import Glass from "@/components/Glass";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 function PrivacyToggleRow({ label, sublabel, value, onChange, disabled }) {
   return (
@@ -30,23 +32,23 @@ function PrivacyToggleRow({ label, sublabel, value, onChange, disabled }) {
       <View style={{ flex: 1, marginRight: 16 }}>
         <Text
           style={{
+            fontFamily: fonts.bodySemibold,
             fontSize: 16,
-            fontWeight: "600",
-            color: "#192524",
+            color: colors.ink,
             marginBottom: 4,
           }}
         >
           {label}
         </Text>
-        <Text style={{ fontSize: 13, color: "#3C5759", lineHeight: 18 }}>
+        <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, lineHeight: 18 }}>
           {sublabel}
         </Text>
       </View>
       <Switch
         value={value}
         onValueChange={onChange}
-        trackColor={{ false: "#D0D5CE", true: "#D1EBDB" }}
-        thumbColor={value ? "#3C5759" : "#959D90"}
+        trackColor={{ false: colors.stone, true: colors.mint }}
+        thumbColor={value ? colors.slate : colors.sage}
         disabled={disabled}
       />
     </View>
@@ -101,7 +103,7 @@ export default function PrivacySecurityScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#EFECE9" }}>
+    <AtmosphericBackground>
       <StatusBar style="dark" />
 
       {/* Header */}
@@ -110,9 +112,9 @@ export default function PrivacySecurityScreen() {
           paddingTop: insets.top + 12,
           paddingBottom: 12,
           paddingHorizontal: 20,
-          backgroundColor: "#fff",
+          backgroundColor: colors.surface,
           borderBottomWidth: 1,
-          borderBottomColor: "#D0D5CE",
+          borderBottomColor: colors.stone,
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -120,9 +122,16 @@ export default function PrivacySecurityScreen() {
             onPress={() => router.back()}
             style={{ marginRight: 16 }}
           >
-            <ChevronLeft color="#3C5759" size={28} />
+            <ChevronLeft color={colors.slate} size={28} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 20, fontWeight: "700", color: "#192524" }}>
+          <Text
+            style={{
+              fontFamily: fonts.display,
+              fontSize: 20,
+              color: colors.ink,
+              letterSpacing: track(20, tracking.display),
+            }}
+          >
             Privacy & Security
           </Text>
         </View>
@@ -142,19 +151,20 @@ export default function PrivacySecurityScreen() {
               width: 80,
               height: 80,
               borderRadius: 40,
-              backgroundColor: "#D1EBDB",
+              backgroundColor: colors.mint,
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 16,
             }}
           >
-            <Shield color="#3C5759" size={40} />
+            <Shield color={colors.slate} size={40} />
           </View>
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 24,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(24, tracking.display),
               marginBottom: 8,
             }}
           >
@@ -162,8 +172,9 @@ export default function PrivacySecurityScreen() {
           </Text>
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 14,
-              color: "#3C5759",
+              color: colors.slate,
               textAlign: "center",
               lineHeight: 20,
             }}
@@ -173,18 +184,7 @@ export default function PrivacySecurityScreen() {
         </View>
 
         {profile?.role === "creator" && (
-          <BlurView
-            intensity={60}
-            tint="light"
-            style={{
-              borderRadius: 16,
-              overflow: "hidden",
-              borderWidth: 1,
-              borderColor: "rgba(255, 255, 255, 0.5)",
-              backgroundColor: "rgba(255, 255, 255, 0.3)",
-              marginBottom: 16,
-            }}
-          >
+          <Glass variant="small" style={{ marginBottom: 16 }}>
             <PrivacyToggleRow
               label={profileVisible ? "Profile is visible to hosts" : "Profile is hidden"}
               sublabel={
@@ -202,21 +202,10 @@ export default function PrivacySecurityScreen() {
               }
               disabled={!profileId}
             />
-          </BlurView>
+          </Glass>
         )}
 
-        <BlurView
-          intensity={60}
-          tint="light"
-          style={{
-            borderRadius: 16,
-            overflow: "hidden",
-            borderWidth: 1,
-            borderColor: "rgba(255, 255, 255, 0.5)",
-            backgroundColor: "rgba(255, 255, 255, 0.3)",
-            marginBottom: 16,
-          }}
-        >
+        <Glass variant="small" style={{ marginBottom: 16 }}>
           <PrivacyToggleRow
             label="Show my activity to hosts"
             sublabel="Applications, response time, and recent activity"
@@ -230,14 +219,14 @@ export default function PrivacySecurityScreen() {
             }
             disabled={!profileId}
           />
-        </BlurView>
+        </Glass>
 
         <Text
           style={{
-            fontFamily: "Inter-Medium",
+            fontFamily: fonts.bodyMedium,
             fontSize: 11,
-            color: "#959D90",
-            letterSpacing: 1.2,
+            color: colors.sage,
+            letterSpacing: track(11, tracking.eyebrow),
             paddingBottom: 10,
             textTransform: "uppercase",
           }}
@@ -249,15 +238,18 @@ export default function PrivacySecurityScreen() {
             value={blockQuery}
             onChangeText={setBlockQuery}
             placeholder="Search by name to block someone…"
-            placeholderTextColor="#959D90"
+            placeholderTextColor={colors.sage}
             style={{
               borderWidth: 1,
+              // colors.slate at 18% opacity
               borderColor: "rgba(60,87,89,0.18)",
               borderRadius: 12,
               paddingHorizontal: 14,
               paddingVertical: 12,
+              fontFamily: fonts.body,
               fontSize: 15,
-              color: "#192524",
+              color: colors.ink,
+              // colors.surface at 62% opacity
               backgroundColor: "rgba(255,255,255,0.62)",
             }}
           />
@@ -269,9 +261,10 @@ export default function PrivacySecurityScreen() {
                 left: 0,
                 right: 0,
                 marginTop: 4,
-                backgroundColor: "#fff",
+                backgroundColor: colors.surface,
                 borderRadius: 12,
                 borderWidth: 1,
+                // colors.slate at 15% opacity
                 borderColor: "rgba(60,87,89,0.15)",
                 overflow: "hidden",
                 zIndex: 20,
@@ -291,10 +284,10 @@ export default function PrivacySecurityScreen() {
                     paddingHorizontal: 14,
                   }}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#192524" }}>
+                  <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.ink }}>
                     {p.full_name}
                   </Text>
-                  <Text style={{ fontSize: 12, color: "#959D90" }}>Block</Text>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.sage }}>Block</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -302,23 +295,12 @@ export default function PrivacySecurityScreen() {
         </View>
 
         {blockedProfiles.length === 0 ? (
-          <Text style={{ fontSize: 13, color: "#959D90", marginBottom: 16 }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage, marginBottom: 16 }}>
             You haven't blocked anyone. Blocked people can't message you or see
             your profile.
           </Text>
         ) : (
-          <BlurView
-            intensity={60}
-            tint="light"
-            style={{
-              borderRadius: 16,
-              overflow: "hidden",
-              borderWidth: 1,
-              borderColor: "rgba(255, 255, 255, 0.5)",
-              backgroundColor: "rgba(255, 255, 255, 0.3)",
-              marginBottom: 16,
-            }}
-          >
+          <Glass variant="small" style={{ marginBottom: 16 }}>
             {blockedProfiles.map((p, i) => (
               <View key={p._id}>
                 <View
@@ -331,15 +313,16 @@ export default function PrivacySecurityScreen() {
                   }}
                 >
                   <View style={{ flex: 1, marginRight: 12 }}>
-                    <Text style={{ fontSize: 15, fontWeight: "600", color: "#192524" }}>
+                    <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}>
                       {p.full_name}
                     </Text>
-                    <Text style={{ fontSize: 12, color: "#959D90", marginTop: 2 }}>
+                    <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.sage, marginTop: 2 }}>
                       Blocked — can't message you or view your profile
                     </Text>
                   </View>
                   <TouchableOpacity onPress={() => handleUnblock(String(p._id))}>
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: "#C86868" }}>
+                    {/* No danger/error token exists in the 9-color palette — left as-is, see report */}
+                    <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: "#C86868" }}>
                       Unblock
                     </Text>
                   </TouchableOpacity>
@@ -348,6 +331,7 @@ export default function PrivacySecurityScreen() {
                   <View
                     style={{
                       height: 1,
+                      // colors.sage at 20% opacity
                       backgroundColor: "rgba(149, 157, 144, 0.2)",
                       marginLeft: 18,
                     }}
@@ -355,27 +339,16 @@ export default function PrivacySecurityScreen() {
                 )}
               </View>
             ))}
-          </BlurView>
+          </Glass>
         )}
 
-        <BlurView
-          intensity={60}
-          tint="light"
-          style={{
-            borderRadius: 16,
-            overflow: "hidden",
-            borderWidth: 1,
-            borderColor: "rgba(255, 255, 255, 0.5)",
-            backgroundColor: "rgba(255, 255, 255, 0.3)",
-            marginBottom: 16,
-          }}
-        >
+        <Glass variant="small" style={{ marginBottom: 16 }}>
           <View style={{ padding: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 16,
-                fontWeight: "700",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 12,
               }}
             >
@@ -383,8 +356,9 @@ export default function PrivacySecurityScreen() {
             </Text>
             <Text
               style={{
+                fontFamily: fonts.body,
                 fontSize: 15,
-                color: "#3C5759",
+                color: colors.slate,
                 lineHeight: 22,
                 marginBottom: 16,
               }}
@@ -396,9 +370,9 @@ export default function PrivacySecurityScreen() {
 
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 16,
-                fontWeight: "700",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 12,
               }}
             >
@@ -406,8 +380,9 @@ export default function PrivacySecurityScreen() {
             </Text>
             <Text
               style={{
+                fontFamily: fonts.body,
                 fontSize: 15,
-                color: "#3C5759",
+                color: colors.slate,
                 lineHeight: 22,
                 marginBottom: 16,
               }}
@@ -419,9 +394,9 @@ export default function PrivacySecurityScreen() {
 
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 16,
-                fontWeight: "700",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 12,
               }}
             >
@@ -429,8 +404,9 @@ export default function PrivacySecurityScreen() {
             </Text>
             <Text
               style={{
+                fontFamily: fonts.body,
                 fontSize: 15,
-                color: "#3C5759",
+                color: colors.slate,
                 lineHeight: 22,
               }}
             >
@@ -439,49 +415,45 @@ export default function PrivacySecurityScreen() {
               account.
             </Text>
           </View>
-        </BlurView>
+        </Glass>
 
-        <BlurView
-          intensity={60}
-          tint="light"
+        <Glass
+          variant="small"
           style={{
-            borderRadius: 16,
-            overflow: "hidden",
-            borderWidth: 1,
-            borderColor: "rgba(255, 255, 255, 0.5)",
+            // colors.mint at 40% opacity — preserved as an emphasis tint distinct from the other Glass panels above
             backgroundColor: "rgba(209, 235, 219, 0.4)",
           }}
         >
           <View style={{ padding: 16 }}>
             <Text
               style={{
+                fontFamily: fonts.bodyMedium,
                 fontSize: 14,
-                color: "#192524",
+                color: colors.ink,
                 lineHeight: 20,
                 textAlign: "center",
-                fontWeight: "500",
               }}
             >
               💡 Questions about privacy? Contact us at support@collabnb.com
             </Text>
           </View>
-        </BlurView>
+        </Glass>
 
         <TouchableOpacity
           onPress={() => router.push("/privacy-policy")}
           style={{
-            backgroundColor: "#3C5759",
+            backgroundColor: colors.slate,
             paddingVertical: 16,
             borderRadius: 16,
             alignItems: "center",
             marginTop: 24,
           }}
         >
-          <Text style={{ color: "#EFECE9", fontSize: 16, fontWeight: "600" }}>
+          <Text style={{ fontFamily: fonts.bodySemibold, color: colors.bone, fontSize: 16 }}>
             View Full Privacy Policy
           </Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </AtmosphericBackground>
   );
 }

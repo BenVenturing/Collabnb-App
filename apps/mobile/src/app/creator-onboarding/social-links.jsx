@@ -12,6 +12,8 @@ import { StatusBar } from "expo-status-bar";
 import { Instagram, Music, Youtube } from "lucide-react-native";
 import KeyboardAvoidingAnimatedView from "@/components/KeyboardAvoidingAnimatedView";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 export default function SocialLinksScreen() {
   const router = useRouter();
@@ -57,9 +59,7 @@ export default function SocialLinksScreen() {
 
   return (
     <KeyboardAvoidingAnimatedView style={{ flex: 1 }} behavior="padding">
-      <View
-        style={{ flex: 1, backgroundColor: "#EFECE9", paddingTop: insets.top }}
-      >
+      <AtmosphericBackground style={{ paddingTop: insets.top }}>
         <StatusBar style="dark" />
 
         {/* Progress Bar */}
@@ -68,10 +68,10 @@ export default function SocialLinksScreen() {
         >
           <Text
             style={{
+              fontFamily: fonts.bodyMedium,
               fontSize: 12,
-              color: "#959D90",
+              color: colors.sage,
               marginBottom: 8,
-              fontWeight: "500",
             }}
           >
             Step 2 of 4
@@ -79,7 +79,7 @@ export default function SocialLinksScreen() {
           <View
             style={{
               height: 4,
-              backgroundColor: "#D0D5CE",
+              backgroundColor: colors.stone,
               borderRadius: 2,
               overflow: "hidden",
             }}
@@ -88,7 +88,7 @@ export default function SocialLinksScreen() {
               style={{
                 width: "50%",
                 height: "100%",
-                backgroundColor: "#3C5759",
+                backgroundColor: colors.slate,
               }}
             />
           </View>
@@ -105,16 +105,16 @@ export default function SocialLinksScreen() {
           >
             <Text
               style={{
+                fontFamily: fonts.display,
                 fontSize: 28,
-                fontWeight: "700",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
-                letterSpacing: -0.5,
+                letterSpacing: track(28, tracking.display),
               }}
             >
               Connect your socials
             </Text>
-            <Text style={{ fontSize: 15, color: "#959D90", lineHeight: 22 }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 15, color: colors.sage, lineHeight: 22 }}>
               Help hosts discover your reach and content style
             </Text>
           </View>
@@ -132,15 +132,15 @@ export default function SocialLinksScreen() {
               >
                 <Instagram
                   size={18}
-                  color="#3C5759"
+                  color={colors.slate}
                   style={{ marginRight: 8 }}
                 />
                 <Text
-                  style={{ fontSize: 15, fontWeight: "600", color: "#192524" }}
+                  style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}
                 >
                   Instagram
                 </Text>
-                <Text style={{ fontSize: 13, color: "#959D90", marginLeft: 8 }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage, marginLeft: 8 }}>
                   Optional
                 </Text>
               </View>
@@ -148,19 +148,21 @@ export default function SocialLinksScreen() {
                 value={instagramUrl}
                 onChangeText={setInstagramUrl}
                 placeholder="https://instagram.com/username"
-                placeholderTextColor="#959D90"
+                placeholderTextColor={colors.sage}
                 keyboardType="url"
                 autoCapitalize="none"
                 autoCorrect={false}
                 style={{
+                  // colors.surface at 85% opacity
                   backgroundColor: "rgba(255,255,255,0.85)",
                   borderWidth: 1,
-                  borderColor: "#D0D5CE",
+                  borderColor: colors.stone,
                   borderRadius: 12,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
+                  fontFamily: fonts.body,
                   fontSize: 15,
-                  color: "#192524",
+                  color: colors.ink,
                 }}
               />
             </View>
@@ -174,13 +176,13 @@ export default function SocialLinksScreen() {
                   marginBottom: 8,
                 }}
               >
-                <Music size={18} color="#3C5759" style={{ marginRight: 8 }} />
+                <Music size={18} color={colors.slate} style={{ marginRight: 8 }} />
                 <Text
-                  style={{ fontSize: 15, fontWeight: "600", color: "#192524" }}
+                  style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}
                 >
                   TikTok
                 </Text>
-                <Text style={{ fontSize: 13, color: "#959D90", marginLeft: 8 }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage, marginLeft: 8 }}>
                   Optional
                 </Text>
               </View>
@@ -188,19 +190,21 @@ export default function SocialLinksScreen() {
                 value={tiktokUrl}
                 onChangeText={setTiktokUrl}
                 placeholder="https://tiktok.com/@username"
-                placeholderTextColor="#959D90"
+                placeholderTextColor={colors.sage}
                 keyboardType="url"
                 autoCapitalize="none"
                 autoCorrect={false}
                 style={{
+                  // colors.surface at 85% opacity
                   backgroundColor: "rgba(255,255,255,0.85)",
                   borderWidth: 1,
-                  borderColor: "#D0D5CE",
+                  borderColor: colors.stone,
                   borderRadius: 12,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
+                  fontFamily: fonts.body,
                   fontSize: 15,
-                  color: "#192524",
+                  color: colors.ink,
                 }}
               />
             </View>
@@ -214,13 +218,13 @@ export default function SocialLinksScreen() {
                   marginBottom: 8,
                 }}
               >
-                <Youtube size={18} color="#3C5759" style={{ marginRight: 8 }} />
+                <Youtube size={18} color={colors.slate} style={{ marginRight: 8 }} />
                 <Text
-                  style={{ fontSize: 15, fontWeight: "600", color: "#192524" }}
+                  style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}
                 >
                   YouTube
                 </Text>
-                <Text style={{ fontSize: 13, color: "#959D90", marginLeft: 8 }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage, marginLeft: 8 }}>
                   Optional
                 </Text>
               </View>
@@ -228,19 +232,21 @@ export default function SocialLinksScreen() {
                 value={youtubeUrl}
                 onChangeText={setYoutubeUrl}
                 placeholder="https://youtube.com/@channel"
-                placeholderTextColor="#959D90"
+                placeholderTextColor={colors.sage}
                 keyboardType="url"
                 autoCapitalize="none"
                 autoCorrect={false}
                 style={{
+                  // colors.surface at 85% opacity
                   backgroundColor: "rgba(255,255,255,0.85)",
                   borderWidth: 1,
-                  borderColor: "#D0D5CE",
+                  borderColor: colors.stone,
                   borderRadius: 12,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
+                  fontFamily: fonts.body,
                   fontSize: 15,
-                  color: "#192524",
+                  color: colors.ink,
                 }}
               />
             </View>
@@ -254,9 +260,10 @@ export default function SocialLinksScreen() {
             bottom: 0,
             left: 0,
             right: 0,
+            // colors.surface at 95% opacity
             backgroundColor: "rgba(255,255,255,0.95)",
             borderTopWidth: 1,
-            borderTopColor: "#D0D5CE",
+            borderTopColor: colors.stone,
             paddingHorizontal: 24,
             paddingTop: 16,
             paddingBottom: insets.bottom + 16,
@@ -265,14 +272,14 @@ export default function SocialLinksScreen() {
           <TouchableOpacity
             onPress={handleContinue}
             style={{
-              backgroundColor: "#3C5759",
+              backgroundColor: colors.slate,
               borderRadius: 16,
               paddingVertical: 16,
               alignItems: "center",
               marginBottom: 12,
             }}
           >
-            <Text style={{ color: "#EFECE9", fontSize: 16, fontWeight: "700" }}>
+            <Text style={{ fontFamily: fonts.bodySemibold, color: colors.bone, fontSize: 16 }}>
               Continue
             </Text>
           </TouchableOpacity>
@@ -281,12 +288,12 @@ export default function SocialLinksScreen() {
             onPress={handleSkip}
             style={{ alignItems: "center", paddingVertical: 8 }}
           >
-            <Text style={{ color: "#959D90", fontSize: 15, fontWeight: "500" }}>
+            <Text style={{ fontFamily: fonts.bodyMedium, color: colors.sage, fontSize: 15 }}>
               Skip for now
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </AtmosphericBackground>
     </KeyboardAvoidingAnimatedView>
   );
 }

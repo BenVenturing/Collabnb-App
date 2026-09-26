@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import useHostOnboardingStore from "@/utils/HostOnboardingStore";
 import HostOnboardingShell from "@/components/HostOnboardingShell";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 export default function HostProfileScreen() {
   const router = useRouter();
@@ -59,15 +60,16 @@ export default function HostProfileScreen() {
         >
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 28,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(28, tracking.display),
               marginBottom: 8,
             }}
           >
             Set up your host profile
           </Text>
-          <Text style={{ fontSize: 16, color: "#3C5759", lineHeight: 24 }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 16, color: colors.slate, lineHeight: 24 }}>
             Help creators learn more about you
           </Text>
         </View>
@@ -78,28 +80,30 @@ export default function HostProfileScreen() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
+              {/* No danger/required-field token in the 9-color palette — left as-is, see report */}
               Full name <Text style={{ color: "#EF4444" }}>*</Text>
             </Text>
             <TextInput
               value={fullName}
               onChangeText={(text) => updateField("fullName", text)}
               placeholder="Your name"
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
               style={{
-                backgroundColor: "#EFECE9",
+                backgroundColor: colors.bone,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                fontFamily: fonts.body,
                 fontSize: 16,
-                color: "#192524",
+                color: colors.ink,
               }}
             />
           </View>
@@ -108,9 +112,9 @@ export default function HostProfileScreen() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
@@ -120,16 +124,17 @@ export default function HostProfileScreen() {
               value={businessName}
               onChangeText={(text) => updateField("businessName", text)}
               placeholder="e.g., Sunset Stays"
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
               style={{
-                backgroundColor: "#EFECE9",
+                backgroundColor: colors.bone,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                fontFamily: fonts.body,
                 fontSize: 16,
-                color: "#192524",
+                color: colors.ink,
               }}
             />
           </View>
@@ -138,9 +143,9 @@ export default function HostProfileScreen() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
@@ -150,19 +155,20 @@ export default function HostProfileScreen() {
               value={websiteUrl}
               onChangeText={(text) => updateField("websiteUrl", text)}
               placeholder="https://yourwebsite.com"
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
               style={{
-                backgroundColor: "#EFECE9",
+                backgroundColor: colors.bone,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                fontFamily: fonts.body,
                 fontSize: 16,
-                color: "#192524",
+                color: colors.ink,
               }}
             />
           </View>
@@ -171,9 +177,9 @@ export default function HostProfileScreen() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
@@ -183,19 +189,20 @@ export default function HostProfileScreen() {
               value={contactEmail}
               onChangeText={(text) => updateField("contactEmail", text)}
               placeholder="your@email.com"
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
               style={{
-                backgroundColor: "#EFECE9",
+                backgroundColor: colors.bone,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                fontFamily: fonts.body,
                 fontSize: 16,
-                color: "#192524",
+                color: colors.ink,
               }}
             />
           </View>
@@ -204,9 +211,9 @@ export default function HostProfileScreen() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
@@ -216,17 +223,18 @@ export default function HostProfileScreen() {
               value={phone}
               onChangeText={(text) => updateField("phone", text)}
               placeholder="+1 (555) 123-4567"
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
               keyboardType="phone-pad"
               style={{
-                backgroundColor: "#EFECE9",
+                backgroundColor: colors.bone,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                fontFamily: fonts.body,
                 fontSize: 16,
-                color: "#192524",
+                color: colors.ink,
               }}
             />
           </View>
@@ -234,15 +242,16 @@ export default function HostProfileScreen() {
           {/* Info Callout */}
           <View
             style={{
+              // colors.mint at 50% opacity
               backgroundColor: "rgba(209, 235, 219, 0.5)",
               borderWidth: 1,
-              borderColor: "#D1EBDB",
+              borderColor: colors.mint,
               borderRadius: 12,
               padding: 16,
               marginTop: 8,
             }}
           >
-            <Text style={{ fontSize: 14, color: "#3C5759", lineHeight: 20 }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate, lineHeight: 20 }}>
               Hosts are reviewed to maintain quality collaborations.
             </Text>
           </View>

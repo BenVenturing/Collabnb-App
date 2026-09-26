@@ -5,8 +5,10 @@ import { useRouter } from "expo-router";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { ChevronLeft, Bell } from "lucide-react-native";
-import { BlurView } from "expo-blur";
 import { api } from "@/convex/_generated/api";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import Glass from "@/components/Glass";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 const DEFAULT_PREFS = {
   messages: true,
@@ -66,7 +68,7 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#EFECE9" }}>
+    <AtmosphericBackground>
       <StatusBar style="dark" />
 
       {/* Header */}
@@ -75,9 +77,9 @@ export default function NotificationsScreen() {
           paddingTop: insets.top + 12,
           paddingBottom: 12,
           paddingHorizontal: 20,
-          backgroundColor: "#fff",
+          backgroundColor: colors.surface,
           borderBottomWidth: 1,
-          borderBottomColor: "#D0D5CE",
+          borderBottomColor: colors.stone,
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -85,9 +87,16 @@ export default function NotificationsScreen() {
             onPress={() => router.back()}
             style={{ marginRight: 16 }}
           >
-            <ChevronLeft color="#3C5759" size={28} />
+            <ChevronLeft color={colors.slate} size={28} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 20, fontWeight: "700", color: "#192524" }}>
+          <Text
+            style={{
+              fontFamily: fonts.display,
+              fontSize: 20,
+              color: colors.ink,
+              letterSpacing: track(20, tracking.display),
+            }}
+          >
             Notifications
           </Text>
         </View>
@@ -107,19 +116,20 @@ export default function NotificationsScreen() {
               width: 80,
               height: 80,
               borderRadius: 40,
-              backgroundColor: "#D1EBDB",
+              backgroundColor: colors.mint,
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 16,
             }}
           >
-            <Bell color="#3C5759" size={40} />
+            <Bell color={colors.slate} size={40} />
           </View>
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 24,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(24, tracking.display),
               marginBottom: 8,
             }}
           >
@@ -127,8 +137,9 @@ export default function NotificationsScreen() {
           </Text>
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 14,
-              color: "#3C5759",
+              color: colors.slate,
               textAlign: "center",
               lineHeight: 20,
             }}
@@ -137,17 +148,7 @@ export default function NotificationsScreen() {
           </Text>
         </View>
 
-        <BlurView
-          intensity={60}
-          tint="light"
-          style={{
-            borderRadius: 16,
-            overflow: "hidden",
-            borderWidth: 1,
-            borderColor: "rgba(255, 255, 255, 0.5)",
-            backgroundColor: "rgba(255, 255, 255, 0.3)",
-          }}
-        >
+        <Glass variant="small">
           {notificationOptions.map((option, index) => (
             <View
               key={option.key}
@@ -156,6 +157,7 @@ export default function NotificationsScreen() {
                 paddingHorizontal: 20,
                 borderBottomWidth:
                   index < notificationOptions.length - 1 ? 1 : 0,
+                // colors.sage at 20% opacity
                 borderBottomColor: "rgba(149, 157, 144, 0.2)",
                 opacity: profileId ? 1 : 0.5,
               }}
@@ -170,9 +172,9 @@ export default function NotificationsScreen() {
                 <View style={{ flex: 1, marginRight: 16 }}>
                   <Text
                     style={{
+                      fontFamily: fonts.bodySemibold,
                       fontSize: 16,
-                      fontWeight: "600",
-                      color: "#192524",
+                      color: colors.ink,
                       marginBottom: 4,
                     }}
                   >
@@ -180,8 +182,9 @@ export default function NotificationsScreen() {
                   </Text>
                   <Text
                     style={{
+                      fontFamily: fonts.body,
                       fontSize: 13,
-                      color: "#3C5759",
+                      color: colors.slate,
                       lineHeight: 18,
                     }}
                   >
@@ -191,23 +194,19 @@ export default function NotificationsScreen() {
                 <Switch
                   value={settings[option.key]}
                   onValueChange={(value) => updateSetting(option.key, value)}
-                  trackColor={{ false: "#D0D5CE", true: "#D1EBDB" }}
-                  thumbColor={settings[option.key] ? "#3C5759" : "#959D90"}
+                  trackColor={{ false: colors.stone, true: colors.mint }}
+                  thumbColor={settings[option.key] ? colors.slate : colors.sage}
                   disabled={!profileId}
                 />
               </View>
             </View>
           ))}
-        </BlurView>
+        </Glass>
 
-        <BlurView
-          intensity={60}
-          tint="light"
+        <Glass
+          variant="small"
           style={{
-            borderRadius: 16,
-            overflow: "hidden",
-            borderWidth: 1,
-            borderColor: "rgba(255, 255, 255, 0.5)",
+            // colors.mint at 40% opacity — preserved as an emphasis tint distinct from the panel above
             backgroundColor: "rgba(209, 235, 219, 0.4)",
             marginTop: 16,
           }}
@@ -215,19 +214,19 @@ export default function NotificationsScreen() {
           <View style={{ padding: 16 }}>
             <Text
               style={{
+                fontFamily: fonts.bodyMedium,
                 fontSize: 14,
-                color: "#192524",
+                color: colors.ink,
                 lineHeight: 20,
                 textAlign: "center",
-                fontWeight: "500",
               }}
             >
               💡 Enable push notifications in your device settings for real-time
               alerts
             </Text>
           </View>
-        </BlurView>
+        </Glass>
       </ScrollView>
-    </View>
+    </AtmosphericBackground>
   );
 }

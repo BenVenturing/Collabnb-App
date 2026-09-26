@@ -17,6 +17,8 @@ import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import useHostOnboardingStore from "@/utils/HostOnboardingStore";
 import HostOnboardingShell from "@/components/HostOnboardingShell";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 export default function HostSubmitScreen() {
   const router = useRouter();
@@ -101,7 +103,7 @@ export default function HostSubmitScreen() {
   // Post-Submit Confirmation State
   if (isSubmitted) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      <AtmosphericBackground>
         <StatusBar style="dark" />
 
         <View
@@ -120,21 +122,22 @@ export default function HostSubmitScreen() {
               width: 80,
               height: 80,
               borderRadius: 40,
-              backgroundColor: "#D1EBDB",
+              backgroundColor: colors.mint,
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 24,
             }}
           >
-            <CheckCircle size={48} color="#3C5759" strokeWidth={2.5} />
+            <CheckCircle size={48} color={colors.slate} strokeWidth={2.5} />
           </View>
 
           {/* Title */}
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 28,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(28, tracking.display),
               marginBottom: 12,
               textAlign: "center",
             }}
@@ -145,8 +148,9 @@ export default function HostSubmitScreen() {
           {/* Body Text */}
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 16,
-              color: "#3C5759",
+              color: colors.slate,
               lineHeight: 24,
               textAlign: "center",
               paddingHorizontal: 20,
@@ -163,9 +167,9 @@ export default function HostSubmitScreen() {
             bottom: 0,
             left: 0,
             right: 0,
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderTopWidth: 1,
-            borderTopColor: "#E5E7EB",
+            borderTopColor: colors.hairline,
             paddingHorizontal: 24,
             paddingTop: 16,
             paddingBottom: insets.bottom + 16,
@@ -174,25 +178,31 @@ export default function HostSubmitScreen() {
           <TouchableOpacity
             onPress={handleReturnToExplore}
             style={{
-              backgroundColor: "#192524",
+              backgroundColor: colors.ink,
               borderRadius: 12,
               paddingVertical: 16,
               alignItems: "center",
             }}
           >
-            <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600" }}>
+            <Text
+              style={{
+                fontFamily: fonts.bodySemibold,
+                color: colors.surface,
+                fontSize: 16,
+              }}
+            >
               Explore listings
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </AtmosphericBackground>
     );
   }
 
   // Post-Skip Confirmation State
   if (isSkipped) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      <AtmosphericBackground>
         <StatusBar style="dark" />
 
         <View
@@ -211,21 +221,22 @@ export default function HostSubmitScreen() {
               width: 80,
               height: 80,
               borderRadius: 40,
-              backgroundColor: "#D1EBDB",
+              backgroundColor: colors.mint,
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 24,
             }}
           >
-            <Sparkles size={48} color="#3C5759" strokeWidth={2.5} />
+            <Sparkles size={48} color={colors.slate} strokeWidth={2.5} />
           </View>
 
           {/* Title */}
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 28,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(28, tracking.display),
               marginBottom: 12,
               textAlign: "center",
             }}
@@ -236,8 +247,9 @@ export default function HostSubmitScreen() {
           {/* Body Text */}
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 16,
-              color: "#3C5759",
+              color: colors.slate,
               lineHeight: 24,
               textAlign: "center",
               paddingHorizontal: 20,
@@ -254,9 +266,9 @@ export default function HostSubmitScreen() {
             bottom: 0,
             left: 0,
             right: 0,
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderTopWidth: 1,
-            borderTopColor: "#E5E7EB",
+            borderTopColor: colors.hairline,
             paddingHorizontal: 24,
             paddingTop: 16,
             paddingBottom: insets.bottom + 16,
@@ -265,18 +277,24 @@ export default function HostSubmitScreen() {
           <TouchableOpacity
             onPress={handleReturnToExplore}
             style={{
-              backgroundColor: "#192524",
+              backgroundColor: colors.ink,
               borderRadius: 12,
               paddingVertical: 16,
               alignItems: "center",
             }}
           >
-            <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600" }}>
+            <Text
+              style={{
+                fontFamily: fonts.bodySemibold,
+                color: colors.surface,
+                fontSize: 16,
+              }}
+            >
               Start browsing
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </AtmosphericBackground>
     );
   }
 
@@ -303,15 +321,16 @@ export default function HostSubmitScreen() {
         >
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 28,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(28, tracking.display),
               marginBottom: 8,
             }}
           >
             Submit for review
           </Text>
-          <Text style={{ fontSize: 16, color: "#3C5759", lineHeight: 24 }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 16, color: colors.slate, lineHeight: 24 }}>
             Review your details before submitting
           </Text>
         </View>
@@ -320,9 +339,9 @@ export default function HostSubmitScreen() {
         <View style={{ paddingHorizontal: 24, marginBottom: 32 }}>
           <View
             style={{
-              backgroundColor: "#EFECE9",
+              backgroundColor: colors.bone,
               borderWidth: 1,
-              borderColor: "#D0D5CE",
+              borderColor: colors.stone,
               borderRadius: 16,
               padding: 20,
             }}
@@ -333,40 +352,40 @@ export default function HostSubmitScreen() {
                 marginBottom: 20,
                 paddingBottom: 20,
                 borderBottomWidth: 1,
-                borderBottomColor: "#D0D5CE",
+                borderBottomColor: colors.stone,
               }}
             >
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 13,
-                  fontWeight: "600",
-                  color: "#3C5759",
+                  color: colors.slate,
                   marginBottom: 12,
                   textTransform: "uppercase",
-                  letterSpacing: 0.5,
+                  letterSpacing: track(13, tracking.eyebrow),
                 }}
               >
                 Verification
               </Text>
-              <Text style={{ fontSize: 14, color: "#192524", marginBottom: 8 }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.ink, marginBottom: 8 }}>
                 {workEmail}
               </Text>
               <View
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor: colors.surface,
                   paddingHorizontal: 12,
                   paddingVertical: 8,
                   borderRadius: 8,
                   borderWidth: 1,
-                  borderColor: "#D0D5CE",
+                  borderColor: colors.stone,
                   alignSelf: "flex-start",
                 }}
               >
-                <Link size={14} color="#3C5759" style={{ marginRight: 6 }} />
+                <Link size={14} color={colors.slate} style={{ marginRight: 6 }} />
                 <Text
-                  style={{ fontSize: 13, color: "#3C5759" }}
+                  style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate }}
                   numberOfLines={1}
                 >
                   Property listing
@@ -375,8 +394,9 @@ export default function HostSubmitScreen() {
               {(instagramUrl || websiteUrl) && (
                 <Text
                   style={{
+                    fontFamily: fonts.body,
                     fontSize: 12,
-                    color: "#3C5759",
+                    color: colors.slate,
                     marginTop: 8,
                   }}
                 >
@@ -391,27 +411,27 @@ export default function HostSubmitScreen() {
             <View>
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 13,
-                  fontWeight: "600",
-                  color: "#3C5759",
+                  color: colors.slate,
                   marginBottom: 12,
                   textTransform: "uppercase",
-                  letterSpacing: 0.5,
+                  letterSpacing: track(13, tracking.eyebrow),
                 }}
               >
                 Host
               </Text>
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 16,
-                  fontWeight: "600",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 4,
                 }}
               >
                 {fullName}
               </Text>
-              <Text style={{ fontSize: 14, color: "#3C5759" }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate }}>
                 {contactEmail}
               </Text>
             </View>
@@ -426,29 +446,29 @@ export default function HostSubmitScreen() {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              backgroundColor: "#EFECE9",
+              backgroundColor: colors.bone,
               borderWidth: 1,
-              borderColor: "#D0D5CE",
+              borderColor: colors.stone,
               borderRadius: 12,
               padding: 16,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: "600", color: "#192524" }}>
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: colors.ink }}>
               Create your first collaboration (optional)
             </Text>
             {showListingSection ? (
-              <ChevronUp size={20} color="#3C5759" />
+              <ChevronUp size={20} color={colors.slate} />
             ) : (
-              <ChevronDown size={20} color="#3C5759" />
+              <ChevronDown size={20} color={colors.slate} />
             )}
           </TouchableOpacity>
 
           {showListingSection && (
             <View
               style={{
-                backgroundColor: "#FFFFFF",
+                backgroundColor: colors.surface,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 padding: 16,
                 marginTop: 12,
@@ -456,9 +476,9 @@ export default function HostSubmitScreen() {
             >
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 14,
-                  fontWeight: "600",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 12,
                 }}
               >
@@ -476,16 +496,16 @@ export default function HostSubmitScreen() {
                       borderRadius: 8,
                       borderWidth: 1,
                       borderColor:
-                        collaborationType === type ? "#192524" : "#D0D5CE",
+                        collaborationType === type ? colors.ink : colors.stone,
                       backgroundColor:
-                        collaborationType === type ? "#EFECE9" : "#FFFFFF",
+                        collaborationType === type ? colors.bone : colors.surface,
                     }}
                   >
                     <Text
                       style={{
+                        fontFamily: collaborationType === type ? fonts.bodySemibold : fonts.bodyMedium,
                         fontSize: 13,
-                        fontWeight: collaborationType === type ? "600" : "500",
-                        color: "#192524",
+                        color: colors.ink,
                         textAlign: "center",
                       }}
                     >
@@ -497,9 +517,9 @@ export default function HostSubmitScreen() {
 
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 14,
-                  fontWeight: "600",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 12,
                 }}
               >
@@ -517,17 +537,17 @@ export default function HostSubmitScreen() {
                       borderRadius: 8,
                       borderWidth: 1,
                       borderColor:
-                        deliverablePreset === preset ? "#192524" : "#D0D5CE",
+                        deliverablePreset === preset ? colors.ink : colors.stone,
                       backgroundColor:
-                        deliverablePreset === preset ? "#EFECE9" : "#FFFFFF",
+                        deliverablePreset === preset ? colors.bone : colors.surface,
                     }}
                   >
                     <Text
                       style={{
+                        fontFamily:
+                          deliverablePreset === preset ? fonts.bodySemibold : fonts.bodyMedium,
                         fontSize: 13,
-                        fontWeight:
-                          deliverablePreset === preset ? "600" : "500",
-                        color: "#192524",
+                        color: colors.ink,
                         textAlign: "center",
                       }}
                     >
@@ -539,9 +559,9 @@ export default function HostSubmitScreen() {
 
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 14,
-                  fontWeight: "600",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 12,
                 }}
               >
@@ -557,16 +577,16 @@ export default function HostSubmitScreen() {
                       paddingHorizontal: 14,
                       borderRadius: 8,
                       borderWidth: 1,
-                      borderColor: creatorTier === tier ? "#192524" : "#D0D5CE",
+                      borderColor: creatorTier === tier ? colors.ink : colors.stone,
                       backgroundColor:
-                        creatorTier === tier ? "#EFECE9" : "#FFFFFF",
+                        creatorTier === tier ? colors.bone : colors.surface,
                     }}
                   >
                     <Text
                       style={{
+                        fontFamily: creatorTier === tier ? fonts.bodySemibold : fonts.bodyMedium,
                         fontSize: 13,
-                        fontWeight: creatorTier === tier ? "600" : "500",
-                        color: "#192524",
+                        color: colors.ink,
                       }}
                     >
                       {tier}
@@ -586,9 +606,9 @@ export default function HostSubmitScreen() {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              backgroundColor: "#EFECE9",
+              backgroundColor: colors.bone,
               borderWidth: 1,
-              borderColor: "#D0D5CE",
+              borderColor: colors.stone,
               borderRadius: 12,
               padding: 16,
             }}
@@ -596,26 +616,26 @@ export default function HostSubmitScreen() {
             <View
               style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
             >
-              <DollarSign size={20} color="#3C5759" />
+              <DollarSign size={20} color={colors.slate} />
               <Text
-                style={{ fontSize: 16, fontWeight: "600", color: "#192524" }}
+                style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: colors.ink }}
               >
                 Pricing & fees (host-only)
               </Text>
             </View>
             {showPricingSection ? (
-              <ChevronUp size={20} color="#3C5759" />
+              <ChevronUp size={20} color={colors.slate} />
             ) : (
-              <ChevronDown size={20} color="#3C5759" />
+              <ChevronDown size={20} color={colors.slate} />
             )}
           </TouchableOpacity>
 
           {showPricingSection && (
             <View
               style={{
-                backgroundColor: "#FFFFFF",
+                backgroundColor: colors.surface,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 padding: 16,
                 marginTop: 12,
@@ -624,9 +644,9 @@ export default function HostSubmitScreen() {
               {/* Pricing Type */}
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 14,
-                  fontWeight: "600",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 12,
                 }}
               >
@@ -647,17 +667,17 @@ export default function HostSubmitScreen() {
                       borderRadius: 8,
                       borderWidth: 1,
                       borderColor:
-                        pricingType === option.value ? "#192524" : "#D0D5CE",
+                        pricingType === option.value ? colors.ink : colors.stone,
                       backgroundColor:
-                        pricingType === option.value ? "#EFECE9" : "#FFFFFF",
+                        pricingType === option.value ? colors.bone : colors.surface,
                     }}
                   >
                     <Text
                       style={{
+                        fontFamily:
+                          pricingType === option.value ? fonts.bodySemibold : fonts.bodyMedium,
                         fontSize: 13,
-                        fontWeight:
-                          pricingType === option.value ? "600" : "500",
-                        color: "#192524",
+                        color: colors.ink,
                         textAlign: "center",
                       }}
                     >
@@ -672,9 +692,9 @@ export default function HostSubmitScreen() {
                 <View style={{ marginBottom: 16 }}>
                   <Text
                     style={{
+                      fontFamily: fonts.bodySemibold,
                       fontSize: 14,
-                      fontWeight: "600",
-                      color: "#192524",
+                      color: colors.ink,
                       marginBottom: 8,
                     }}
                   >
@@ -684,17 +704,18 @@ export default function HostSubmitScreen() {
                     value={cashValue}
                     onChangeText={(text) => updateField("cashValue", text)}
                     placeholder="500"
-                    placeholderTextColor="#959D90"
+                    placeholderTextColor={colors.sage}
                     keyboardType="numeric"
                     style={{
-                      backgroundColor: "#EFECE9",
+                      backgroundColor: colors.bone,
                       borderWidth: 1,
-                      borderColor: "#D0D5CE",
+                      borderColor: colors.stone,
                       borderRadius: 8,
                       paddingHorizontal: 12,
                       paddingVertical: 10,
+                      fontFamily: fonts.body,
                       fontSize: 15,
-                      color: "#192524",
+                      color: colors.ink,
                     }}
                   />
                 </View>
@@ -703,7 +724,7 @@ export default function HostSubmitScreen() {
               {/* Fee Calculation */}
               <View
                 style={{
-                  backgroundColor: "#EFECE9",
+                  backgroundColor: colors.bone,
                   borderRadius: 8,
                   padding: 12,
                   marginBottom: 12,
@@ -711,9 +732,9 @@ export default function HostSubmitScreen() {
               >
                 <Text
                   style={{
+                    fontFamily: fonts.bodySemibold,
                     fontSize: 13,
-                    fontWeight: "600",
-                    color: "#3C5759",
+                    color: colors.slate,
                     marginBottom: 6,
                   }}
                 >
@@ -721,16 +742,17 @@ export default function HostSubmitScreen() {
                 </Text>
                 <Text
                   style={{
+                    fontFamily: fonts.display,
                     fontSize: 20,
-                    fontWeight: "700",
-                    color: "#192524",
+                    color: colors.ink,
+                    letterSpacing: track(20, tracking.display),
                     marginBottom: 4,
                   }}
                 >
                   ${calculatedFee.toFixed(2)}
                 </Text>
                 <Text
-                  style={{ fontSize: 12, color: "#3C5759", lineHeight: 16 }}
+                  style={{ fontFamily: fonts.body, fontSize: 12, color: colors.slate, lineHeight: 16 }}
                 >
                   {pricingType === "free"
                     ? "Flat fee for free/exchange collaborations"
@@ -741,13 +763,14 @@ export default function HostSubmitScreen() {
               {/* Privacy Note */}
               <View
                 style={{
+                  // colors.mint at 30% opacity — no alpha token exists for it in theme.js
                   backgroundColor: "rgba(209, 235, 219, 0.3)",
                   borderRadius: 8,
                   padding: 10,
                 }}
               >
                 <Text
-                  style={{ fontSize: 12, color: "#3C5759", lineHeight: 16 }}
+                  style={{ fontFamily: fonts.body, fontSize: 12, color: colors.slate, lineHeight: 16 }}
                 >
                   ℹ️ Creators don't see these fees. They only see the
                   collaboration offer.
@@ -761,14 +784,15 @@ export default function HostSubmitScreen() {
         <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
           <View
             style={{
+              // colors.mint at 50% opacity — no alpha token exists for it in theme.js
               backgroundColor: "rgba(209, 235, 219, 0.5)",
               borderWidth: 1,
-              borderColor: "#D1EBDB",
+              borderColor: colors.mint,
               borderRadius: 12,
               padding: 16,
             }}
           >
-            <Text style={{ fontSize: 14, color: "#3C5759", lineHeight: 20 }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate, lineHeight: 20 }}>
               Our team reviews each host to ensure a great experience for
               creators.
             </Text>
@@ -783,9 +807,9 @@ export default function HostSubmitScreen() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: "#E5E7EB",
+          borderTopColor: colors.hairline,
           paddingHorizontal: 24,
           paddingTop: 16,
           paddingBottom: insets.bottom + 16,
@@ -795,7 +819,7 @@ export default function HostSubmitScreen() {
           onPress={handleSubmit}
           disabled={submitting}
           style={{
-            backgroundColor: "#000000",
+            backgroundColor: colors.ink,
             borderRadius: 12,
             paddingVertical: 16,
             alignItems: "center",
@@ -804,9 +828,9 @@ export default function HostSubmitScreen() {
           }}
         >
           {submitting ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color={colors.surface} />
           ) : (
-            <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600" }}>
+            <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface, fontSize: 16 }}>
               Submit for review
             </Text>
           )}
@@ -819,7 +843,7 @@ export default function HostSubmitScreen() {
             paddingVertical: 8,
           }}
         >
-          <Text style={{ color: "#6B7280", fontSize: 16, fontWeight: "500" }}>
+          <Text style={{ fontFamily: fonts.bodyMedium, color: colors.sage, fontSize: 16 }}>
             Skip for now
           </Text>
         </TouchableOpacity>

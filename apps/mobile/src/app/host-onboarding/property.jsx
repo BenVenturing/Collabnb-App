@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { AlertCircle } from "lucide-react-native";
 import useHostOnboardingStore from "@/utils/HostOnboardingStore";
 import HostOnboardingShell from "@/components/HostOnboardingShell";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 export default function PropertyIntakeScreen() {
   const router = useRouter();
@@ -73,15 +74,16 @@ export default function PropertyIntakeScreen() {
         >
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 28,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(28, tracking.display),
               marginBottom: 8,
             }}
           >
             Verify your property
           </Text>
-          <Text style={{ fontSize: 16, color: "#3C5759", lineHeight: 24 }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 16, color: colors.slate, lineHeight: 24 }}>
             We use these links to verify the property and keep listings
             accurate.
           </Text>
@@ -93,31 +95,33 @@ export default function PropertyIntakeScreen() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
+              {/* No danger/required-field token in the 9-color palette — left as-is, see report */}
               Work email <Text style={{ color: "#EF4444" }}>*</Text>
             </Text>
             <TextInput
               value={workEmail}
               onChangeText={(text) => updateField("workEmail", text)}
               placeholder="you@yourproperty.com"
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
               style={{
-                backgroundColor: "#EFECE9",
+                backgroundColor: colors.bone,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                fontFamily: fonts.body,
                 fontSize: 16,
-                color: "#192524",
+                color: colors.ink,
               }}
             />
             {showEmailWarning && (
@@ -126,6 +130,7 @@ export default function PropertyIntakeScreen() {
                   flexDirection: "row",
                   alignItems: "center",
                   marginTop: 8,
+                  // Amber warning — no equivalent in the 9-color palette, left as-is, see report
                   backgroundColor: "#FEF3C7",
                   borderWidth: 1,
                   borderColor: "#FDE047",
@@ -140,6 +145,7 @@ export default function PropertyIntakeScreen() {
                 />
                 <Text
                   style={{
+                    fontFamily: fonts.body,
                     fontSize: 13,
                     color: "#92400E",
                     flex: 1,
@@ -156,9 +162,9 @@ export default function PropertyIntakeScreen() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
@@ -168,19 +174,20 @@ export default function PropertyIntakeScreen() {
               value={airbnbUrl}
               onChangeText={(text) => updateField("airbnbUrl", text)}
               placeholder="https://www.airbnb.com/rooms/..."
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
               style={{
-                backgroundColor: "#EFECE9",
+                backgroundColor: colors.bone,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                fontFamily: fonts.body,
                 fontSize: 16,
-                color: "#192524",
+                color: colors.ink,
               }}
             />
           </View>
@@ -189,9 +196,9 @@ export default function PropertyIntakeScreen() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
@@ -201,19 +208,20 @@ export default function PropertyIntakeScreen() {
               value={instagramUrl}
               onChangeText={(text) => updateField("instagramUrl", text)}
               placeholder="https://instagram.com/yourproperty"
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
               style={{
-                backgroundColor: "#EFECE9",
+                backgroundColor: colors.bone,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                fontFamily: fonts.body,
                 fontSize: 16,
-                color: "#192524",
+                color: colors.ink,
               }}
             />
           </View>
@@ -222,9 +230,9 @@ export default function PropertyIntakeScreen() {
           <View style={{ marginBottom: 20 }}>
             <Text
               style={{
+                fontFamily: fonts.bodySemibold,
                 fontSize: 14,
-                fontWeight: "600",
-                color: "#192524",
+                color: colors.ink,
                 marginBottom: 8,
               }}
             >
@@ -234,19 +242,20 @@ export default function PropertyIntakeScreen() {
               value={websiteUrl}
               onChangeText={(text) => updateField("websiteUrl", text)}
               placeholder="https://yourwebsite.com"
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
               style={{
-                backgroundColor: "#EFECE9",
+                backgroundColor: colors.bone,
                 borderWidth: 1,
-                borderColor: "#D0D5CE",
+                borderColor: colors.stone,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                fontFamily: fonts.body,
                 fontSize: 16,
-                color: "#192524",
+                color: colors.ink,
               }}
             />
           </View>

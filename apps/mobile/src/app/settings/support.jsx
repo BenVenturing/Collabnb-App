@@ -3,9 +3,11 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ChevronLeft, Mail, Copy, ExternalLink } from "lucide-react-native";
-import { BlurView } from "expo-blur";
 import * as Clipboard from "expo-clipboard";
 import appStoreDraft from "@/data/appStoreDraft";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import Glass from "@/components/Glass";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 export default function SupportScreen() {
   const insets = useSafeAreaInsets();
@@ -27,7 +29,7 @@ export default function SupportScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#EFECE9" }}>
+    <AtmosphericBackground>
       <StatusBar style="dark" />
 
       <View
@@ -35,16 +37,23 @@ export default function SupportScreen() {
           paddingTop: insets.top + 12,
           paddingBottom: 12,
           paddingHorizontal: 20,
-          backgroundColor: "#fff",
+          backgroundColor: colors.surface,
           borderBottomWidth: 1,
-          borderBottomColor: "#D0D5CE",
+          borderBottomColor: colors.stone,
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 16 }}>
-            <ChevronLeft color="#3C5759" size={28} />
+            <ChevronLeft color={colors.slate} size={28} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 20, fontWeight: "700", color: "#192524" }}>
+          <Text
+            style={{
+              fontFamily: fonts.display,
+              fontSize: 20,
+              color: colors.ink,
+              letterSpacing: track(20, tracking.display),
+            }}
+          >
             Support
           </Text>
         </View>
@@ -64,19 +73,20 @@ export default function SupportScreen() {
               width: 80,
               height: 80,
               borderRadius: 40,
-              backgroundColor: "#D1EBDB",
+              backgroundColor: colors.mint,
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 16,
             }}
           >
-            <Mail color="#3C5759" size={40} />
+            <Mail color={colors.slate} size={40} />
           </View>
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 24,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(24, tracking.display),
               marginBottom: 8,
             }}
           >
@@ -84,8 +94,9 @@ export default function SupportScreen() {
           </Text>
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 14,
-              color: "#3C5759",
+              color: colors.slate,
               textAlign: "center",
               lineHeight: 20,
             }}
@@ -114,25 +125,13 @@ export default function SupportScreen() {
             primaryLabel: "Copy",
           },
         ].map((item) => (
-          <BlurView
-            key={item.title}
-            intensity={60}
-            tint="light"
-            style={{
-              borderRadius: 16,
-              overflow: "hidden",
-              borderWidth: 1,
-              borderColor: "rgba(255, 255, 255, 0.5)",
-              backgroundColor: "rgba(255, 255, 255, 0.3)",
-              marginBottom: 14,
-            }}
-          >
+          <Glass key={item.title} variant="small" style={{ marginBottom: 14 }}>
             <View style={{ padding: 18 }}>
               <Text
                 style={{
+                  fontFamily: fonts.bodySemibold,
                   fontSize: 15,
-                  fontWeight: "700",
-                  color: "#192524",
+                  color: colors.ink,
                   marginBottom: 8,
                 }}
               >
@@ -140,9 +139,10 @@ export default function SupportScreen() {
               </Text>
               <Text
                 style={{
+                  fontFamily: fonts.body,
                   fontSize: 14,
                   lineHeight: 20,
-                  color: "#3C5759",
+                  color: colors.slate,
                   marginBottom: 14,
                 }}
               >
@@ -153,7 +153,7 @@ export default function SupportScreen() {
                   onPress={item.onPrimary}
                   style={{
                     flex: 1,
-                    backgroundColor: "#3C5759",
+                    backgroundColor: colors.slate,
                     borderRadius: 12,
                     paddingVertical: 12,
                     alignItems: "center",
@@ -162,8 +162,8 @@ export default function SupportScreen() {
                     gap: 8,
                   }}
                 >
-                  <ExternalLink color="#EFECE9" size={16} />
-                  <Text style={{ color: "#EFECE9", fontWeight: "600" }}>
+                  <ExternalLink color={colors.bone} size={16} />
+                  <Text style={{ fontFamily: fonts.bodySemibold, color: colors.bone }}>
                     {item.primaryLabel}
                   </Text>
                 </TouchableOpacity>
@@ -171,7 +171,7 @@ export default function SupportScreen() {
                   onPress={() => copyValue(item.title, item.value)}
                   style={{
                     flex: 1,
-                    backgroundColor: "#FFFFFF",
+                    backgroundColor: colors.surface,
                     borderRadius: 12,
                     paddingVertical: 12,
                     alignItems: "center",
@@ -179,37 +179,33 @@ export default function SupportScreen() {
                     justifyContent: "center",
                     gap: 8,
                     borderWidth: 1,
-                    borderColor: "#D0D5CE",
+                    borderColor: colors.stone,
                   }}
                 >
-                  <Copy color="#3C5759" size={16} />
-                  <Text style={{ color: "#3C5759", fontWeight: "600" }}>
+                  <Copy color={colors.slate} size={16} />
+                  <Text style={{ fontFamily: fonts.bodySemibold, color: colors.slate }}>
                     Copy
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
-          </BlurView>
+          </Glass>
         ))}
 
-        <BlurView
-          intensity={60}
-          tint="light"
+        <Glass
+          variant="small"
           style={{
-            borderRadius: 16,
-            overflow: "hidden",
-            borderWidth: 1,
-            borderColor: "rgba(255, 255, 255, 0.5)",
+            // colors.mint at 40% opacity — preserved as an emphasis tint distinct from the panels above
             backgroundColor: "rgba(209, 235, 219, 0.4)",
           }}
         >
           <View style={{ padding: 16 }}>
-            <Text style={{ fontSize: 14, color: "#192524", lineHeight: 21 }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.ink, lineHeight: 21 }}>
               App Store Connect will not accept this screen as your support URL. You still need a public webpage later, but this keeps the final contact copy inside the mobile app for review.
             </Text>
           </View>
-        </BlurView>
+        </Glass>
       </ScrollView>
-    </View>
+    </AtmosphericBackground>
   );
 }

@@ -15,6 +15,8 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useUpload } from "@/utils/useUpload";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 const MAX_PORTFOLIO_ITEMS = 6;
 
@@ -116,9 +118,7 @@ export default function PortfolioScreen() {
   }
 
   return (
-    <View
-      style={{ flex: 1, backgroundColor: "#EFECE9", paddingTop: insets.top }}
-    >
+    <AtmosphericBackground style={{ paddingTop: insets.top }}>
       <StatusBar style="dark" />
 
       {/* Progress Bar */}
@@ -127,10 +127,10 @@ export default function PortfolioScreen() {
       >
         <Text
           style={{
+            fontFamily: fonts.bodyMedium,
             fontSize: 12,
-            color: "#959D90",
+            color: colors.sage,
             marginBottom: 8,
-            fontWeight: "500",
           }}
         >
           Step 3 of 4
@@ -138,7 +138,7 @@ export default function PortfolioScreen() {
         <View
           style={{
             height: 4,
-            backgroundColor: "#D0D5CE",
+            backgroundColor: colors.stone,
             borderRadius: 2,
             overflow: "hidden",
           }}
@@ -147,7 +147,7 @@ export default function PortfolioScreen() {
             style={{
               width: "75%",
               height: "100%",
-              backgroundColor: "#3C5759",
+              backgroundColor: colors.slate,
             }}
           />
         </View>
@@ -164,16 +164,16 @@ export default function PortfolioScreen() {
         >
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 28,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
               marginBottom: 8,
-              letterSpacing: -0.5,
+              letterSpacing: track(28, tracking.display),
             }}
           >
             Showcase your work
           </Text>
-          <Text style={{ fontSize: 15, color: "#959D90", lineHeight: 22 }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 15, color: colors.sage, lineHeight: 22 }}>
             Upload photos and videos from past collabs
           </Text>
         </View>
@@ -198,8 +198,10 @@ export default function PortfolioScreen() {
                     style={{
                       width: "31%",
                       aspectRatio: 1,
+                      // colors.surface at 70% opacity
                       backgroundColor: "rgba(255,255,255,0.7)",
                       borderWidth: 1.5,
+                      // colors.slate at 25% opacity
                       borderColor: "rgba(60,87,89,0.25)",
                       borderStyle: "dashed",
                       borderRadius: 14,
@@ -208,16 +210,16 @@ export default function PortfolioScreen() {
                     }}
                   >
                     {uploadLoading ? (
-                      <ActivityIndicator color="#3C5759" />
+                      <ActivityIndicator color={colors.slate} />
                     ) : (
                       <>
-                        <Plus size={26} color="#3C5759" strokeWidth={2} />
+                        <Plus size={26} color={colors.slate} strokeWidth={2} />
                         <Text
                           style={{
+                            fontFamily: fonts.bodyMedium,
                             fontSize: 12,
-                            color: "#3C5759",
+                            color: colors.slate,
                             marginTop: 4,
-                            fontWeight: "500",
                           }}
                         >
                           Add
@@ -237,7 +239,7 @@ export default function PortfolioScreen() {
                     aspectRatio: 1,
                     borderRadius: 14,
                     overflow: "hidden",
-                    backgroundColor: "#D0D5CE",
+                    backgroundColor: colors.stone,
                     position: "relative",
                   }}
                 >
@@ -256,7 +258,8 @@ export default function PortfolioScreen() {
                         position: "absolute",
                         bottom: 8,
                         left: 8,
-                        backgroundColor: "rgba(0, 0, 0, 0.65)",
+                        // colors.ink at 65% opacity
+                        backgroundColor: "rgba(25,37,36,0.65)",
                         borderRadius: 6,
                         paddingHorizontal: 6,
                         paddingVertical: 4,
@@ -264,7 +267,7 @@ export default function PortfolioScreen() {
                         alignItems: "center",
                       }}
                     >
-                      <Video size={12} color="#FFFFFF" />
+                      <Video size={12} color={colors.surface} />
                     </View>
                   )}
 
@@ -275,7 +278,8 @@ export default function PortfolioScreen() {
                       position: "absolute",
                       top: 6,
                       right: 6,
-                      backgroundColor: "rgba(0, 0, 0, 0.65)",
+                      // colors.ink at 65% opacity
+                      backgroundColor: "rgba(25,37,36,0.65)",
                       borderRadius: 12,
                       width: 24,
                       height: 24,
@@ -283,7 +287,7 @@ export default function PortfolioScreen() {
                       justifyContent: "center",
                     }}
                   >
-                    <X size={14} color="#FFFFFF" strokeWidth={2.5} />
+                    <X size={14} color={colors.surface} strokeWidth={2.5} />
                   </TouchableOpacity>
                 </View>
               );
@@ -295,8 +299,9 @@ export default function PortfolioScreen() {
         <View style={{ paddingHorizontal: 24 }}>
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 14,
-              color: "#959D90",
+              color: colors.sage,
               lineHeight: 20,
               marginBottom: 12,
             }}
@@ -305,9 +310,11 @@ export default function PortfolioScreen() {
           </Text>
           <View
             style={{
+              // colors.mint at 50% opacity
               backgroundColor: "rgba(209,235,219,0.5)",
               borderRadius: 12,
               borderWidth: 1,
+              // colors.mint at 80% opacity
               borderColor: "rgba(209,235,219,0.8)",
               paddingHorizontal: 14,
               paddingVertical: 10,
@@ -320,8 +327,9 @@ export default function PortfolioScreen() {
             <Text
               style={{
                 flex: 1,
+                fontFamily: fonts.body,
                 fontSize: 13,
-                color: "#3C5759",
+                color: colors.slate,
                 lineHeight: 18,
               }}
             >
@@ -338,9 +346,10 @@ export default function PortfolioScreen() {
           bottom: 0,
           left: 0,
           right: 0,
+          // colors.surface at 95% opacity
           backgroundColor: "rgba(255,255,255,0.95)",
           borderTopWidth: 1,
-          borderTopColor: "#D0D5CE",
+          borderTopColor: colors.stone,
           paddingHorizontal: 24,
           paddingTop: 16,
           paddingBottom: insets.bottom + 16,
@@ -350,14 +359,14 @@ export default function PortfolioScreen() {
         <TouchableOpacity
           onPress={handleContinue}
           style={{
-            backgroundColor: "#3C5759",
+            backgroundColor: colors.slate,
             borderRadius: 16,
             paddingVertical: 16,
             alignItems: "center",
             marginBottom: 12,
           }}
         >
-          <Text style={{ color: "#EFECE9", fontSize: 16, fontWeight: "700" }}>
+          <Text style={{ fontFamily: fonts.bodySemibold, color: colors.bone, fontSize: 16 }}>
             Continue
           </Text>
         </TouchableOpacity>
@@ -370,11 +379,11 @@ export default function PortfolioScreen() {
             paddingVertical: 8,
           }}
         >
-          <Text style={{ color: "#959D90", fontSize: 15, fontWeight: "500" }}>
+          <Text style={{ fontFamily: fonts.bodyMedium, color: colors.sage, fontSize: 15 }}>
             Skip for now
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </AtmosphericBackground>
   );
 }

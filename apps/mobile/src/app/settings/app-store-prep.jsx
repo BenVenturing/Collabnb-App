@@ -3,30 +3,21 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ChevronLeft, Copy, FileText } from "lucide-react-native";
-import { BlurView } from "expo-blur";
 import * as Clipboard from "expo-clipboard";
 import appStoreDraft from "@/data/appStoreDraft";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import Glass from "@/components/Glass";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 function SectionCard({ title, children }) {
   return (
-    <BlurView
-      intensity={60}
-      tint="light"
-      style={{
-        borderRadius: 16,
-        overflow: "hidden",
-        borderWidth: 1,
-        borderColor: "rgba(255, 255, 255, 0.5)",
-        backgroundColor: "rgba(255, 255, 255, 0.3)",
-        marginBottom: 14,
-      }}
-    >
+    <Glass variant="small" style={{ marginBottom: 14 }}>
       <View style={{ padding: 18 }}>
         <Text
           style={{
+            fontFamily: fonts.bodySemibold,
             fontSize: 16,
-            fontWeight: "700",
-            color: "#192524",
+            color: colors.ink,
             marginBottom: 12,
           }}
         >
@@ -34,7 +25,7 @@ function SectionCard({ title, children }) {
         </Text>
         {children}
       </View>
-    </BlurView>
+    </Glass>
   );
 }
 
@@ -48,7 +39,7 @@ export default function AppStorePrepScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#EFECE9" }}>
+    <AtmosphericBackground>
       <StatusBar style="dark" />
 
       <View
@@ -56,16 +47,23 @@ export default function AppStorePrepScreen() {
           paddingTop: insets.top + 12,
           paddingBottom: 12,
           paddingHorizontal: 20,
-          backgroundColor: "#fff",
+          backgroundColor: colors.surface,
           borderBottomWidth: 1,
-          borderBottomColor: "#D0D5CE",
+          borderBottomColor: colors.stone,
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 16 }}>
-            <ChevronLeft color="#3C5759" size={28} />
+            <ChevronLeft color={colors.slate} size={28} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 20, fontWeight: "700", color: "#192524" }}>
+          <Text
+            style={{
+              fontFamily: fonts.display,
+              fontSize: 20,
+              color: colors.ink,
+              letterSpacing: track(20, tracking.display),
+            }}
+          >
             App Store Prep
           </Text>
         </View>
@@ -85,19 +83,20 @@ export default function AppStorePrepScreen() {
               width: 80,
               height: 80,
               borderRadius: 40,
-              backgroundColor: "#D1EBDB",
+              backgroundColor: colors.mint,
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 16,
             }}
           >
-            <FileText color="#3C5759" size={40} />
+            <FileText color={colors.slate} size={40} />
           </View>
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 24,
-              fontWeight: "700",
-              color: "#192524",
+              color: colors.ink,
+              letterSpacing: track(24, tracking.display),
               marginBottom: 8,
             }}
           >
@@ -105,8 +104,9 @@ export default function AppStorePrepScreen() {
           </Text>
           <Text
             style={{
+              fontFamily: fonts.body,
               fontSize: 14,
-              color: "#3C5759",
+              color: colors.slate,
               textAlign: "center",
               lineHeight: 20,
             }}
@@ -116,13 +116,13 @@ export default function AppStorePrepScreen() {
         </View>
 
         <SectionCard title="Description">
-          <Text style={{ fontSize: 14, lineHeight: 22, color: "#3C5759", marginBottom: 14 }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 22, color: colors.slate, marginBottom: 14 }}>
             {appStoreDraft.appDescription}
           </Text>
           <TouchableOpacity
             onPress={() => copyValue("Description", appStoreDraft.appDescription)}
             style={{
-              backgroundColor: "#3C5759",
+              backgroundColor: colors.slate,
               borderRadius: 12,
               paddingVertical: 12,
               alignItems: "center",
@@ -131,19 +131,19 @@ export default function AppStorePrepScreen() {
               gap: 8,
             }}
           >
-            <Copy color="#EFECE9" size={16} />
-            <Text style={{ color: "#EFECE9", fontWeight: "600" }}>Copy Description</Text>
+            <Copy color={colors.bone} size={16} />
+            <Text style={{ fontFamily: fonts.bodySemibold, color: colors.bone }}>Copy Description</Text>
           </TouchableOpacity>
         </SectionCard>
 
         <SectionCard title="Keywords">
-          <Text style={{ fontSize: 14, lineHeight: 22, color: "#3C5759", marginBottom: 14 }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 22, color: colors.slate, marginBottom: 14 }}>
             {appStoreDraft.keywords}
           </Text>
           <TouchableOpacity
             onPress={() => copyValue("Keywords", appStoreDraft.keywords)}
             style={{
-              backgroundColor: "#3C5759",
+              backgroundColor: colors.slate,
               borderRadius: 12,
               paddingVertical: 12,
               alignItems: "center",
@@ -152,8 +152,8 @@ export default function AppStorePrepScreen() {
               gap: 8,
             }}
           >
-            <Copy color="#EFECE9" size={16} />
-            <Text style={{ color: "#EFECE9", fontWeight: "600" }}>Copy Keywords</Text>
+            <Copy color={colors.bone} size={16} />
+            <Text style={{ fontFamily: fonts.bodySemibold, color: colors.bone }}>Copy Keywords</Text>
           </TouchableOpacity>
         </SectionCard>
 
@@ -163,42 +163,42 @@ export default function AppStorePrepScreen() {
             ["Privacy Policy URL", appStoreDraft.privacyPolicyUrl],
           ].map(([label, value]) => (
             <View key={label} style={{ marginBottom: 14 }}>
-              <Text style={{ fontSize: 13, fontWeight: "700", color: "#192524", marginBottom: 6 }}>
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink, marginBottom: 6 }}>
                 {label}
               </Text>
-              <Text style={{ fontSize: 14, lineHeight: 21, color: "#3C5759", marginBottom: 8 }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 21, color: colors.slate, marginBottom: 8 }}>
                 {value}
               </Text>
               <TouchableOpacity
                 onPress={() => copyValue(label, value)}
                 style={{
                   alignSelf: "flex-start",
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor: colors.surface,
                   borderRadius: 10,
                   paddingVertical: 9,
                   paddingHorizontal: 12,
                   borderWidth: 1,
-                  borderColor: "#D0D5CE",
+                  borderColor: colors.stone,
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 6,
                 }}
               >
-                <Copy color="#3C5759" size={14} />
-                <Text style={{ color: "#3C5759", fontWeight: "600" }}>Copy</Text>
+                <Copy color={colors.slate} size={14} />
+                <Text style={{ fontFamily: fonts.bodySemibold, color: colors.slate }}>Copy</Text>
               </TouchableOpacity>
             </View>
           ))}
         </SectionCard>
 
         <SectionCard title="Age Rating Draft">
-          <Text style={{ fontSize: 14, fontWeight: "700", color: "#192524", marginBottom: 10 }}>
+          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.ink, marginBottom: 10 }}>
             Target: {appStoreDraft.ageRating.target}
           </Text>
           {appStoreDraft.ageRating.notes.map((note) => (
             <Text
               key={note}
-              style={{ fontSize: 14, lineHeight: 21, color: "#3C5759", marginBottom: 8 }}
+              style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 21, color: colors.slate, marginBottom: 8 }}
             >
               • {note}
             </Text>
@@ -208,13 +208,13 @@ export default function AppStorePrepScreen() {
         <SectionCard title="App Privacy Draft">
           {appStoreDraft.privacySummary.map((section) => (
             <View key={section.title} style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 14, fontWeight: "700", color: "#192524", marginBottom: 6 }}>
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.ink, marginBottom: 6 }}>
                 {section.title}
               </Text>
-              <Text style={{ fontSize: 14, lineHeight: 21, color: "#3C5759", marginBottom: 6 }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 21, color: colors.slate, marginBottom: 6 }}>
                 {section.items.join(", ")}
               </Text>
-              <Text style={{ fontSize: 13, lineHeight: 19, color: "#959D90" }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 13, lineHeight: 19, color: colors.sage }}>
                 {section.purpose}
               </Text>
             </View>
@@ -225,13 +225,13 @@ export default function AppStorePrepScreen() {
           {appStoreDraft.submissionNotes.map((note) => (
             <Text
               key={note}
-              style={{ fontSize: 14, lineHeight: 21, color: "#3C5759", marginBottom: 8 }}
+              style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 21, color: colors.slate, marginBottom: 8 }}
             >
               • {note}
             </Text>
           ))}
         </SectionCard>
       </ScrollView>
-    </View>
+    </AtmosphericBackground>
   );
 }

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { MapPin } from "lucide-react-native";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 export default function AirbnbPreviewScreen() {
   const router = useRouter();
@@ -19,9 +21,7 @@ export default function AirbnbPreviewScreen() {
   };
 
   return (
-    <View
-      style={{ flex: 1, backgroundColor: "#FFFFFF", paddingTop: insets.top }}
-    >
+    <AtmosphericBackground style={{ paddingTop: insets.top }}>
       <StatusBar style="dark" />
 
       {/* Progress Bar */}
@@ -30,10 +30,10 @@ export default function AirbnbPreviewScreen() {
       >
         <Text
           style={{
+            fontFamily: fonts.bodyMedium,
             fontSize: 12,
-            color: "#6B7280",
+            color: colors.sage,
             marginBottom: 8,
-            fontWeight: "500",
           }}
         >
           Step 1 of 3
@@ -41,7 +41,7 @@ export default function AirbnbPreviewScreen() {
         <View
           style={{
             height: 4,
-            backgroundColor: "#E5E7EB",
+            backgroundColor: colors.stone,
             borderRadius: 2,
             overflow: "hidden",
           }}
@@ -50,7 +50,7 @@ export default function AirbnbPreviewScreen() {
             style={{
               width: "33.33%",
               height: "100%",
-              backgroundColor: "#000000",
+              backgroundColor: colors.ink,
             }}
           />
         </View>
@@ -67,15 +67,16 @@ export default function AirbnbPreviewScreen() {
         >
           <Text
             style={{
+              fontFamily: fonts.display,
               fontSize: 28,
-              fontWeight: "700",
-              color: "#000000",
+              color: colors.ink,
+              letterSpacing: track(28, tracking.display),
               marginBottom: 8,
             }}
           >
             Preview your listing
           </Text>
-          <Text style={{ fontSize: 16, color: "#6B7280", lineHeight: 24 }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 16, color: colors.sage, lineHeight: 24 }}>
             Review imported property details
           </Text>
         </View>
@@ -95,12 +96,12 @@ export default function AirbnbPreviewScreen() {
                   width: 280,
                   height: 200,
                   borderRadius: 16,
-                  backgroundColor: "#E5E7EB",
+                  backgroundColor: colors.stone,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontSize: 14, color: "#9CA3AF" }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage }}>
                   Image {index + 1}
                 </Text>
               </View>
@@ -112,18 +113,19 @@ export default function AirbnbPreviewScreen() {
         <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
           <View
             style={{
-              backgroundColor: "#F9FAFB",
+              backgroundColor: colors.bone,
               borderWidth: 1,
-              borderColor: "#E5E7EB",
+              borderColor: colors.stone,
               borderRadius: 16,
               padding: 20,
             }}
           >
             <Text
               style={{
+                fontFamily: fonts.display,
                 fontSize: 20,
-                fontWeight: "700",
-                color: "#000000",
+                color: colors.ink,
+                letterSpacing: track(20, tracking.display),
                 marginBottom: 12,
               }}
             >
@@ -137,16 +139,17 @@ export default function AirbnbPreviewScreen() {
                 marginBottom: 16,
               }}
             >
-              <MapPin size={16} color="#6B7280" style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 15, color: "#6B7280" }}>
+              <MapPin size={16} color={colors.sage} style={{ marginRight: 6 }} />
+              <Text style={{ fontFamily: fonts.body, fontSize: 15, color: colors.sage }}>
                 {placeholderListing.location}
               </Text>
             </View>
 
             <Text
               style={{
+                fontFamily: fonts.body,
                 fontSize: 15,
-                color: "#374151",
+                color: colors.slate,
                 lineHeight: 22,
                 marginBottom: 16,
               }}
@@ -156,16 +159,16 @@ export default function AirbnbPreviewScreen() {
 
             <View
               style={{
-                backgroundColor: "#FFFFFF",
+                backgroundColor: colors.surface,
                 paddingHorizontal: 12,
                 paddingVertical: 8,
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: "#E5E7EB",
+                borderColor: colors.stone,
                 alignSelf: "flex-start",
               }}
             >
-              <Text style={{ fontSize: 13, color: "#6B7280" }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage }}>
                 {placeholderListing.images} images imported
               </Text>
             </View>
@@ -180,9 +183,9 @@ export default function AirbnbPreviewScreen() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: "#E5E7EB",
+          borderTopColor: colors.stone,
           paddingHorizontal: 24,
           paddingTop: 16,
           paddingBottom: insets.bottom + 16,
@@ -191,14 +194,14 @@ export default function AirbnbPreviewScreen() {
         <TouchableOpacity
           onPress={() => router.push("/host-onboarding/host-profile")}
           style={{
-            backgroundColor: "#000000",
+            backgroundColor: colors.ink,
             borderRadius: 12,
             paddingVertical: 16,
             alignItems: "center",
             marginBottom: 12,
           }}
         >
-          <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600" }}>
+          <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface, fontSize: 16 }}>
             Confirm & Continue
           </Text>
         </TouchableOpacity>
@@ -210,11 +213,11 @@ export default function AirbnbPreviewScreen() {
             paddingVertical: 8,
           }}
         >
-          <Text style={{ color: "#6B7280", fontSize: 16, fontWeight: "500" }}>
+          <Text style={{ fontFamily: fonts.bodyMedium, color: colors.sage, fontSize: 16 }}>
             Back to edit
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </AtmosphericBackground>
   );
 }

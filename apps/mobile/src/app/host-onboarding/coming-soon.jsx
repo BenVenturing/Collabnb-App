@@ -4,15 +4,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Home, ArrowLeft } from "lucide-react-native";
 import { Image } from "expo-image";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { colors, fonts, tracking, track } from "@/config/theme";
 
 export default function HostComingSoonScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
   return (
-    <View
-      style={{ flex: 1, backgroundColor: "#EFECE9", paddingTop: insets.top }}
-    >
+    <AtmosphericBackground style={{ paddingTop: insets.top }}>
       <StatusBar style="dark" />
 
       <View
@@ -29,21 +29,22 @@ export default function HostComingSoonScreen() {
             width: 120,
             height: 120,
             borderRadius: 60,
-            backgroundColor: "#D1EBDB",
+            backgroundColor: colors.mint,
             alignItems: "center",
             justifyContent: "center",
             marginBottom: 32,
           }}
         >
-          <Home color="#192524" size={56} />
+          <Home color={colors.ink} size={56} />
         </View>
 
         {/* Title */}
         <Text
           style={{
+            fontFamily: fonts.display,
             fontSize: 28,
-            fontWeight: "700",
-            color: "#192524",
+            color: colors.ink,
+            letterSpacing: track(28, tracking.display),
             textAlign: "center",
             marginBottom: 12,
           }}
@@ -54,8 +55,9 @@ export default function HostComingSoonScreen() {
         {/* Body */}
         <Text
           style={{
+            fontFamily: fonts.body,
             fontSize: 16,
-            color: "#3C5759",
+            color: colors.slate,
             textAlign: "center",
             lineHeight: 24,
             marginBottom: 40,
@@ -81,24 +83,24 @@ export default function HostComingSoonScreen() {
           style={{
             flexDirection: "row",
             alignItems: "center",
-            backgroundColor: "#3C5759",
+            backgroundColor: colors.slate,
             paddingHorizontal: 24,
             paddingVertical: 16,
             borderRadius: 16,
           }}
         >
-          <ArrowLeft color="#EFECE9" size={20} style={{ marginRight: 8 }} />
-          <Text style={{ color: "#EFECE9", fontSize: 16, fontWeight: "600" }}>
+          <ArrowLeft color={colors.bone} size={20} style={{ marginRight: 8 }} />
+          <Text style={{ fontFamily: fonts.bodySemibold, color: colors.bone, fontSize: 16 }}>
             Go to Explore
           </Text>
         </TouchableOpacity>
       </View>
 
       <View style={{ paddingBottom: insets.bottom + 20 }}>
-        <Text style={{ fontSize: 13, color: "#959D90", textAlign: "center" }}>
+        <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage, textAlign: "center" }}>
           Need help? Contact support@collabnb.com
         </Text>
       </View>
-    </View>
+    </AtmosphericBackground>
   );
 }
