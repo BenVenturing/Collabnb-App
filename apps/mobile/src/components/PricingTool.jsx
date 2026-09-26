@@ -20,6 +20,12 @@ import {
   isDeliverableAllowedForTier,
   findPackagesForBudget,
 } from "@/utils/compensationPoints";
+import {
+  colors,
+  fonts,
+  tracking,
+  track as trackLetters,
+} from "@/config/theme";
 
 function fmt(n) {
   return `$${Math.round(n).toLocaleString()}`;
@@ -120,6 +126,10 @@ function ThreeZoneScale({ hardFloor, warnThreshold, range, cashAmount, midpoint 
         </View>
       </View>
       <View style={styles.scaleTrack}>
+        {/* Bespoke 4-stop "pay safety" ramp (too-low mint -> healthy dark
+            green) — no brand-token equivalent for any of these exact stops;
+            flagged for design review rather than collapsed to 2 tokens,
+            which would lose the gradient's in-between hues. */}
         <LinearGradient
           colors={["#DCEFE3", "#6FAE8E", "#234A3A", "#17352A"]}
           locations={[0, 0.45, 0.78, 1]}
@@ -243,7 +253,7 @@ export default function PricingTool({ initialValue, onChange }) {
               value={stayValue ? String(stayValue) : ""}
               onChangeText={(v) => setStayValue(Number(v.replace(/[^0-9]/g, "")) || 0)}
               placeholder="0"
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
             />
           </View>
         </View>
@@ -269,7 +279,7 @@ export default function PricingTool({ initialValue, onChange }) {
               keyboardType="number-pad"
               value={budget ? String(budget) : ""}
               onChangeText={(v) => setBudget(Number(v.replace(/[^0-9]/g, "")) || 0)}
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
             />
           </View>
           {compensationType === "hybrid" && effectiveStayOffset > 0 && (
@@ -356,7 +366,7 @@ export default function PricingTool({ initialValue, onChange }) {
               value={cashAmount ? String(cashAmount) : ""}
               onChangeText={(v) => setCashAmount(Number(v.replace(/[^0-9]/g, "")) || 0)}
               placeholder="0"
-              placeholderTextColor="#959D90"
+              placeholderTextColor={colors.sage}
             />
           </View>
 
@@ -389,8 +399,8 @@ export default function PricingTool({ initialValue, onChange }) {
 }
 
 const styles = {
-  heading: { fontSize: 20, fontWeight: "700", color: "#192524", marginBottom: 4 },
-  subtitle: { fontSize: 13, color: "#3C5759", marginBottom: 18, lineHeight: 18 },
+  heading: { fontFamily: fonts.display, fontSize: 20, color: colors.ink, marginBottom: 4 },
+  subtitle: { fontFamily: fonts.body, fontSize: 13, color: colors.slate, marginBottom: 18, lineHeight: 18 },
 
   segmented: {
     flexDirection: "row",
@@ -401,15 +411,15 @@ const styles = {
     alignSelf: "flex-start",
   },
   segment: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 9999 },
-  segmentActive: { backgroundColor: "#192524" },
-  segmentText: { fontSize: 12.5, fontWeight: "600", color: "#3C5759" },
-  segmentTextActive: { color: "#EFECE9" },
+  segmentActive: { backgroundColor: colors.ink },
+  segmentText: { fontFamily: fonts.bodySemibold, fontSize: 12.5, color: colors.slate },
+  segmentTextActive: { color: colors.bone },
 
   sectionLabel: {
+    fontFamily: fonts.bodySemibold,
     fontSize: 11,
-    fontWeight: "700",
-    color: "#959D90",
-    letterSpacing: 0.8,
+    color: colors.sage,
+    letterSpacing: trackLetters(11, tracking.eyebrow),
     marginTop: 16,
     marginBottom: 8,
   },
@@ -419,26 +429,26 @@ const styles = {
     paddingVertical: 8,
     borderRadius: 9999,
     borderWidth: 1.5,
-    borderColor: "#959D90",
+    borderColor: colors.sage,
     backgroundColor: "rgba(255,255,255,0.6)",
   },
-  pillActive: { backgroundColor: "#192524", borderColor: "#192524" },
-  pillText: { fontSize: 12.5, fontWeight: "600", color: "#3C5759" },
-  pillTextActive: { color: "#EFECE9" },
+  pillActive: { backgroundColor: colors.ink, borderColor: colors.ink },
+  pillText: { fontFamily: fonts.bodySemibold, fontSize: 12.5, color: colors.slate },
+  pillTextActive: { color: colors.bone },
 
-  fieldLabel: { fontSize: 12, color: "#3C5759", marginBottom: 4 },
+  fieldLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.slate, marginBottom: 4 },
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: "rgba(25,37,36,0.15)",
     borderRadius: 10,
     paddingHorizontal: 12,
   },
-  inputPrefix: { fontSize: 14, color: "#959D90", marginRight: 2 },
-  input: { flex: 1, paddingVertical: 10, fontSize: 14, fontWeight: "600", color: "#192524" },
-  helperNote: { fontSize: 12, color: "#959D90", marginTop: 6 },
+  inputPrefix: { fontFamily: fonts.body, fontSize: 14, color: colors.sage, marginRight: 2 },
+  input: { flex: 1, paddingVertical: 10, fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.ink },
+  helperNote: { fontFamily: fonts.body, fontSize: 12, color: colors.sage, marginTop: 6 },
 
   presetGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   presetCard: {
@@ -449,9 +459,9 @@ const styles = {
     borderColor: "rgba(25,37,36,0.1)",
     backgroundColor: "rgba(255,255,255,0.6)",
   },
-  presetCardActive: { borderColor: "#192524", backgroundColor: "rgba(209,235,219,0.45)" },
-  presetName: { fontSize: 13, fontWeight: "700", color: "#192524" },
-  presetMid: { fontSize: 11, color: "#959D90", marginTop: 2 },
+  presetCardActive: { borderColor: colors.ink, backgroundColor: "rgba(209,235,219,0.45)" },
+  presetName: { fontFamily: fonts.display, fontSize: 13, color: colors.ink },
+  presetMid: { fontFamily: fonts.body, fontSize: 11, color: colors.sage, marginTop: 2 },
 
   buildYourOwnCard: {
     backgroundColor: "rgba(209,235,219,0.35)",
@@ -466,7 +476,7 @@ const styles = {
     alignItems: "center",
     marginBottom: 2,
   },
-  loadTierText: { fontSize: 12, fontWeight: "600", color: "#3C5759" },
+  loadTierText: { fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.slate },
 
   stepper: {
     flexDirection: "row",
@@ -477,31 +487,37 @@ const styles = {
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  stepperLabel: { fontSize: 13, fontWeight: "600", color: "#192524" },
-  stepperPts: { fontSize: 11, color: "#959D90" },
-  stepperQty: { fontSize: 14, fontWeight: "700", color: "#192524", minWidth: 16, textAlign: "center" },
+  stepperLabel: { fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink },
+  stepperPts: { fontFamily: fonts.body, fontSize: 11, color: colors.sage },
+  stepperQty: { fontFamily: fonts.display, fontSize: 14, color: colors.ink, minWidth: 16, textAlign: "center" },
   stepBtnMinus: {
     width: 26,
     height: 26,
     borderRadius: 13,
     borderWidth: 1.5,
-    borderColor: "#959D90",
+    borderColor: colors.sage,
     alignItems: "center",
     justifyContent: "center",
   },
-  stepBtnMinusText: { fontSize: 14, color: "#3C5759", lineHeight: 16 },
+  stepBtnMinusText: { fontSize: 14, color: colors.slate, lineHeight: 16 },
   stepBtnPlus: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: "#192524",
+    backgroundColor: colors.ink,
     alignItems: "center",
     justifyContent: "center",
   },
-  stepBtnPlusText: { fontSize: 14, color: "#EFECE9", lineHeight: 16 },
+  stepBtnPlusText: { fontSize: 14, color: colors.bone, lineHeight: 16 },
 
-  rangeText: { fontSize: 26, fontWeight: "800", color: "#192524", marginTop: 12 },
-  rangeSub: { fontSize: 12, color: "#3C5759", marginTop: 2, lineHeight: 17 },
+  rangeText: {
+    fontFamily: fonts.displayExtrabold,
+    fontSize: 26,
+    color: colors.ink,
+    letterSpacing: trackLetters(26, tracking.display),
+    marginTop: 12,
+  },
+  rangeSub: { fontFamily: fonts.body, fontSize: 12, color: colors.slate, marginTop: 2, lineHeight: 17 },
 
   scaleTrack: { height: 10, borderRadius: 9999, overflow: "visible" },
   scaleMarker: {
@@ -509,13 +525,16 @@ const styles = {
     top: -3,
     width: 3,
     height: 16,
-    backgroundColor: "#EFECE9",
+    backgroundColor: colors.bone,
     borderRadius: 2,
     borderWidth: 1,
-    borderColor: "#192524",
+    borderColor: colors.ink,
   },
-  medianLabel: { fontSize: 10, fontWeight: "700", color: "#192524" },
+  medianLabel: { fontFamily: fonts.display, fontSize: 10, color: colors.ink },
   scaleLabelsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
-  scaleLabelText: { fontSize: 9.5, color: "#959D90", flexShrink: 1 },
-  zoneNote: { fontSize: 11.5, color: "#8a4a30", marginTop: 10, lineHeight: 16 },
+  scaleLabelText: { fontFamily: fonts.body, fontSize: 9.5, color: colors.sage, flexShrink: 1 },
+  // no brand token — a 4th distinct "warning" hue in this lane (rust/brown),
+  // alongside the three amber families flagged in review.jsx. Flagged for
+  // design review.
+  zoneNote: { fontFamily: fonts.body, fontSize: 11.5, color: "#8a4a30", marginTop: 10, lineHeight: 16 },
 };
