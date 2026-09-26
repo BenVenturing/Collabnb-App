@@ -42,3 +42,6 @@ app-example
 .metro-virtual/*
 
 caches/*
+# Brand fonts — fetched by scripts/fetch-fonts.sh, not committed.
+# Public repo + ITF Free Font License forbids redistributing font files.
+assets/fonts/*.ttf

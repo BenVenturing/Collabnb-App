@@ -7,13 +7,7 @@ import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ThemedBackground from "@/components/ThemedBackground";
-import {
-  useFonts,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from "@expo-google-fonts/inter";
+import { useFonts } from "expo-font";
 import clerkTokenCache from "@/config/clerkTokenCache";
 import convexClient from "@/config/convexClient";
 import { useAuthStore } from "@/utils/auth/store";
@@ -83,11 +77,16 @@ function AppShell() {
 }
 
 export default function RootLayout() {
+  // The real brand faces, matching the weights index.css loads from Fontshare.
+  // Cabinet Grotesk is display, Satoshi is body — see src/config/theme.js.
   const [fontsLoaded, fontError] = useFonts({
-    "Inter-Regular": Inter_400Regular,
-    "Inter-Medium": Inter_500Medium,
-    "Inter-SemiBold": Inter_600SemiBold,
-    "Inter-Bold": Inter_700Bold,
+    "CabinetGrotesk-Regular": require("../../assets/fonts/CabinetGrotesk-Regular.ttf"),
+    "CabinetGrotesk-Medium": require("../../assets/fonts/CabinetGrotesk-Medium.ttf"),
+    "CabinetGrotesk-Bold": require("../../assets/fonts/CabinetGrotesk-Bold.ttf"),
+    "CabinetGrotesk-Extrabold": require("../../assets/fonts/CabinetGrotesk-Extrabold.ttf"),
+    "Satoshi-Regular": require("../../assets/fonts/Satoshi-Regular.ttf"),
+    "Satoshi-Medium": require("../../assets/fonts/Satoshi-Medium.ttf"),
+    "Satoshi-Bold": require("../../assets/fonts/Satoshi-Bold.ttf"),
   });
 
   useEffect(() => {

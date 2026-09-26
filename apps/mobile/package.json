@@ -8,7 +8,8 @@
     "android": "expo run:android",
     "web": "expo start --web",
     "web:auth-proxy": "node ./scripts/dev-auth-proxy.mjs",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package && sh ./scripts/fetch-fonts.sh",
+    "fonts": "sh ./scripts/fetch-fonts.sh"
   },
   "dependencies": {
     "@anythingai/app": "0.1.96",
