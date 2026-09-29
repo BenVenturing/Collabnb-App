@@ -1,4 +1,10 @@
-import { ClerkProvider, ClerkLoaded, useAuth as useClerkAuth, useUser } from "@clerk/clerk-expo";
+import {
+  ClerkProvider,
+  ClerkLoaded,
+  ClerkLoading,
+  useAuth as useClerkAuth,
+  useUser,
+} from "@clerk/clerk-expo";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { useQuery } from "convex/react";
 import { Stack } from "expo-router";
@@ -13,6 +19,7 @@ import convexClient from "@/config/convexClient";
 import { useAuthStore } from "@/utils/auth/store";
 import { api } from "@/convex/_generated/api";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { LoadingScreen } from "@/components/ui";
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -101,6 +108,9 @@ export default function RootLayout() {
 
   return (
     <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={clerkTokenCache}>
+      <ClerkLoading>
+        <LoadingScreen />
+      </ClerkLoading>
       <ClerkLoaded>
         <AuthStoreBridge />
         {convexClient ? (

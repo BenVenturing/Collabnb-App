@@ -5,8 +5,9 @@ import { View, Image, ScrollView } from "react-native";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radii, shadows } from "@/config/theme";
-import { Body, Display } from "./Text";
+import { Body, Display, EyebrowLabel } from "./Text";
 import { Chip, PillButton } from "./Chip";
+import AtmosphericBackground from "../AtmosphericBackground";
 
 // Pinned above the tab bar on listing detail: price + sub-line, then the CTA.
 // Opaque so content scrolls cleanly beneath it.
@@ -184,5 +185,25 @@ export function MenuOverlay({ items = [], footer, style }) {
         {footer ? <View style={{ marginTop: 16 }}>{footer}</View> : null}
       </View>
     </BlurView>
+  );
+}
+
+// Branded full-screen loading state. See COMPONENT-SPEC.md §16.
+//
+// This exists because the app's two startup gates — <ClerkLoaded> in the root
+// layout and the role check in app/index.jsx — both used to render null, so a
+// cold launch showed plain white for as long as Clerk took to resolve. That
+// reads as "broken", not "loading". A spinner alone would still read as
+// unbranded, so web uses the mark over tracked LOADING… on the atmosphere.
+export function LoadingScreen({ label = "Loading" }) {
+  return (
+    <AtmosphericBackground style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+      <Image
+        source={require("../../../assets/images/collabnb-logo.png")}
+        style={{ width: 72, height: 72, marginBottom: 20 }}
+        resizeMode="contain"
+      />
+      <EyebrowLabel size={12}>{`${label}…`}</EyebrowLabel>
+    </AtmosphericBackground>
   );
 }

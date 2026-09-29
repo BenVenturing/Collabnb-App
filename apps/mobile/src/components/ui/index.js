@@ -15,6 +15,7 @@ export {
   ProfileHeader,
   MessageBubble,
   MenuOverlay,
+  LoadingScreen,
 } from "./Chrome";
 
 export { default as Glass } from "../Glass";
