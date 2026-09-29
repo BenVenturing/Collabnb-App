@@ -1,22 +1,21 @@
 // Explore tab — mirrors Collabnb Website/app/src/pages/Explore.jsx's data and
-// decisions (real Convex listings + samples, same property-type filters),
-// presented as a native list instead of a web grid. Search-dropdowns/
-// trial-gating from the web page are a deliberate later pass, not this one.
+// decisions (real Convex listings + samples, same property-type filters) and
+// now its composition too: a three-segment WHERE/WHAT/WHEN search, filter
+// chips, a "Trending Now" carousel, then "All Stays". See COMPONENT-SPEC.md
+// §6/§7/§9 — round 1 matched web's colors and type but kept mobile's own
+// layout, which is why it still didn't read as the same product.
+//
+// Deliberately absent: web's floating glass pill navbar. Mobile has a native
+// tab bar and the owner is removing that header from web as well.
+//
 // Map view mirrors CollabMap.jsx's phone-width behavior specifically (map on
 // top, in-view listings docked below) rather than its desktop split.
 
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
+import { View, FlatList, Dimensions, ActivityIndicator, Pressable } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { Search, Heart, MapPin, Star, List, Map as MapIcon, Lock } from "lucide-react-native";
+import { List, Map as MapIcon } from "lucide-react-native";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
@@ -24,12 +23,26 @@ import { api } from "@/convex/_generated/api";
 import { useSavedCollections } from "@/hooks/useSavedCollections";
 import { useAccessGate } from "@/hooks/useAccessGate";
 import { normalizeListing } from "@/utils/listingHelpers";
-import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
+import { colors, radii, shadows } from "@/config/theme";
 import ExploreMap from "@/components/ExploreMap";
-import AtmosphericBackground from "@/components/AtmosphericBackground";
+import {
+  AtmosphericBackground,
+  Body,
+  Chip,
+  CompactListRow,
+  Display,
+  ListingCard,
+  PillButton,
+  SearchBar,
+  SectionHeading,
+} from "@/components/ui";
 
 const PROP_FILTERS = ["All", "Cabin", "Villa", "Treehouse", "Glamping", "Lodge", "Estate", "Cottage"];
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
+
+// Web's trending carousel lets the next card peek past the screen edge as the
+// affordance that the row scrolls. Keep the peek — don't pad it away.
+const TRENDING_CARD_WIDTH = Math.round(Dimensions.get("window").width * 0.78);
 
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
@@ -47,7 +60,8 @@ export default function ExploreScreen() {
   // Same gate the website checks (api.gates.getMyAccess) — a trial-ended
   // creator still browses, but every listing (card + map dock) is redacted.
   const access = useAccessGate(profile);
-  const isLimited = access.state === "limited" && access.role === "creator" && !access.isAdmin && !access.isFounder;
+  const isLimited =
+    access.state === "limited" && access.role === "creator" && !access.isAdmin && !access.isFounder;
 
   const isLoading = convexRaw === undefined || samplesRaw === undefined;
 
@@ -60,6 +74,8 @@ export default function ExploreScreen() {
     if (filter === "All") return all;
     return all.filter((l) => l.property_type?.toLowerCase() === filter.toLowerCase());
   }, [convexRaw, samplesRaw, filter, isLimited]);
+
+  const trending = useMemo(() => listings.filter((l) => l.is_featured).slice(0, 8), [listings]);
 
   // ── Map view ──────────────────────────────────────────────────────────────
   const mapRef = useRef(null);
@@ -84,8 +100,12 @@ export default function ExploreScreen() {
   }, [mapListings]);
   const inBounds = (l) => {
     if (!mapBounds) return true;
-    return l.lat >= mapBounds.south && l.lat <= mapBounds.north
-        && l.lng >= mapBounds.west && l.lng <= mapBounds.east;
+    return (
+      l.lat >= mapBounds.south &&
+      l.lat <= mapBounds.north &&
+      l.lng >= mapBounds.west &&
+      l.lng <= mapBounds.east
+    );
   };
   const mapListInBounds = mapListings.filter(inBounds);
 
@@ -112,9 +132,14 @@ export default function ExploreScreen() {
         const d = await r.json();
         const name = d?.features?.[0]?.place_name || d?.features?.[0]?.text || "";
         if (!cancelled) setMapAreaLabel(name);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }, 400);
-    return () => { cancelled = true; clearTimeout(t); };
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [mapOpen, mapBounds]);
 
   const toggleSave = async (listing) => {
@@ -125,141 +150,184 @@ export default function ExploreScreen() {
     await toggleSaved(listing.id);
   };
 
+  const openListing = (item) =>
+    router.push({
+      pathname: "/listing-detail",
+      params: { id: item.id, title: item.title, location: item.location, photoUri: item.image },
+    });
+
+  // One card definition for both the carousel and the vertical list, so the two
+  // can never drift apart the way the old screen's inline card drifted from web.
+  const renderCard = (item, width) => (
+    <ListingCard
+      width={width}
+      image={item.image}
+      title={item.title}
+      location={item.location}
+      price={item.compensation}
+      deliverables={item.deliverables}
+      tag={item.collab_type || undefined}
+      authorName={item.host_name}
+      featured={item.is_featured}
+      badge={item.isSample ? "Sample" : undefined}
+      saved={savedIds.has(item.id)}
+      redacted={item._redacted === true}
+      onToggleSave={() => toggleSave(item)}
+      onPress={() => openListing(item)}
+    />
+  );
+
+  const header = (
+    <View style={{ paddingTop: insets.top + 16, gap: 18 }}>
+      <View style={{ paddingHorizontal: 20, gap: 16 }}>
+        <Display size={30}>Find your next collab</Display>
+
+        <SearchBar
+          segments={[
+            { label: "Where", placeholder: "Anywhere", onPress: () => router.push("/search") },
+            { label: "What", placeholder: "Any type", onPress: () => router.push("/search") },
+            { label: "When", placeholder: "Any dates", onPress: () => router.push("/search") },
+          ]}
+          onSubmit={() => router.push("/search")}
+        />
+      </View>
+
+      <FlatList
+        data={PROP_FILTERS}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(item) => item}
+        contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }}
+        renderItem={({ item }) => (
+          <Chip label={item} active={filter === item} onPress={() => setFilter(item)} />
+        )}
+      />
+
+      {trending.length > 0 && (
+        <View style={{ gap: 0 }}>
+          <View style={{ paddingHorizontal: 20 }}>
+            <SectionHeading
+              title="Trending Now"
+              subtitle="Top picks this week"
+              actionLabel="see all"
+              onAction={() => setFilter("All")}
+            />
+          </View>
+          <FlatList
+            data={trending}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => `trending-${item.id}`}
+            snapToInterval={TRENDING_CARD_WIDTH + 14}
+            decelerationRate="fast"
+            contentContainerStyle={{ gap: 14, paddingHorizontal: 20, paddingBottom: 4 }}
+            renderItem={({ item }) => renderCard(item, TRENDING_CARD_WIDTH)}
+          />
+        </View>
+      )}
+
+      <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
+        <SectionHeading
+          title={filter === "All" ? "All Stays" : filter}
+          subtitle={`${listings.length} collab${listings.length === 1 ? "" : "s"} available`}
+        />
+      </View>
+    </View>
+  );
+
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
       <StatusBar style="dark" />
 
       {/* Trial countdown */}
       {!access.loading && access.state === "trial" && access.daysLeft !== null && access.daysLeft <= 7 && (
-        <View style={{ backgroundColor: colors.mint, paddingTop: insets.top + 10, paddingBottom: 10, paddingHorizontal: 20 }}>
-          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink, textAlign: "center" }}>
-            {access.daysLeft === 0 ? "Your trial ends today" : `${access.daysLeft} day${access.daysLeft === 1 ? "" : "s"} left in your trial`}
-          </Text>
+        <View
+          style={{
+            backgroundColor: colors.mint,
+            paddingTop: insets.top + 10,
+            paddingBottom: 10,
+            paddingHorizontal: 20,
+          }}
+        >
+          <Body size={12} weight="semibold" style={{ textAlign: "center" }}>
+            {access.daysLeft === 0
+              ? "Your trial ends today"
+              : `${access.daysLeft} day${access.daysLeft === 1 ? "" : "s"} left in your trial`}
+          </Body>
         </View>
       )}
 
       {/* Trial-ended upsell */}
       {isLimited && (
-        <TouchableOpacity
+        <Pressable
           onPress={() => router.push("/subscribe")}
-          activeOpacity={0.9}
-          style={{ backgroundColor: colors.ink, paddingTop: insets.top + 12, paddingBottom: 12, paddingHorizontal: 20, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}
-        >
-          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.surface }}>Your trial has ended</Text>
-          <View style={{ backgroundColor: colors.mint, borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 4 }}>
-            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink }}>Subscribe</Text>
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {/* Header */}
-      <View
-        style={{
-          paddingTop: insets.top + 16,
-          paddingHorizontal: 20,
-          backgroundColor: colors.surface,
-          paddingBottom: 16,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.hairline,
-        }}
-      >
-        <TouchableOpacity
-          onPress={() => router.push("/search")}
           style={{
+            backgroundColor: colors.ink,
+            paddingTop: insets.top + 12,
+            paddingBottom: 12,
+            paddingHorizontal: 20,
             flexDirection: "row",
             alignItems: "center",
-            backgroundColor: colors.bone,
-            borderRadius: radii.pill,
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            marginBottom: 14,
+            justifyContent: "center",
+            gap: 10,
+            flexWrap: "wrap",
           }}
         >
-          <Search color={colors.sage} size={20} />
-          <Text style={{ flex: 1, marginLeft: 12, fontFamily: fonts.body, fontSize: 15, color: colors.sage }}>
-            Search destinations
-          </Text>
-        </TouchableOpacity>
+          <Body size={13} weight="semibold" color={colors.surface}>
+            Your trial has ended
+          </Body>
+          <Chip label="Subscribe" style={{ backgroundColor: colors.mint }} />
+        </Pressable>
+      )}
 
-        <FlatList
-          data={PROP_FILTERS}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => item}
-          contentContainerStyle={{ gap: 8 }}
-          renderItem={({ item }) => {
-            const active = filter === item;
-            return (
-              <TouchableOpacity
-                onPress={() => setFilter(item)}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 9,
-                  borderRadius: radii.pill,
-                  backgroundColor: active ? colors.mint : colors.bone,
-                  borderWidth: 1,
-                  borderColor: active ? colors.mint : colors.stone,
-                }}
-              >
-                <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.ink }}>{item}</Text>
-              </TouchableOpacity>
-            );
-          }}
-        />
-      </View>
-
-      {/* Listings */}
       {isLoading ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator color={colors.slate} />
-        </View>
-      ) : listings.length === 0 ? (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40 }}>
-          <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 18, color: colors.ink, textAlign: "center", marginBottom: 8, letterSpacing: track(18, tracking.display) }}>
-            No collaborations here yet
-          </Text>
-          <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage, textAlign: "center" }}>
-            Try a different property type, or check back soon — new opportunities are added regularly.
-          </Text>
         </View>
       ) : (
         <FlatList
           data={listings}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: insets.bottom + 20 }}
+          ListHeaderComponent={header}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            gap: 16,
+            paddingBottom: insets.bottom + 90,
+          }}
+          ListHeaderComponentStyle={{ marginHorizontal: -20, marginBottom: 4 }}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <ListingCard
-              listing={item}
-              saved={savedIds.has(item.id)}
-              onToggleSave={() => toggleSave(item)}
-              onPress={() =>
-                router.push({
-                  pathname: "/listing-detail",
-                  params: { id: item.id, title: item.title, location: item.location, photoUri: item.image },
-                })
-              }
-            />
-          )}
+          ListEmptyComponent={
+            <View style={{ alignItems: "center", paddingVertical: 48, paddingHorizontal: 20 }}>
+              <Display size={18} style={{ textAlign: "center", marginBottom: 8 }}>
+                No collaborations here yet
+              </Display>
+              <Body size={14} color={colors.sage} style={{ textAlign: "center" }}>
+                Try a different property type, or check back soon — new opportunities are added
+                regularly.
+              </Body>
+            </View>
+          }
+          renderItem={({ item }) => renderCard(item, undefined)}
         />
       )}
 
       {/* Floating Map pill — opens the full-screen map view */}
       {!mapOpen && mapPoints.length > 0 && (
-        <TouchableOpacity
-          onPress={() => { setMapBounds(null); setMapAreaLabel(""); setMapOpen(true); }}
-          activeOpacity={0.9}
+        <PillButton
+          label="Map"
+          iconRight={<MapIcon color={colors.surface} size={16} />}
+          onPress={() => {
+            setMapBounds(null);
+            setMapAreaLabel("");
+            setMapOpen(true);
+          }}
           style={{
-            position: "absolute", bottom: insets.bottom + 20, alignSelf: "center",
-            flexDirection: "row", alignItems: "center", gap: 8,
-            backgroundColor: colors.ink, borderRadius: radii.pill,
-            paddingHorizontal: 20, paddingVertical: 13,
+            position: "absolute",
+            bottom: insets.bottom + 20,
+            alignSelf: "center",
             ...shadows.lg,
           }}
-        >
-          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.surface }}>Map</Text>
-          <MapIcon color={colors.surface} size={16} />
-        </TouchableOpacity>
+        />
       )}
 
       {/* Map view (full-screen) — map on top, in-view listings docked below,
@@ -276,39 +344,56 @@ export default function ExploreScreen() {
               onRegionChange={setMapBounds}
               fitPoints={focusMapPoints}
             />
-            <TouchableOpacity
-              onPress={() => { setMapOpen(false); setActivePinId(null); }}
-              activeOpacity={0.85}
+            <PillButton
+              label="Show list"
+              variant="glass"
+              icon={<List color={colors.ink} size={15} />}
+              onPress={() => {
+                setMapOpen(false);
+                setActivePinId(null);
+              }}
               style={{
-                position: "absolute", top: insets.top + 12, left: 16,
-                flexDirection: "row", alignItems: "center", gap: 6,
-                backgroundColor: colors.surface, borderRadius: radii.pill,
-                paddingHorizontal: 14, paddingVertical: 9,
+                position: "absolute",
+                top: insets.top + 12,
+                left: 16,
+                paddingVertical: 9,
+                paddingHorizontal: 16,
+                backgroundColor: colors.surface,
                 ...shadows.md,
               }}
-            >
-              <List color={colors.ink} size={15} />
-              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink }}>Show list</Text>
-            </TouchableOpacity>
+            />
           </View>
 
           <View
             style={{
               height: "28%",
-              borderTopWidth: 1, borderTopColor: colors.hairline,
-              borderTopLeftRadius: radii.lg, borderTopRightRadius: radii.lg,
-              backgroundColor: colors.bone, paddingTop: 10,
+              borderTopWidth: 1,
+              borderTopColor: colors.hairline,
+              borderTopLeftRadius: radii.lg,
+              borderTopRightRadius: radii.lg,
+              backgroundColor: colors.bone,
+              paddingTop: 10,
               ...shadows.lg,
             }}
           >
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.stone, alignSelf: "center", marginBottom: 8 }} />
-            <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 13, color: colors.ink, paddingHorizontal: 16, marginBottom: 8, letterSpacing: track(13, tracking.display) }}>
-              {mapListInBounds.length} collab{mapListInBounds.length === 1 ? "" : "s"} {mapAreaLabel ? `near ${mapAreaLabel}` : "here"}
-            </Text>
+            <View
+              style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: colors.stone,
+                alignSelf: "center",
+                marginBottom: 10,
+              }}
+            />
+            <Display size={14} style={{ paddingHorizontal: 16, marginBottom: 10 }}>
+              {mapListInBounds.length} collab{mapListInBounds.length === 1 ? "" : "s"}{" "}
+              {mapAreaLabel ? `near ${mapAreaLabel}` : "here"}
+            </Display>
             {mapListInBounds.length === 0 ? (
-              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage, paddingHorizontal: 16 }}>
+              <Body size={13} color={colors.sage} style={{ paddingHorizontal: 16 }}>
                 No collaborations in this area.
-              </Text>
+              </Body>
             ) : (
               <FlatList
                 ref={dockListRef}
@@ -316,41 +401,28 @@ export default function ExploreScreen() {
                 horizontal
                 keyExtractor={(item) => item.id}
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 16, gap: 10, paddingBottom: insets.bottom + 10 }}
+                contentContainerStyle={{
+                  paddingHorizontal: 16,
+                  gap: 10,
+                  paddingBottom: insets.bottom + 10,
+                }}
                 onScrollToIndexFailed={(info) => {
-                  dockListRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true });
+                  dockListRef.current?.scrollToOffset({
+                    offset: info.averageItemLength * info.index,
+                    animated: true,
+                  });
                 }}
                 renderItem={({ item }) => (
-                  <TouchableOpacity
-                    onPress={() =>
-                      router.push({
-                        pathname: "/listing-detail",
-                        params: { id: item.id, title: item.title, location: item.location, photoUri: item.image },
-                      })
-                    }
-                    activeOpacity={0.85}
-                    style={{
-                      width: 220, flexDirection: "row", alignItems: "center", gap: 10,
-                      backgroundColor: colors.surface, borderRadius: radii.md,
-                      borderWidth: activePinId === item.id ? 1.5 : 1,
-                      borderColor: activePinId === item.id ? colors.ink : colors.hairline,
-                      padding: 8,
-                    }}
-                  >
-                    <View style={{ width: 48, height: 48, borderRadius: radii.sm, overflow: "hidden" }}>
-                      <Image source={{ uri: item.image }} style={{ width: 48, height: 48 }} contentFit="cover" blurRadius={item._redacted ? 12 : 0} />
-                      {item._redacted && (
-                        <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(25,37,36,0.3)", alignItems: "center", justifyContent: "center" }}>
-                          <Lock color={colors.surface} size={14} />
-                        </View>
-                      )}
-                    </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text numberOfLines={1} style={{ fontFamily: fonts.displaySemibold, fontSize: 13, color: colors.ink, opacity: item._redacted ? 0.35 : 1, letterSpacing: track(13, tracking.display) }}>{item.title}</Text>
-                      <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 11, color: colors.sage, marginTop: 1, opacity: item._redacted ? 0.35 : 1 }}>{item.location}</Text>
-                      <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink, marginTop: 2 }}>{item.compensation}</Text>
-                    </View>
-                  </TouchableOpacity>
+                  <CompactListRow
+                    width={248}
+                    image={item.image}
+                    title={item.title}
+                    location={item.location}
+                    price={item.compensation}
+                    active={activePinId === item.id}
+                    redacted={item._redacted === true}
+                    onPress={() => openListing(item)}
+                  />
                 )}
               />
             )}
@@ -358,90 +430,5 @@ export default function ExploreScreen() {
         </View>
       )}
     </AtmosphericBackground>
-  );
-}
-
-function ListingCard({ listing, saved, onToggleSave, onPress }) {
-  const redacted = listing._redacted === true;
-  return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={{ overflow: "visible" }}>
-      <View style={{ borderRadius: radii.lg, backgroundColor: colors.surface, overflow: "visible", ...shadows.md }}>
-        <View style={{ borderTopLeftRadius: radii.lg, borderTopRightRadius: radii.lg, overflow: "hidden" }}>
-          <Image
-            source={{ uri: listing.image }}
-            style={{ width: "100%", height: 200 }}
-            contentFit="cover"
-            transition={200}
-            blurRadius={redacted ? 18 : 0}
-          />
-
-          {/* Redacted overlay — trial-ended creators still see the price (the
-              hook), just not the listing contents behind it. */}
-          {redacted && (
-            <View style={{ position: "absolute", inset: 0, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(25,37,36,0.25)" }}>
-              <Lock color={colors.surface} size={20} style={{ marginBottom: 6, opacity: 0.85 }} />
-              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.surface, opacity: 0.85 }}>Apply to view</Text>
-            </View>
-          )}
-
-          {listing.isSample && (
-            <View style={{ position: "absolute", top: 12, left: 12, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: "rgba(255,255,255,0.92)" }}>
-              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 11, color: colors.sage }}>Sample</Text>
-            </View>
-          )}
-
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation();
-              onToggleSave();
-            }}
-            style={{ position: "absolute", top: 12, right: 12, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: radii.pill, padding: 8 }}
-          >
-            <Heart color={saved ? "#B3261E" : colors.ink} fill={saved ? "#B3261E" : "none"} size={18} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={{ padding: 16 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6, opacity: redacted ? 0.35 : 1 }}>
-            <MapPin color={colors.slate} size={13} />
-            <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.slate, marginLeft: 4 }}>{listing.location}</Text>
-          </View>
-
-          <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 16, color: colors.ink, marginBottom: 4, opacity: redacted ? 0.35 : 1, letterSpacing: track(16, tracking.display) }}>{listing.title}</Text>
-
-          {(listing.rating || listing.host_name) && (
-            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
-              {listing.rating ? (
-                <>
-                  <Star color={colors.slate} size={13} fill={colors.slate} />
-                  <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.ink, marginLeft: 4 }}>
-                    {listing.rating}
-                  </Text>
-                  {listing.review_count ? (
-                    <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, marginLeft: 4 }}>
-                      ({listing.review_count})
-                    </Text>
-                  ) : null}
-                </>
-              ) : null}
-              {listing.host_name ? (
-                <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, marginLeft: listing.rating ? 8 : 0 }}>
-                  Hosted by {listing.host_name}
-                </Text>
-              ) : null}
-            </View>
-          )}
-
-          <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-            <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 17, color: colors.ink, letterSpacing: track(17, tracking.display) }}>{listing.compensation}</Text>
-            {listing.deliverables ? (
-              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, marginLeft: 6 }}>
-                · {listing.deliverables}
-              </Text>
-            ) : null}
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
   );
 }

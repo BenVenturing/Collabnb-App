@@ -1,7 +1,8 @@
 // Cards and grids. See COMPONENT-SPEC.md §5, §7, §8.
 
-import { View, Image, Pressable } from "react-native";
-import { Heart } from "lucide-react-native";
+import { View, Pressable } from "react-native";
+import { Image } from "expo-image";
+import { Heart, Lock } from "lucide-react-native";
 import { colors, radii, shadows } from "@/config/theme";
 import { Body, Display, EyebrowLabel } from "./Text";
 import { Chip, RoundButton } from "./Chip";
@@ -79,6 +80,12 @@ export function StatGrid({ items, columns = 2, footer, eyebrowLabels = false, st
 }
 
 // The marketplace card. Image with overlays on top, near-opaque body below.
+// Field order is web's, which differs from mobile's old card: title first,
+// then location, then the price line — see COMPONENT-SPEC.md §7.
+//
+// `redacted` is the trial-ended state: the image blurs behind a lock and the
+// listing's text dims, but the price stays legible because it's the hook that
+// sells the subscription.
 export function ListingCard({
   image,
   title,
@@ -90,12 +97,18 @@ export function ListingCard({
   authorName,
   authorAvatar,
   featured = false,
+  badge,
   saved = false,
+  redacted = false,
   onPress,
   onToggleSave,
   width,
+  imageHeight = 200,
   style,
 }) {
+  const source = typeof image === "string" ? { uri: image } : image;
+  const dim = redacted ? 0.35 : 1;
+
   return (
     <Pressable
       onPress={onPress}
@@ -112,23 +125,64 @@ export function ListingCard({
       ]}
     >
       <View>
-        {image ? <Image source={image} style={{ width: "100%", height: 200 }} resizeMode="cover" /> : null}
+        {image ? (
+          <Image
+            source={source}
+            style={{ width: "100%", height: imageHeight }}
+            contentFit="cover"
+            transition={200}
+            blurRadius={redacted ? 18 : 0}
+          />
+        ) : null}
+
+        {redacted ? (
+          <View
+            style={{
+              position: "absolute",
+              inset: 0,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "rgba(25,37,36,0.25)",
+            }}
+          >
+            <Lock color={colors.surface} size={20} style={{ marginBottom: 6, opacity: 0.85 }} />
+            <Body size={12} weight="semibold" color={colors.surface} style={{ opacity: 0.85 }}>
+              Apply to view
+            </Body>
+          </View>
+        ) : null}
+
         {featured ? (
           <Chip label="Featured" eyebrow style={{ position: "absolute", top: 12, left: 12 }} />
+        ) : badge ? (
+          <View
+            style={{
+              position: "absolute",
+              top: 12,
+              left: 12,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: radii.pill,
+              backgroundColor: "rgba(255,255,255,0.92)",
+            }}
+          >
+            <Body size={11} weight="semibold" color={colors.sage}>
+              {badge}
+            </Body>
+          </View>
         ) : null}
+
         <RoundButton onPress={onToggleSave} size={36} style={{ position: "absolute", top: 12, right: 12 }}>
-          <Heart
-            size={18}
-            color={colors.ink}
-            fill={saved ? colors.ink : "transparent"}
-          />
+          <Heart size={18} color={colors.ink} fill={saved ? colors.ink : "transparent"} />
         </RoundButton>
       </View>
 
       <View style={{ padding: 16, gap: 3 }}>
-        <Display size={17}>{title}</Display>
+        <Display size={17} numberOfLines={2} style={{ opacity: dim }}>
+          {title}
+        </Display>
         {location ? (
-          <Body size={14} color={colors.sage}>
+          <Body size={14} color={colors.sage} numberOfLines={1} style={{ opacity: dim }}>
             {location}
           </Body>
         ) : null}
@@ -138,21 +192,23 @@ export function ListingCard({
           </Body>
         ) : null}
 
-        <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 10 }}>
-          <View style={{ flex: 1 }}>
-            {deliverables ? (
-              <Body size={13} color={colors.sage}>
-                {deliverables}
-              </Body>
-            ) : null}
-            {dates ? (
-              <Body size={13} color={colors.sage}>
-                {dates}
-              </Body>
-            ) : null}
+        {deliverables || dates || tag ? (
+          <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 10 }}>
+            <View style={{ flex: 1, opacity: dim }}>
+              {deliverables ? (
+                <Body size={13} color={colors.sage}>
+                  {deliverables}
+                </Body>
+              ) : null}
+              {dates ? (
+                <Body size={13} color={colors.sage}>
+                  {dates}
+                </Body>
+              ) : null}
+            </View>
+            {tag ? <Chip label={tag} /> : null}
           </View>
-          {tag ? <Chip label={tag} /> : null}
-        </View>
+        ) : null}
 
         {authorName ? (
           <View
@@ -164,10 +220,15 @@ export function ListingCard({
               paddingTop: 12,
               borderTopWidth: 1,
               borderTopColor: colors.hairline,
+              opacity: dim,
             }}
           >
             {authorAvatar ? (
-              <Image source={authorAvatar} style={{ width: 24, height: 24, borderRadius: 12 }} />
+              <Image
+                source={typeof authorAvatar === "string" ? { uri: authorAvatar } : authorAvatar}
+                style={{ width: 24, height: 24, borderRadius: 12 }}
+                contentFit="cover"
+              />
             ) : null}
             <Body size={13} color={colors.sage}>
               by <Body size={13} weight="semibold">{authorName}</Body>
@@ -179,8 +240,20 @@ export function ListingCard({
   );
 }
 
-// Bottom-sheet variant: thumbnail left, text stacked right.
-export function CompactListRow({ image, title, location, price, onPress, width, style }) {
+// Bottom-sheet variant: thumbnail left, text stacked right. `active` is the
+// map dock's selected-pin state; `redacted` matches ListingCard's trial gate.
+export function CompactListRow({
+  image,
+  title,
+  location,
+  price,
+  active = false,
+  redacted = false,
+  onPress,
+  width,
+  style,
+}) {
+  const dim = redacted ? 0.35 : 1;
   return (
     <Pressable
       onPress={onPress}
@@ -193,19 +266,43 @@ export function CompactListRow({ image, title, location, price, onPress, width, 
           padding: 14,
           borderRadius: radii.lg,
           backgroundColor: colors.surface,
+          borderWidth: active ? 1.5 : 1,
+          borderColor: active ? colors.ink : colors.hairline,
           transform: [{ scale: pressed ? 0.99 : 1 }],
           ...shadows.sm,
         },
         style,
       ]}
     >
-      {image ? <Image source={image} style={{ width: 56, height: 56, borderRadius: radii.sm }} /> : null}
+      {image ? (
+        <View style={{ width: 56, height: 56, borderRadius: radii.sm, overflow: "hidden" }}>
+          <Image
+            source={typeof image === "string" ? { uri: image } : image}
+            style={{ width: 56, height: 56 }}
+            contentFit="cover"
+            blurRadius={redacted ? 12 : 0}
+          />
+          {redacted ? (
+            <View
+              style={{
+                position: "absolute",
+                inset: 0,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "rgba(25,37,36,0.3)",
+              }}
+            >
+              <Lock color={colors.surface} size={14} />
+            </View>
+          ) : null}
+        </View>
+      ) : null}
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Display size={16} numberOfLines={1}>
+        <Display size={16} numberOfLines={1} style={{ opacity: dim }}>
           {title}
         </Display>
         {location ? (
-          <Body size={13} color={colors.sage} numberOfLines={1}>
+          <Body size={13} color={colors.sage} numberOfLines={1} style={{ opacity: dim }}>
             {location}
           </Body>
         ) : null}
