@@ -12,6 +12,8 @@ import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { useUser } from "@clerk/clerk-expo";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -33,7 +35,6 @@ import {
   ArrowRight,
   ArrowUp,
 } from "lucide-react-native";
-import MessagingStore from "@/utils/MessagingStore";
 import SavedCreatorsStore from "@/utils/SavedCreatorsStore";
 import ListingDraftStore from "@/utils/ListingDraftStore";
 import { addInvitedProposal } from "@/utils/ProposalsStore";
@@ -45,6 +46,7 @@ import {
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
 import { colors, fonts, tracking, track } from "@/config/theme";
+import { api } from "@/convex/_generated/api";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
@@ -62,10 +64,15 @@ export default function HostCreatorsScreen() {
   const [availableListings, setAvailableListings] = useState([]);
   const [currentCreatorIndex, setCurrentCreatorIndex] = useState(0);
 
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  const createThreadCvx = useMutation(api.threads.create);
+  const sendMessageCvx = useMutation(api.threadMessages.sendMessage);
+
   useEffect(() => {
     const init = async () => {
       await SavedCreatorsStore.init();
-      await MessagingStore.init();
       setSavedCreatorIds(SavedCreatorsStore.getSavedCreatorIds());
 
       const allListings = await ListingDraftStore.getPublishedListings();
@@ -91,28 +98,46 @@ export default function HostCreatorsScreen() {
   };
 
   const handleSwipeUp = async (creator) => {
+    if (!profile?._id) return;
     const listing = availableListings[0];
-    const thread = await MessagingStore.createOrGetCreatorThread({
-      creatorId: creator.id,
-      creatorName: creator.name,
-      creatorAvatarUrl: creator.avatarUri,
+    const hostId = String(profile._id);
+    const threadKey = `thread_host_${hostId}_${creator.id}`;
+    const text = listing
+      ? `Hi ${creator.name} — I'd love to collaborate. Here's a proposal for you: ${listing.title} in ${listing.location_city}, ${listing.location_country}.`
+      : `Hi ${creator.name} — I'd love to collaborate with you. Let me know if you're interested!`;
+
+    await createThreadCvx({
+      listingTitle: listing?.title || `Chat with ${creator.name}`,
+      hostName: creator.name,
+      hostAvatar: creator.avatarUri,
+      tag: "Pitch",
+      lastMessage: text.slice(0, 100),
+      participantId: creator.id,
+      threadKey,
+    });
+
+    await sendMessageCvx({
+      threadKey,
+      senderId: hostId,
+      senderName: profile.full_name || "Host",
+      senderAvatar: profile.avatar_url,
+      senderRole: "host",
+      text,
     });
 
     if (listing) {
-      await MessagingStore.addListingCardMessage({
-        threadId: thread.id,
-        listing,
-        prefilledText: `Hi ${creator.name} — I'd love to collaborate. Here's a proposal for you:`,
-      });
       await addInvitedProposal({ creator, listing });
-    } else {
-      await MessagingStore.sendMessage(
-        thread.id,
-        `Hi ${creator.name} — I'd love to collaborate with you. Let me know if you're interested!`,
-      );
     }
 
-    router.push(`/messages/${thread.id}`);
+    router.push({
+      pathname: `/messages/${threadKey}`,
+      params: {
+        listingTitle: listing?.title || `Chat with ${creator.name}`,
+        hostName: creator.name,
+        hostAvatar: creator.avatarUri || "",
+        tag: "Pitch",
+      },
+    });
   };
 
   const handleReviewTap = (review) => {
@@ -121,25 +146,38 @@ export default function HostCreatorsScreen() {
   };
 
   const handleBulkMessage = async (listingId) => {
+    if (!profile?._id) return;
     const listing = availableListings.find((l) => l.id === listingId);
     if (!listing) return;
 
+    const hostId = String(profile._id);
     const selectedCreators = mockCreators.filter((c) =>
       selectedCreatorsForBulk.includes(c.id),
     );
 
     for (const creator of selectedCreators) {
-      const thread = await MessagingStore.createOrGetCreatorThread({
-        creatorId: creator.id,
-        creatorName: creator.name,
-        creatorAvatarUrl: creator.avatarUri,
+      const threadKey = `thread_host_${hostId}_${creator.id}`;
+      const text = `Hi ${creator.name} — I'd love to collaborate. Here's a proposal for you: ${listing.title} in ${listing.location_city}, ${listing.location_country}.`;
+
+      await createThreadCvx({
+        listingTitle: listing.title,
+        hostName: creator.name,
+        hostAvatar: creator.avatarUri,
+        tag: "Pitch",
+        lastMessage: text.slice(0, 100),
+        participantId: creator.id,
+        threadKey,
       });
 
-      await MessagingStore.addListingCardMessage({
-        threadId: thread.id,
-        listing,
-        prefilledText: `Hi ${creator.name} — I'd love to collaborate. Here's a proposal for you:`,
+      await sendMessageCvx({
+        threadKey,
+        senderId: hostId,
+        senderName: profile.full_name || "Host",
+        senderAvatar: profile.avatar_url,
+        senderRole: "host",
+        text,
       });
+
       await addInvitedProposal({ creator, listing });
     }
 

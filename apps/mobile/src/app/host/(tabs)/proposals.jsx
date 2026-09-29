@@ -594,10 +594,10 @@ function DetailModal({
 
   const handleMessage = () => {
     // Inbox and message threads are Convex-backed (see useConversations /
-    // messages/[threadId].jsx); MessagingStore is a separate local mock that
-    // never reaches them, and threads.create isn't idempotent, so we can't
-    // safely open/create a specific thread from here yet. Land on the inbox
-    // list instead of a broken or duplicate thread.
+    // messages/[threadId].jsx) and keyed by a real creator profile id
+    // (thread_<listingId>_<creatorId>). This screen's proposals are still
+    // local sample/AsyncStorage data with no creatorId field, so there's no
+    // way to build that key here. Land on the inbox list instead of guessing.
     router.push("/host/(tabs)/inbox");
   };
 
