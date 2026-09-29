@@ -29,6 +29,7 @@ import {
   Plane,
   Settings,
   Share2,
+  UserRound,
 } from "lucide-react-native";
 import { colors, radii, shadows } from "@/config/theme";
 import {
@@ -183,7 +184,7 @@ export default function CreatorProfileScreen() {
   const router = useRouter();
   const { loadDraft: loadHostDraft } = useHostOnboardingStore();
   const { loadDraft: loadCreatorDraft } = useCreatorOnboardingStore();
-  const { user } = useUser();
+  const { user, isSignedIn } = useUser();
   const email = user?.primaryEmailAddress?.emailAddress;
 
   const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
@@ -253,6 +254,34 @@ export default function CreatorProfileScreen() {
     () => (collabs ?? []).filter((c) => c.is_sample),
     [collabs],
   );
+
+  // Signed out, the Convex query is skipped and never resolves, so the loading
+  // screen below would spin forever with no way off it. Same shape as the
+  // Saved tab's gate.
+  if (!isSignedIn) {
+    return (
+      <AtmosphericBackground style={{ flex: 1 }}>
+        <StatusBar style="dark" />
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 40,
+          }}
+        >
+          <UserRound size={44} color={colors.stone} style={{ marginBottom: 18 }} />
+          <Display size={20} style={{ textAlign: "center", marginBottom: 8 }}>
+            Sign in to see your profile
+          </Display>
+          <Body size={15} color={colors.slate} style={{ textAlign: "center", marginBottom: 24 }}>
+            Your stats, links, and past collabs live on your account.
+          </Body>
+          <PillButton label="Sign in" onPress={() => router.push("/signin")} />
+        </View>
+      </AtmosphericBackground>
+    );
+  }
 
   if (profile === undefined) {
     return <LoadingScreen label="Loading profile" />;
