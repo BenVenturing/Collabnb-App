@@ -23,7 +23,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import MapView, { Marker } from "react-native-maps";
-import { Share2, Heart, Quote, Star, Check, Plus } from "lucide-react-native";
+import { Share2, Heart, Quote, Star, Check, Plus, ArrowRight } from "lucide-react-native";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
@@ -31,6 +31,15 @@ import ListingDraftStore from "@/utils/ListingDraftStore";
 import { AmenityIcon } from "@/lib/amenityIcons";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
+import {
+  StickyActionBar,
+  StatGrid,
+  Chip,
+  PillButton,
+  Display,
+  Body,
+  SectionHeading,
+} from "@/components/ui";
 import { colors, fonts, tracking, track, lineHeights } from "@/config/theme";
 
 // Mirrors the compensation/deliverables formatting in (tabs)/index.jsx so a
@@ -1387,105 +1396,69 @@ export default function ListingDetailScreen() {
       >
         {/* SECTION 1 — Title Block */}
         <View style={{ padding: 20, paddingBottom: 16 }}>
-          <Text
-            style={{
-              fontFamily: fonts.display,
-              fontSize: 26,
-              color: colors.ink,
-              letterSpacing: track(26, tracking.display),
-              marginBottom: 8,
-            }}
-          >
+          <Display size={26} style={{ marginBottom: 8 }}>
             {listing.title}
-          </Text>
-          <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage, marginBottom: 12 }}>
+          </Display>
+          <Body size={14} color={colors.sage} style={{ marginBottom: 12 }}>
             ✦ Boutique Stay · {listing.location}
-          </Text>
+          </Body>
+
+          {/* Status + required tier. Both are stat pills, so eyebrow tracking
+              (COMPONENT-SPEC.md §2) rather than sentence case. */}
           <View style={{ flexDirection: "row", gap: 8 }}>
-            <View
-              style={{
-                paddingHorizontal: 10,
-                paddingVertical: 5,
-                borderRadius: 12,
-                backgroundColor: "rgba(60,87,89,0.12)",
-              }}
-            >
-              <Text
-                style={{ fontFamily: fonts.bodySemibold, fontSize: 11, color: colors.slate }}
-              >
-                {listing.status === "active"
+            <Chip
+              eyebrow
+              label={
+                listing.status === "active"
                   ? "Active"
                   : listing.status === "paused"
                     ? "Paused"
-                    : "Draft"}
-              </Text>
-            </View>
-            <View
-              style={{
-                paddingHorizontal: 10,
-                paddingVertical: 5,
-                borderRadius: 12,
-                backgroundColor: "rgba(149,157,144,0.12)",
-              }}
-            >
-              <Text
-                style={{ fontFamily: fonts.bodySemibold, fontSize: 11, color: colors.sage }}
-              >
-                {listing.tierRequired}
-              </Text>
-            </View>
+                    : "Draft"
+              }
+            />
+            {listing.tierRequired ? <Chip eyebrow label={listing.tierRequired} /> : null}
           </View>
 
+          {/* Secondary actions — glass pills per §11. Saved inverts to the ink
+              fill of an active chip rather than introducing an off-palette red. */}
           {!isHost && (
             <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
-              <TouchableOpacity
+              <PillButton
+                variant="glass"
+                label="Share"
+                icon={<Share2 size={14} color={colors.ink} strokeWidth={2} />}
                 onPress={handleShare}
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 999,
+                  paddingHorizontal: 16,
+                  paddingVertical: 9,
                   backgroundColor: colors.bone,
-                  borderWidth: 1,
-                  borderColor: colors.bone,
+                  borderColor: colors.hairline,
                 }}
-              >
-                <Share2 size={13} color={colors.slate} strokeWidth={2} />
-                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.slate }}>Share</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              />
+              <PillButton
+                variant={isSaved ? "dark" : "glass"}
+                label={isSaved ? "Saved" : "Save"}
+                icon={
+                  <Heart
+                    size={14}
+                    color={isSaved ? colors.surface : colors.ink}
+                    fill={isSaved ? colors.surface : "none"}
+                    strokeWidth={2}
+                  />
+                }
                 onPress={() => setSaveModalVisible(true)}
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 999,
-                  backgroundColor: isSaved ? "rgba(192,57,43,0.08)" : colors.bone,
-                  borderWidth: 1,
-                  borderColor: isSaved ? "rgba(192,57,43,0.2)" : colors.bone,
+                  paddingHorizontal: 16,
+                  paddingVertical: 9,
+                  backgroundColor: isSaved ? colors.ink : colors.bone,
+                  borderColor: isSaved ? colors.ink : colors.hairline,
                 }}
-              >
-                <Heart
-                  size={13}
-                  color={isSaved ? "#c0392b" : colors.slate}
-                  fill={isSaved ? "#c0392b" : "none"}
-                  strokeWidth={2}
-                />
-                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: isSaved ? "#c0392b" : colors.slate }}>
-                  {isSaved ? "Saved" : "Save"}
-                </Text>
-              </TouchableOpacity>
+              />
             </View>
           )}
         </View>
 
-        <View
-          style={{ height: 1, backgroundColor: colors.hairline, marginBottom: 20 }}
-        />
+        <View style={{ height: 1, backgroundColor: colors.hairline, marginBottom: 20 }} />
 
         {/* SECTION 2 — Host Info Row */}
         <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
@@ -1511,61 +1484,28 @@ export default function ListingDetailScreen() {
           style={{ height: 1, backgroundColor: colors.hairline, marginBottom: 20 }}
         />
 
-        {/* SECTION 3 — Three highlight pills */}
-        <View
-          style={{
-            paddingHorizontal: 20,
-            marginBottom: 20,
-            flexDirection: "row",
-            gap: 16,
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 20, marginBottom: 4 }}>🎯</Text>
-            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink }}>
-              Creator Tier
-            </Text>
-            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage }}>
-              {listing.tierRequired}
-            </Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 20, marginBottom: 4 }}>💰</Text>
-            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink }}>
-              Compensation
-            </Text>
-            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage }}>
-              {listing.compensation}
-            </Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 20, marginBottom: 4 }}>📦</Text>
-            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink }}>
-              Deliverables
-            </Text>
-            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage }}>
-              {listing.deliverablesLoad} load
-            </Text>
-          </View>
+        {/* SECTION 3 — the at-a-glance stats. COMPONENT-SPEC.md §5: a stat
+            grid inside a glass card, cells split by full-bleed hairlines, with
+            the tracked eyebrow labels §1 names for exactly these three. The
+            emoji this replaced have no counterpart on web. */}
+        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+          <StatGrid
+            columns={3}
+            eyebrowLabels
+            items={[
+              { label: "Creator Tier", value: listing.tierRequired },
+              { label: "Compensation", value: listing.compensation },
+              {
+                label: "Deliverables",
+                value: listing.deliverablesLoad ? String(listing.deliverablesLoad) : null,
+              },
+            ]}
+          />
         </View>
-
-        <View
-          style={{ height: 1, backgroundColor: colors.hairline, marginBottom: 20 }}
-        />
 
         {/* SECTION 4 — About This Stay */}
         <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-          <Text
-            style={{
-              fontFamily: fonts.display,
-              fontSize: 18,
-              color: colors.ink,
-              marginBottom: 12,
-              letterSpacing: track(18, tracking.display),
-            }}
-          >
-            About this stay
-          </Text>
+          <SectionHeading size={18} title={"About this stay"} />
           <Text
             style={{
               fontFamily: fonts.body,
@@ -1603,11 +1543,7 @@ export default function ListingDetailScreen() {
         {listing.amenities?.length > 0 && (
           <>
             <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-              <Text
-                style={{ fontFamily: fonts.display, fontSize: 18, color: colors.ink, marginBottom: 14, letterSpacing: track(18, tracking.display) }}
-              >
-                What this place offers
-              </Text>
+              <SectionHeading size={18} title={"What this place offers"} />
               <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
                 {listing.amenities.map(({ icon, label }, i) => (
                   <View
@@ -1638,17 +1574,7 @@ export default function ListingDetailScreen() {
         {listing.deliverables && listing.deliverables.length > 0 && (
           <>
             <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-              <Text
-                style={{
-                  fontFamily: fonts.display,
-                  fontSize: 18,
-                  color: colors.ink,
-                  marginBottom: 12,
-                  letterSpacing: track(18, tracking.display),
-                }}
-              >
-                What we're looking for
-              </Text>
+              <SectionHeading size={18} title={"What we're looking for"} />
               {listing.deliverables.map((item, i) => (
                 <View
                   key={i}
@@ -1693,17 +1619,7 @@ export default function ListingDetailScreen() {
         {listing.dates && (
           <>
             <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-              <Text
-                style={{
-                  fontFamily: fonts.display,
-                  fontSize: 18,
-                  color: colors.ink,
-                  marginBottom: 12,
-                  letterSpacing: track(18, tracking.display),
-                }}
-              >
-                Collab details
-              </Text>
+              <SectionHeading size={18} title={"Collab details"} />
               <View
                 style={{
                   flexDirection: "row",
@@ -1819,9 +1735,7 @@ export default function ListingDetailScreen() {
               style={{ height: 1, backgroundColor: colors.hairline, marginTop: 4, marginBottom: 20 }}
             />
             <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-              <Text style={{ fontFamily: fonts.display, fontSize: 18, color: colors.ink, marginBottom: 14, letterSpacing: track(18, tracking.display) }}>
-                Requirements
-              </Text>
+              <SectionHeading size={18} title={"Requirements"} />
               <View style={{ gap: 10 }}>
                 {listing.requirements.map((req, i) => (
                   <View key={i} style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
@@ -1851,9 +1765,7 @@ export default function ListingDetailScreen() {
               style={{ height: 1, backgroundColor: colors.hairline, marginBottom: 20 }}
             />
             <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-              <Text style={{ fontFamily: fonts.display, fontSize: 18, color: colors.ink, marginBottom: 4, letterSpacing: track(18, tracking.display) }}>
-                Location
-              </Text>
+              <SectionHeading size={18} title={"Location"} />
               {listing.locationFull && (
                 <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage, marginBottom: 12 }}>
                   {listing.locationFull}
@@ -1893,9 +1805,7 @@ export default function ListingDetailScreen() {
           style={{ height: 1, backgroundColor: colors.hairline, marginBottom: 20 }}
         />
         <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
-          <Text style={{ fontFamily: fonts.display, fontSize: 18, color: colors.ink, marginBottom: 14, letterSpacing: track(18, tracking.display) }}>
-            Reviews
-          </Text>
+          <SectionHeading size={18} title={"Reviews"} />
           {listingReviews?.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
               {listingReviews.map((r, i) => (
@@ -1937,72 +1847,41 @@ export default function ListingDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* BOTTOM ACTION BAR */}
-      <View
+      {/* BOTTOM ACTION BAR — COMPONENT-SPEC.md §12. Price over a sage
+          deliverables sub-line, wide dark pill CTA. Collapses to a single
+          full-width action on the host's own listing. */}
+      <StickyActionBar
         style={{
           position: "absolute",
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: colors.surface,
-          borderTopWidth: 1,
-          borderTopColor: colors.hairline,
-          paddingHorizontal: 20,
-          paddingTop: 12,
           paddingBottom: insets.bottom + 12,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
         }}
-      >
-        {isHost ? (
-          <TouchableOpacity
-            style={{
-              flex: 1,
-              backgroundColor: colors.slate,
-              paddingVertical: 14,
-              borderRadius: 24,
-              alignItems: "center",
-            }}
-            onPress={handleEdit}
-          >
-            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: colors.surface }}>
-              Edit Listing
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{ fontFamily: fonts.displaySemibold, fontSize: 16, color: colors.ink, letterSpacing: track(16, tracking.display) }}
-              >
-                {listing.compensation?.includes("Free") ||
+        price={
+          isHost
+            ? undefined
+            : listing.compensation?.includes("Free") ||
                 listing.compensation?.includes("Complimentary")
-                  ? "Free stay"
-                  : listing.compensation?.split("+")[0]?.trim() || "Free stay"}
-              </Text>
-              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage }}>
-                {listing.compensation}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={{
-                backgroundColor: hasApplied ? colors.stone : colors.slate,
-                paddingVertical: 14,
-                paddingHorizontal: 24,
-                borderRadius: 24,
-                alignItems: "center",
-              }}
-              onPress={hasApplied ? undefined : handleApply}
-              disabled={hasApplied}
-            >
-              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: hasApplied ? colors.slate : colors.surface }}>
-                {hasApplied ? "Applied ✓" : "Apply Now"}
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
+              ? "Free stay"
+              : listing.compensation?.split("+")[0]?.trim() || "Free stay"
+        }
+        caption={
+          isHost
+            ? undefined
+            : listing.deliverablesLoad
+              ? `${listing.deliverablesLoad} deliverable${listing.deliverablesLoad === 1 ? "" : "s"}`
+              : listing.compensation
+        }
+        actionLabel={isHost ? "Edit Listing" : hasApplied ? "Applied ✓" : "Apply Now"}
+        actionIcon={
+          !isHost && !hasApplied ? (
+            <ArrowRight size={16} color={colors.surface} />
+          ) : undefined
+        }
+        onAction={isHost ? handleEdit : hasApplied ? undefined : handleApply}
+        disabled={!isHost && hasApplied}
+      />
 
       {/* Apply Modal */}
       <ApplyModal

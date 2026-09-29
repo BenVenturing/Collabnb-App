@@ -37,14 +37,21 @@ export function StatGrid({ items, columns = 2, footer, eyebrowLabels = false, st
                   flex: 1,
                   alignItems: "center",
                   paddingVertical: 20,
-                  paddingHorizontal: 12,
+                  paddingHorizontal: columns >= 3 ? 6 : 12,
                   borderLeftWidth: c === 0 ? 0 : 1,
                   borderLeftColor: colors.hairline,
                 }}
               >
                 {eyebrowLabels ? (
                   <>
-                    <EyebrowLabel size={10}>{item.label}</EyebrowLabel>
+                    <EyebrowLabel
+                      size={10}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      style={{ textAlign: "center" }}
+                    >
+                      {item.label}
+                    </EyebrowLabel>
                     <Display size={17} style={{ marginTop: 6 }}>
                       {item.value ?? "—"}
                     </Display>

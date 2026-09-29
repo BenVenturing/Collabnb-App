@@ -11,7 +11,20 @@ import AtmosphericBackground from "../AtmosphericBackground";
 
 // Pinned above the tab bar on listing detail: price + sub-line, then the CTA.
 // Opaque so content scrolls cleanly beneath it.
-export function StickyActionBar({ price, caption, actionLabel, onAction, loading, style }) {
+//
+// `price`/`caption` are omitted for the host's own listing, where the bar is a
+// single full-width action rather than a price-plus-CTA split.
+export function StickyActionBar({
+  price,
+  caption,
+  actionLabel,
+  actionIcon,
+  onAction,
+  loading,
+  disabled,
+  style,
+}) {
+  const split = price != null;
   return (
     <View
       style={[
@@ -30,18 +43,28 @@ export function StickyActionBar({ price, caption, actionLabel, onAction, loading
         style,
       ]}
     >
-      <View style={{ flexShrink: 1 }}>
-        <Display size={20}>{price}</Display>
-        {caption ? (
-          <Body size={13} color={colors.sage}>
-            {caption}
-          </Body>
-        ) : null}
-      </View>
-      <PillButton label={actionLabel} onPress={onAction} loading={loading} style={{ flex: 1, maxWidth: 200 }} />
+      {split ? (
+        <View style={{ flexShrink: 1 }}>
+          <Display size={20}>{price}</Display>
+          {caption ? (
+            <Body size={13} color={colors.sage} numberOfLines={1}>
+              {caption}
+            </Body>
+          ) : null}
+        </View>
+      ) : null}
+      <PillButton
+        label={actionLabel}
+        iconRight={actionIcon}
+        onPress={onAction}
+        loading={loading}
+        disabled={disabled}
+        style={split ? { flex: 1, maxWidth: 200 } : { flex: 1 }}
+      />
     </View>
   );
 }
+
 
 // Rounded top corners, centred drag handle, opaque bone. Sits over the map.
 export function BottomSheet({ title, children, horizontal = true, style }) {

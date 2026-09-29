@@ -9,9 +9,10 @@ import { Text, View, Pressable } from "react-native";
 import { colors, fonts, tracking, track, lineHeights } from "@/config/theme";
 
 // Uppercase micro-label: WHERE, CREATOR TIER, WHAT YOU GET, LOCATION.
-export function EyebrowLabel({ children, size = 11, color = colors.sage, style }) {
+export function EyebrowLabel({ children, size = 11, color = colors.sage, style, ...rest }) {
   return (
     <Text
+      {...rest}
       style={[
         {
           fontFamily: fonts.bodyMedium,
