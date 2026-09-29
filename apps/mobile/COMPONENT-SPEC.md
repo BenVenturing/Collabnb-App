@@ -148,10 +148,13 @@ sparkle (AI), and send icons trailing, plus an
 `Enter to send • Shift+Enter for new line` hint in sage beneath.
 
 ## 19. Profile header
-Hero media (video on web) bleeding to the top edge, a circular avatar with a
-thick white ring overlapping its lower edge, then centred name
-(`fonts.display`), a mint chip (`★ FOUNDING MEMBER`), and a sage
-`@handle • location` line.
+Hero media (video on web) bleeding to the top edge, its lower half dissolving
+into the page under a bone gradient rather than ending on a hard line. A
+circular avatar with a thick white ring overlaps that edge at the **lower
+left**, inset 24pt. Beneath it, centred: name (`fonts.display`), a mint chip
+(`★ FOUNDING MEMBER`, else the creator tier), a sage `@handle · location`
+line with the location in `colors.slate`, then the action row (Share Profile
+as a glass pill). With no banner the hero is an ink→slate diagonal gradient.
 
 ---
 

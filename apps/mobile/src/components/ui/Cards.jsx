@@ -76,9 +76,13 @@ export function StatGrid({ items, columns = 2, footer, eyebrowLabels = false, st
         ))}
         {footer ? (
           <View style={{ alignItems: "center", paddingBottom: 14, paddingTop: 2 }}>
-            <Body size={12} color={colors.sage}>
-              {footer}
-            </Body>
+            {typeof footer === "string" ? (
+              <Body size={12} color={colors.sage}>
+                {footer}
+              </Body>
+            ) : (
+              footer
+            )}
           </View>
         ) : null}
       </View>

@@ -2,6 +2,7 @@
 // See COMPONENT-SPEC.md §12, §13, §18, §19.
 
 import { View, Image, ScrollView } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radii, shadows } from "@/config/theme";
@@ -113,39 +114,84 @@ export function BottomSheet({ title, children, horizontal = true, style }) {
   );
 }
 
-// Hero media bleeding to the top edge, avatar overlapping its lower edge,
-// then centred name, membership chip, and @handle • location.
+// Hero media bleeding to the top edge, avatar overlapping its lower-left edge,
+// then centred name, membership chip, @handle • location, and an action row.
 // Static image by design — video autoplay costs battery on every profile view.
-export function ProfileHeader({ hero, avatar, name, badgeLabel, handle, location, action, style }) {
+//
+// The hero fades into the page rather than ending on a hard line: web lays a
+// bone gradient over its lower half so the banner dissolves into the canvas.
+// Its no-banner fallback is a dark green gradient; ink → slate is the palette's
+// nearest pair and reads the same.
+export function ProfileHeader({
+  hero,
+  avatar,
+  name,
+  badgeLabel,
+  handle,
+  location,
+  action,
+  topRight,
+  heroHeight = 300,
+  style,
+}) {
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={style}>
-      <View style={{ height: 210, backgroundColor: colors.slate }}>
-        {hero ? <Image source={hero} style={{ width: "100%", height: "100%" }} resizeMode="cover" /> : null}
-      </View>
+      <View style={{ height: heroHeight }}>
+        <LinearGradient
+          colors={[colors.ink, colors.slate]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: "absolute", inset: 0 }}
+        />
+        {hero ? (
+          <Image source={hero} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+        ) : null}
+        <LinearGradient
+          colors={["transparent", "rgba(239,236,233,0.55)", colors.bone]}
+          locations={[0, 0.55, 1]}
+          style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: heroHeight * 0.45 }}
+        />
 
-      <View style={{ alignItems: "center", marginTop: -52, paddingHorizontal: 24 }}>
+        {topRight ? (
+          <View style={{ position: "absolute", top: insets.top + 12, right: 20 }}>{topRight}</View>
+        ) : null}
+
         {avatar ? (
           <Image
             source={avatar}
             style={{
+              position: "absolute",
+              bottom: -20,
+              left: 24,
               width: 104,
               height: 104,
               borderRadius: 52,
               borderWidth: 4,
               borderColor: colors.surface,
+              ...shadows.md,
             }}
           />
         ) : null}
+      </View>
 
-        <Display size={28} style={{ marginTop: 14, textAlign: "center" }}>
+      <View style={{ alignItems: "center", paddingTop: 44, paddingHorizontal: 24 }}>
+        <Display size={28} style={{ textAlign: "center" }}>
           {name}
         </Display>
 
         {badgeLabel ? <Chip label={badgeLabel} eyebrow style={{ marginTop: 10 }} /> : null}
 
-        {(handle || location) ? (
+        {handle || location ? (
           <Body size={14} color={colors.sage} style={{ marginTop: 10, textAlign: "center" }}>
-            {[handle, location].filter(Boolean).join("  •  ")}
+            {handle}
+            {handle && location ? "  " : null}
+            {location ? (
+              <Body size={14} color={colors.slate}>
+                · {location}
+              </Body>
+            ) : null}
           </Body>
         ) : null}
 
@@ -154,6 +200,7 @@ export function ProfileHeader({ hero, avatar, name, badgeLabel, handle, location
     </View>
   );
 }
+
 
 // Own messages are slate-filled with white text and an inset timestamp.
 export function MessageBubble({ children, timestamp, own = true, style }) {

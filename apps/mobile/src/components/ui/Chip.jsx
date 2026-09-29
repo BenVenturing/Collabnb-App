@@ -62,6 +62,7 @@ export function PillButton({
   iconRight = null,
   loading = false,
   disabled = false,
+  size = 15,
   style,
 }) {
   const dark = variant === "dark";
@@ -92,7 +93,7 @@ export function PillButton({
       ) : (
         <>
           {icon}
-          <Body size={15} weight="semibold" color={dark ? colors.surface : colors.ink}>
+          <Body size={size} weight="semibold" color={dark ? colors.surface : colors.ink}>
             {label}
           </Body>
           {iconRight}

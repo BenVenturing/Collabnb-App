@@ -1,128 +1,83 @@
-import { View, Text, TouchableOpacity, Linking } from "react-native";
-import { BlurView } from "expo-blur";
-import { ExternalLink } from "lucide-react-native";
+import { View, Pressable, Linking } from "react-native";
+import { ArrowUpRight } from "lucide-react-native";
+import { colors, radii } from "@/config/theme";
+import { Body, SectionHeading, Glass } from "@/components/ui";
+
+// Web renders each link as its own glass row in a gapped column — not as one
+// divided card — so the list reads as a stack of tappable things.
+function SocialRow({ icon: Icon, label, value, url }) {
+  return (
+    <Pressable
+      onPress={() => Linking.openURL(url)}
+      style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.99 : 1 }] })}
+    >
+      <Glass
+        variant="regular"
+        style={{ borderRadius: radii.md }}
+        contentStyle={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 16,
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+        }}
+      >
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: colors.mint,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Icon color={colors.slate} size={20} />
+        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Body size={14} weight="semibold">
+            {label}
+          </Body>
+          <Body size={12} color={colors.sage} numberOfLines={1}>
+            {value}
+          </Body>
+        </View>
+        <ArrowUpRight color={colors.stone} size={18} />
+      </Glass>
+    </Pressable>
+  );
+}
 
 export default function LinksSection({ personalLink, socialLinks }) {
-  const openLink = (url) => {
-    Linking.openURL(url);
-  };
+  const rows = [
+    ...(personalLink
+      ? [
+          {
+            key: "personal",
+            icon: personalLink.icon,
+            label: personalLink.title,
+            value: personalLink.url,
+            url: personalLink.url,
+          },
+        ]
+      : []),
+    ...socialLinks.map((l) => ({
+      key: l.platform,
+      icon: l.icon,
+      label: l.platform,
+      value: l.username,
+      url: l.url,
+    })),
+  ];
 
   return (
-    <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-      <Text
-        style={{
-          fontSize: 16,
-          fontWeight: "600",
-          color: "#192524",
-          marginBottom: 12,
-        }}
-      >
-        Links & Socials
-      </Text>
-
-      <BlurView
-        intensity={22}
-        tint="light"
-        style={{
-          borderRadius: 24,
-          overflow: "hidden",
-          borderWidth: 1,
-          borderColor: "rgba(255, 255, 255, 0.35)",
-          backgroundColor: "rgba(255, 255, 255, 0.28)",
-          shadowColor: "#192524",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
-          elevation: 2,
-        }}
-      >
-        {personalLink && (
-          <TouchableOpacity
-            onPress={() => openLink(personalLink.url)}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-              borderBottomWidth: socialLinks.length > 0 ? 1 : 0,
-              borderBottomColor: "rgba(255, 255, 255, 0.25)",
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#D1EBDB",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-              }}
-            >
-              <personalLink.icon color="#192524" size={20} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontWeight: "600",
-                  color: "#192524",
-                  marginBottom: 2,
-                }}
-              >
-                {personalLink.title}
-              </Text>
-              <Text style={{ fontSize: 13, color: "#959D90" }} numberOfLines={1}>
-                {personalLink.url}
-              </Text>
-            </View>
-            <ExternalLink color="#3C5759" size={18} />
-          </TouchableOpacity>
-        )}
-
-        {socialLinks.map((link, index) => (
-          <TouchableOpacity
-            key={link.platform}
-            onPress={() => openLink(link.url)}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-              borderBottomWidth: index < socialLinks.length - 1 ? 1 : 0,
-              borderBottomColor: "rgba(255, 255, 255, 0.25)",
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#3C5759",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-              }}
-            >
-              <link.icon color="#fff" size={20} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontWeight: "600",
-                  color: "#192524",
-                  marginBottom: 2,
-                }}
-              >
-                {link.platform}
-              </Text>
-              <Text style={{ fontSize: 13, color: "#959D90" }}>
-                {link.username}
-              </Text>
-            </View>
-            <ExternalLink color="#3C5759" size={18} />
-          </TouchableOpacity>
+    <View style={{ paddingHorizontal: 20, marginBottom: 28 }}>
+      <SectionHeading size={18} title="Links & Socials" />
+      <View style={{ gap: 10 }}>
+        {rows.map((row) => (
+          <SocialRow key={row.key} {...row} />
         ))}
-      </BlurView>
+      </View>
     </View>
   );
 }
