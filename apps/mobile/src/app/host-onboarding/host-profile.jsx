@@ -1,11 +1,12 @@
-import { View, Text, ScrollView, TextInput, Alert } from "react-native";
+import { View, Text, ScrollView, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import useHostOnboardingStore from "@/utils/HostOnboardingStore";
 import HostOnboardingShell from "@/components/HostOnboardingShell";
-import { colors, fonts, tracking, track } from "@/config/theme";
+import { Display, Body, FormField } from "@/components/ui";
+import { colors } from "@/config/theme";
 
 export default function HostProfileScreen() {
   const router = useRouter();
@@ -58,202 +59,70 @@ export default function HostProfileScreen() {
         <View
           style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 32 }}
         >
-          <Text
-            style={{
-              fontFamily: fonts.display,
-              fontSize: 28,
-              color: colors.ink,
-              letterSpacing: track(28, tracking.display),
-              marginBottom: 8,
-            }}
-          >
-            Set up your host profile
-          </Text>
-          <Text style={{ fontFamily: fonts.body, fontSize: 16, color: colors.slate, lineHeight: 24 }}>
+          <Display size={28} style={{ marginBottom: 8 }}>Set up your host profile</Display>
+          <Body size={16} color={colors.slate} style={{ lineHeight: 24 }}>
             Help creators learn more about you
-          </Text>
+          </Body>
         </View>
 
         {/* Form Fields */}
-        <View style={{ paddingHorizontal: 24 }}>
-          {/* Full Name */}
-          <View style={{ marginBottom: 20 }}>
-            <Text
-              style={{
-                fontFamily: fonts.bodySemibold,
-                fontSize: 14,
-                color: colors.ink,
-                marginBottom: 8,
-              }}
-            >
-              {/* No danger/required-field token in the 9-color palette — left as-is, see report */}
-              Full name <Text style={{ color: "#EF4444" }}>*</Text>
-            </Text>
-            <TextInput
-              value={fullName}
-              onChangeText={(text) => updateField("fullName", text)}
-              placeholder="Your name"
-              placeholderTextColor={colors.sage}
-              style={{
-                backgroundColor: colors.bone,
-                borderWidth: 1,
-                borderColor: colors.stone,
-                borderRadius: 12,
-                paddingHorizontal: 16,
-                paddingVertical: 14,
-                fontFamily: fonts.body,
-                fontSize: 16,
-                color: colors.ink,
-              }}
-            />
-          </View>
+        <View style={{ paddingHorizontal: 24, gap: 20 }}>
+          {/* No danger/required-field token in the 9-color palette — left as-is, see report */}
+          <FormField
+            label={<>Full name <Text style={{ color: "#EF4444" }}>*</Text></>}
+            value={fullName}
+            onChangeText={(text) => updateField("fullName", text)}
+            placeholder="Your name"
+          />
 
-          {/* Business/Brand Name */}
-          <View style={{ marginBottom: 20 }}>
-            <Text
-              style={{
-                fontFamily: fonts.bodySemibold,
-                fontSize: 14,
-                color: colors.ink,
-                marginBottom: 8,
-              }}
-            >
-              Business / property brand name (optional)
-            </Text>
-            <TextInput
-              value={businessName}
-              onChangeText={(text) => updateField("businessName", text)}
-              placeholder="e.g., Sunset Stays"
-              placeholderTextColor={colors.sage}
-              style={{
-                backgroundColor: colors.bone,
-                borderWidth: 1,
-                borderColor: colors.stone,
-                borderRadius: 12,
-                paddingHorizontal: 16,
-                paddingVertical: 14,
-                fontFamily: fonts.body,
-                fontSize: 16,
-                color: colors.ink,
-              }}
-            />
-          </View>
+          <FormField
+            label="Business / property brand name (optional)"
+            value={businessName}
+            onChangeText={(text) => updateField("businessName", text)}
+            placeholder="e.g., Sunset Stays"
+          />
 
-          {/* Website */}
-          <View style={{ marginBottom: 20 }}>
-            <Text
-              style={{
-                fontFamily: fonts.bodySemibold,
-                fontSize: 14,
-                color: colors.ink,
-                marginBottom: 8,
-              }}
-            >
-              Website (optional)
-            </Text>
-            <TextInput
-              value={websiteUrl}
-              onChangeText={(text) => updateField("websiteUrl", text)}
-              placeholder="https://yourwebsite.com"
-              placeholderTextColor={colors.sage}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              style={{
-                backgroundColor: colors.bone,
-                borderWidth: 1,
-                borderColor: colors.stone,
-                borderRadius: 12,
-                paddingHorizontal: 16,
-                paddingVertical: 14,
-                fontFamily: fonts.body,
-                fontSize: 16,
-                color: colors.ink,
-              }}
-            />
-          </View>
+          <FormField
+            label="Website (optional)"
+            value={websiteUrl}
+            onChangeText={(text) => updateField("websiteUrl", text)}
+            placeholder="https://yourwebsite.com"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+          />
 
-          {/* Contact Email */}
-          <View style={{ marginBottom: 20 }}>
-            <Text
-              style={{
-                fontFamily: fonts.bodySemibold,
-                fontSize: 14,
-                color: colors.ink,
-                marginBottom: 8,
-              }}
-            >
-              Contact email <Text style={{ color: "#EF4444" }}>*</Text>
-            </Text>
-            <TextInput
-              value={contactEmail}
-              onChangeText={(text) => updateField("contactEmail", text)}
-              placeholder="your@email.com"
-              placeholderTextColor={colors.sage}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              style={{
-                backgroundColor: colors.bone,
-                borderWidth: 1,
-                borderColor: colors.stone,
-                borderRadius: 12,
-                paddingHorizontal: 16,
-                paddingVertical: 14,
-                fontFamily: fonts.body,
-                fontSize: 16,
-                color: colors.ink,
-              }}
-            />
-          </View>
+          <FormField
+            label={<>Contact email <Text style={{ color: "#EF4444" }}>*</Text></>}
+            value={contactEmail}
+            onChangeText={(text) => updateField("contactEmail", text)}
+            placeholder="your@email.com"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+          />
 
-          {/* Phone */}
-          <View style={{ marginBottom: 20 }}>
-            <Text
-              style={{
-                fontFamily: fonts.bodySemibold,
-                fontSize: 14,
-                color: colors.ink,
-                marginBottom: 8,
-              }}
-            >
-              Phone (optional)
-            </Text>
-            <TextInput
-              value={phone}
-              onChangeText={(text) => updateField("phone", text)}
-              placeholder="+1 (555) 123-4567"
-              placeholderTextColor={colors.sage}
-              keyboardType="phone-pad"
-              style={{
-                backgroundColor: colors.bone,
-                borderWidth: 1,
-                borderColor: colors.stone,
-                borderRadius: 12,
-                paddingHorizontal: 16,
-                paddingVertical: 14,
-                fontFamily: fonts.body,
-                fontSize: 16,
-                color: colors.ink,
-              }}
-            />
-          </View>
+          <FormField
+            label="Phone (optional)"
+            value={phone}
+            onChangeText={(text) => updateField("phone", text)}
+            placeholder="+1 (555) 123-4567"
+            keyboardType="phone-pad"
+          />
 
           {/* Info Callout */}
           <View
             style={{
-              // colors.mint at 50% opacity
               backgroundColor: "rgba(209, 235, 219, 0.5)",
               borderWidth: 1,
               borderColor: colors.mint,
               borderRadius: 12,
               padding: 16,
-              marginTop: 8,
             }}
           >
-            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate, lineHeight: 20 }}>
+            <Body size={14} color={colors.slate} style={{ lineHeight: 20 }}>
               Hosts are reviewed to maintain quality collaborations.
-            </Text>
+            </Body>
           </View>
         </View>
       </ScrollView>

@@ -1,11 +1,11 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, TouchableOpacity } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Home, ArrowLeft } from "lucide-react-native";
 import { Image } from "expo-image";
-import AtmosphericBackground from "@/components/AtmosphericBackground";
-import { colors, fonts, tracking, track } from "@/config/theme";
+import { AtmosphericBackground, Display, Body } from "@/components/ui";
+import { colors } from "@/config/theme";
 
 export default function HostComingSoonScreen() {
   const insets = useSafeAreaInsets();
@@ -39,33 +39,15 @@ export default function HostComingSoonScreen() {
         </View>
 
         {/* Title */}
-        <Text
-          style={{
-            fontFamily: fonts.display,
-            fontSize: 28,
-            color: colors.ink,
-            letterSpacing: track(28, tracking.display),
-            textAlign: "center",
-            marginBottom: 12,
-          }}
-        >
+        <Display size={28} style={{ textAlign: "center", marginBottom: 12 }}>
           Host Mode
-        </Text>
+        </Display>
 
         {/* Body */}
-        <Text
-          style={{
-            fontFamily: fonts.body,
-            fontSize: 16,
-            color: colors.slate,
-            textAlign: "center",
-            lineHeight: 24,
-            marginBottom: 40,
-          }}
-        >
+        <Body size={16} color={colors.slate} style={{ textAlign: "center", lineHeight: 24, marginBottom: 40 }}>
           Host onboarding is being finalized. You can explore as a creator in
           the meantime and switch to host mode when it's ready.
-        </Text>
+        </Body>
 
         {/* Logo */}
         <Image
@@ -90,16 +72,16 @@ export default function HostComingSoonScreen() {
           }}
         >
           <ArrowLeft color={colors.bone} size={20} style={{ marginRight: 8 }} />
-          <Text style={{ fontFamily: fonts.bodySemibold, color: colors.bone, fontSize: 16 }}>
+          <Body size={16} weight="semibold" color={colors.bone}>
             Go to Explore
-          </Text>
+          </Body>
         </TouchableOpacity>
       </View>
 
       <View style={{ paddingBottom: insets.bottom + 20 }}>
-        <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage, textAlign: "center" }}>
+        <Body size={13} color={colors.sage} style={{ textAlign: "center" }}>
           Need help? Contact support@collabnb.com
-        </Text>
+        </Body>
       </View>
     </AtmosphericBackground>
   );

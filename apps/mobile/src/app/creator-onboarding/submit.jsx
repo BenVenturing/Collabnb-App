@@ -1,7 +1,7 @@
 // Creator Onboarding — Step 4: Review & Submit
 // Collabnb Design System
 
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,8 +19,8 @@ import { useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
-import AtmosphericBackground from "@/components/AtmosphericBackground";
-import { colors, fonts, tracking, track } from "@/config/theme";
+import { AtmosphericBackground, Display, Body, EyebrowLabel, PillButton, Glass } from "@/components/ui";
+import { colors } from "@/config/theme";
 
 // Website's profiles.updateProfile stores bare handles (e.g. "jane"), not
 // full URLs — mirrors RoleSwitchSheet.jsx's `.replace(/^@/, '')` convention.
@@ -140,43 +140,16 @@ export default function CreatorSubmitApplicationScreen() {
             <CheckCircle size={48} color={colors.slate} strokeWidth={2} />
           </View>
 
-          <Text
-            style={{
-              fontFamily: fonts.display,
-              fontSize: 28,
-              color: colors.ink,
-              letterSpacing: track(28, tracking.display),
-              marginBottom: 12,
-              textAlign: "center",
-            }}
-          >
+          <Display size={28} style={{ marginBottom: 12, textAlign: "center" }}>
             Profile submitted! 🎉
-          </Text>
+          </Display>
 
-          <Text
-            style={{
-              fontFamily: fonts.body,
-              fontSize: 16,
-              color: colors.slate,
-              lineHeight: 24,
-              textAlign: "center",
-              paddingHorizontal: 20,
-              marginBottom: 8,
-            }}
-          >
+          <Body size={16} color={colors.slate} style={{ lineHeight: 24, textAlign: "center", paddingHorizontal: 20, marginBottom: 8 }}>
             We're reviewing your profile and will email you within 48 hours.
-          </Text>
-          <Text
-            style={{
-              fontFamily: fonts.body,
-              fontSize: 14,
-              color: colors.sage,
-              textAlign: "center",
-              lineHeight: 20,
-            }}
-          >
+          </Body>
+          <Body size={14} color={colors.sage} style={{ textAlign: "center", lineHeight: 20 }}>
             In the meantime, explore open collabs near you.
-          </Text>
+          </Body>
         </View>
 
         {/* Bottom CTA */}
@@ -185,26 +158,12 @@ export default function CreatorSubmitApplicationScreen() {
             paddingHorizontal: 24,
             paddingTop: 16,
             paddingBottom: insets.bottom + 16,
-            // colors.surface at 90% opacity
             backgroundColor: "rgba(255,255,255,0.9)",
             borderTopWidth: 1,
-            // colors.stone at 50% opacity
-            borderTopColor: "rgba(208,213,206,0.5)",
+            borderTopColor: colors.hairline,
           }}
         >
-          <TouchableOpacity
-            onPress={handleReturnToBrowse}
-            style={{
-              backgroundColor: colors.slate,
-              borderRadius: 16,
-              paddingVertical: 16,
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ fontFamily: fonts.bodySemibold, color: colors.bone, fontSize: 16 }}>
-              Explore collabs
-            </Text>
-          </TouchableOpacity>
+          <PillButton label="Explore collabs" onPress={handleReturnToBrowse} style={{ alignSelf: "stretch" }} />
         </View>
       </AtmosphericBackground>
     );
@@ -221,51 +180,21 @@ export default function CreatorSubmitApplicationScreen() {
           paddingTop: insets.top + 16,
           paddingHorizontal: 20,
           paddingBottom: 16,
-          // colors.surface at 85% opacity
           backgroundColor: "rgba(255,255,255,0.85)",
           borderBottomWidth: 1,
-          borderBottomColor: colors.stone,
+          borderBottomColor: colors.hairline,
         }}
       >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            marginBottom: 12,
-          }}
-        >
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
           <TouchableOpacity onPress={() => router.back()}>
             <ChevronLeft color={colors.slate} size={24} />
           </TouchableOpacity>
-          <Text
-            style={{
-              flex: 1,
-              textAlign: "center",
-              fontFamily: fonts.bodySemibold,
-              fontSize: 16,
-              color: colors.ink,
-              marginRight: 24,
-            }}
-          >
+          <Body size={16} weight="semibold" style={{ flex: 1, textAlign: "center", marginRight: 24 }}>
             Step 4 of 4
-          </Text>
+          </Body>
         </View>
-        {/* Progress Bar */}
-        <View
-          style={{
-            height: 4,
-            backgroundColor: colors.stone,
-            borderRadius: 2,
-            overflow: "hidden",
-          }}
-        >
-          <View
-            style={{
-              width: "100%",
-              height: "100%",
-              backgroundColor: colors.slate,
-            }}
-          />
+        <View style={{ height: 4, backgroundColor: colors.stone, borderRadius: 2, overflow: "hidden" }}>
+          <View style={{ width: "100%", height: "100%", backgroundColor: colors.slate }} />
         </View>
       </View>
 
@@ -279,47 +208,13 @@ export default function CreatorSubmitApplicationScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Title */}
-        <Text
-          style={{
-            fontFamily: fonts.display,
-            fontSize: 28,
-            color: colors.ink,
-            marginBottom: 6,
-            letterSpacing: track(28, tracking.display),
-          }}
-        >
-          Review your profile
-        </Text>
-        <Text
-          style={{
-            fontFamily: fonts.body,
-            fontSize: 15,
-            color: colors.sage,
-            lineHeight: 22,
-            marginBottom: 28,
-          }}
-        >
+        <Display size={28} style={{ marginBottom: 6 }}>Review your profile</Display>
+        <Body size={15} color={colors.sage} style={{ lineHeight: 22, marginBottom: 28 }}>
           This is what hosts will see when you apply to a collab.
-        </Text>
+        </Body>
 
         {/* Profile Card */}
-        <View
-          style={{
-            // colors.surface at 75% opacity
-            backgroundColor: "rgba(255,255,255,0.75)",
-            borderRadius: 20,
-            borderWidth: 1,
-            // colors.surface at 85% opacity
-            borderColor: "rgba(255,255,255,0.85)",
-            shadowColor: colors.slate,
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.08,
-            shadowRadius: 16,
-            elevation: 3,
-            padding: 20,
-            marginBottom: 16,
-          }}
-        >
+        <Glass variant="card" contentStyle={{ padding: 20 }} style={{ marginBottom: 16 }}>
           {/* Avatar + Name */}
           <View
             style={{
@@ -350,26 +245,18 @@ export default function CreatorSubmitApplicationScreen() {
                   contentFit="cover"
                 />
               ) : (
-                <Text style={{ fontFamily: fonts.display, fontSize: 28, color: colors.slate }}>
+                <Display size={28} color={colors.slate}>
                   {(displayName || "?").charAt(0).toUpperCase()}
-                </Text>
+                </Display>
               )}
             </View>
             <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontFamily: fonts.display,
-                  fontSize: 20,
-                  color: colors.ink,
-                  letterSpacing: track(20, tracking.display),
-                  marginBottom: 3,
-                }}
-              >
+              <Display size={20} style={{ marginBottom: 3 }}>
                 {displayName || "Your Name"}
-              </Text>
-              <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage }}>
+              </Display>
+              <Body size={14} color={colors.sage}>
                 @{username || "username"}
-              </Text>
+              </Body>
             </View>
           </View>
 
@@ -378,24 +265,15 @@ export default function CreatorSubmitApplicationScreen() {
             style={{
               height: 1,
               // colors.slate at 8% opacity
-              backgroundColor: "rgba(60,87,89,0.08)",
+              backgroundColor: colors.hairline,
               marginBottom: 16,
             }}
           />
 
           {/* Social platforms */}
-          <Text
-            style={{
-              fontFamily: fonts.bodyMedium,
-              fontSize: 10,
-              color: colors.sage,
-              letterSpacing: track(10, tracking.eyebrow),
-              marginBottom: 12,
-              textTransform: "uppercase",
-            }}
-          >
+          <EyebrowLabel size={10} style={{ marginBottom: 12 }}>
             Connected Platforms
-          </Text>
+          </EyebrowLabel>
           <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
             {hasInstagram && (
               <View
@@ -443,9 +321,9 @@ export default function CreatorSubmitApplicationScreen() {
               </View>
             )}
             {!hasAnySocial && (
-              <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.stone }}>
+              <Body size={14} color={colors.stone}>
                 None connected
-              </Text>
+              </Body>
             )}
           </View>
 
@@ -454,24 +332,15 @@ export default function CreatorSubmitApplicationScreen() {
             style={{
               height: 1,
               // colors.slate at 8% opacity
-              backgroundColor: "rgba(60,87,89,0.08)",
+              backgroundColor: colors.hairline,
               marginBottom: 16,
             }}
           />
 
           {/* Portfolio */}
-          <Text
-            style={{
-              fontFamily: fonts.bodyMedium,
-              fontSize: 10,
-              color: colors.sage,
-              letterSpacing: track(10, tracking.eyebrow),
-              marginBottom: 12,
-              textTransform: "uppercase",
-            }}
-          >
+          <EyebrowLabel size={10} style={{ marginBottom: 12 }}>
             Portfolio
-          </Text>
+          </EyebrowLabel>
           <View
             style={{
               flexDirection: "row",
@@ -486,22 +355,20 @@ export default function CreatorSubmitApplicationScreen() {
             }}
           >
             <ImageIcon size={16} color={colors.slate} />
-            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.slate }}>
+            <Body size={14} weight="medium" color={colors.slate}>
               {portfolioCount > 0
                 ? `${portfolioCount} item${portfolioCount !== 1 ? "s" : ""} added`
                 : "No uploads — that's okay!"}
-            </Text>
+            </Body>
           </View>
-        </View>
+        </Glass>
 
         {/* Info banner */}
         <View
           style={{
-            // colors.mint at 50% opacity
             backgroundColor: "rgba(209,235,219,0.5)",
             borderRadius: 14,
             borderWidth: 1,
-            // colors.mint at 80% opacity
             borderColor: "rgba(209,235,219,0.8)",
             padding: 16,
             flexDirection: "row",
@@ -509,13 +376,11 @@ export default function CreatorSubmitApplicationScreen() {
             gap: 10,
           }}
         >
-          <Text style={{ fontSize: 16 }}>✦</Text>
-          <Text
-            style={{ flex: 1, fontFamily: fonts.body, fontSize: 14, color: colors.slate, lineHeight: 21 }}
-          >
+          <Body size={16}>✦</Body>
+          <Body size={14} color={colors.slate} style={{ flex: 1, lineHeight: 21 }}>
             Every creator profile is reviewed before going live. This ensures
             quality for both hosts and creators.
-          </Text>
+          </Body>
         </View>
       </ScrollView>
 
@@ -525,41 +390,20 @@ export default function CreatorSubmitApplicationScreen() {
           paddingHorizontal: 20,
           paddingTop: 16,
           paddingBottom: insets.bottom + 16,
-          // colors.surface at 92% opacity
           backgroundColor: "rgba(255,255,255,0.92)",
           borderTopWidth: 1,
-          // colors.stone at 50% opacity
-          borderTopColor: "rgba(208,213,206,0.5)",
+          borderTopColor: colors.hairline,
         }}
       >
-        <TouchableOpacity
+        <PillButton
+          label="Submit application"
           onPress={handleSubmit}
           disabled={submitting}
-          style={{
-            backgroundColor: colors.slate,
-            borderRadius: 16,
-            paddingVertical: 16,
-            alignItems: "center",
-            marginBottom: 12,
-            opacity: submitting ? 0.7 : 1,
-          }}
-        >
-          {submitting ? (
-            <ActivityIndicator color={colors.bone} />
-          ) : (
-            <Text style={{ fontFamily: fonts.bodySemibold, color: colors.bone, fontSize: 16 }}>
-              Submit application
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={{ alignItems: "center", paddingVertical: 8 }}
-        >
-          <Text style={{ fontFamily: fonts.bodyMedium, color: colors.sage, fontSize: 15 }}>
-            Edit profile
-          </Text>
+          loading={submitting}
+          style={{ alignSelf: "stretch", marginBottom: 12 }}
+        />
+        <TouchableOpacity onPress={() => router.back()} style={{ alignItems: "center", paddingVertical: 8 }}>
+          <Body size={15} color={colors.sage}>Edit profile</Body>
         </TouchableOpacity>
       </View>
     </AtmosphericBackground>

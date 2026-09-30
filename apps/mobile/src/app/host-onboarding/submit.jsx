@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Alert, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, ScrollView, Alert, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,8 +17,8 @@ import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import useHostOnboardingStore from "@/utils/HostOnboardingStore";
 import HostOnboardingShell from "@/components/HostOnboardingShell";
-import AtmosphericBackground from "@/components/AtmosphericBackground";
-import { colors, fonts, tracking, track } from "@/config/theme";
+import { AtmosphericBackground, Display, Body, EyebrowLabel, PillButton, FormField, Glass } from "@/components/ui";
+import { colors } from "@/config/theme";
 
 export default function HostSubmitScreen() {
   const router = useRouter();
@@ -132,32 +132,14 @@ export default function HostSubmitScreen() {
           </View>
 
           {/* Title */}
-          <Text
-            style={{
-              fontFamily: fonts.display,
-              fontSize: 28,
-              color: colors.ink,
-              letterSpacing: track(28, tracking.display),
-              marginBottom: 12,
-              textAlign: "center",
-            }}
-          >
+          <Display size={28} style={{ marginBottom: 12, textAlign: "center" }}>
             Submitted — under review
-          </Text>
+          </Display>
 
           {/* Body Text */}
-          <Text
-            style={{
-              fontFamily: fonts.body,
-              fontSize: 16,
-              color: colors.slate,
-              lineHeight: 24,
-              textAlign: "center",
-              paddingHorizontal: 20,
-            }}
-          >
+          <Body size={16} color={colors.slate} style={{ lineHeight: 24, textAlign: "center", paddingHorizontal: 20 }}>
             We'll email you within 24–48 hours.
-          </Text>
+          </Body>
         </View>
 
         {/* Bottom CTA */}
@@ -175,25 +157,7 @@ export default function HostSubmitScreen() {
             paddingBottom: insets.bottom + 16,
           }}
         >
-          <TouchableOpacity
-            onPress={handleReturnToExplore}
-            style={{
-              backgroundColor: colors.ink,
-              borderRadius: 12,
-              paddingVertical: 16,
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: fonts.bodySemibold,
-                color: colors.surface,
-                fontSize: 16,
-              }}
-            >
-              Explore listings
-            </Text>
-          </TouchableOpacity>
+          <PillButton label="Explore listings" onPress={handleReturnToExplore} style={{ alignSelf: "stretch" }} />
         </View>
       </AtmosphericBackground>
     );
@@ -231,32 +195,14 @@ export default function HostSubmitScreen() {
           </View>
 
           {/* Title */}
-          <Text
-            style={{
-              fontFamily: fonts.display,
-              fontSize: 28,
-              color: colors.ink,
-              letterSpacing: track(28, tracking.display),
-              marginBottom: 12,
-              textAlign: "center",
-            }}
-          >
+          <Display size={28} style={{ marginBottom: 12, textAlign: "center" }}>
             You're in!
-          </Text>
+          </Display>
 
           {/* Body Text */}
-          <Text
-            style={{
-              fontFamily: fonts.body,
-              fontSize: 16,
-              color: colors.slate,
-              lineHeight: 24,
-              textAlign: "center",
-              paddingHorizontal: 20,
-            }}
-          >
+          <Body size={16} color={colors.slate} style={{ lineHeight: 24, textAlign: "center", paddingHorizontal: 20 }}>
             You can browse now. You'll need approval before posting listings.
-          </Text>
+          </Body>
         </View>
 
         {/* Bottom CTA */}
@@ -274,25 +220,7 @@ export default function HostSubmitScreen() {
             paddingBottom: insets.bottom + 16,
           }}
         >
-          <TouchableOpacity
-            onPress={handleReturnToExplore}
-            style={{
-              backgroundColor: colors.ink,
-              borderRadius: 12,
-              paddingVertical: 16,
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: fonts.bodySemibold,
-                color: colors.surface,
-                fontSize: 16,
-              }}
-            >
-              Start browsing
-            </Text>
-          </TouchableOpacity>
+          <PillButton label="Start browsing" onPress={handleReturnToExplore} style={{ alignSelf: "stretch" }} />
         </View>
       </AtmosphericBackground>
     );
@@ -316,60 +244,29 @@ export default function HostSubmitScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View
-          style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 32 }}
-        >
-          <Text
-            style={{
-              fontFamily: fonts.display,
-              fontSize: 28,
-              color: colors.ink,
-              letterSpacing: track(28, tracking.display),
-              marginBottom: 8,
-            }}
-          >
-            Submit for review
-          </Text>
-          <Text style={{ fontFamily: fonts.body, fontSize: 16, color: colors.slate, lineHeight: 24 }}>
+        <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 32 }}>
+          <Display size={28} style={{ marginBottom: 8 }}>Submit for review</Display>
+          <Body size={16} color={colors.slate} style={{ lineHeight: 24 }}>
             Review your details before submitting
-          </Text>
+          </Body>
         </View>
 
         {/* Summary Card */}
         <View style={{ paddingHorizontal: 24, marginBottom: 32 }}>
-          <View
-            style={{
-              backgroundColor: colors.bone,
-              borderWidth: 1,
-              borderColor: colors.stone,
-              borderRadius: 16,
-              padding: 20,
-            }}
-          >
+          <Glass variant="card" contentStyle={{ padding: 20 }}>
             {/* Verification Info */}
             <View
               style={{
                 marginBottom: 20,
                 paddingBottom: 20,
                 borderBottomWidth: 1,
-                borderBottomColor: colors.stone,
+                borderBottomColor: colors.hairline,
               }}
             >
-              <Text
-                style={{
-                  fontFamily: fonts.bodySemibold,
-                  fontSize: 13,
-                  color: colors.slate,
-                  marginBottom: 12,
-                  textTransform: "uppercase",
-                  letterSpacing: track(13, tracking.eyebrow),
-                }}
-              >
+              <EyebrowLabel size={13} color={colors.slate} style={{ marginBottom: 12 }}>
                 Verification
-              </Text>
-              <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.ink, marginBottom: 8 }}>
-                {workEmail}
-              </Text>
+              </EyebrowLabel>
+              <Body size={14} style={{ marginBottom: 8 }}>{workEmail}</Body>
               <View
                 style={{
                   flexDirection: "row",
@@ -379,63 +276,35 @@ export default function HostSubmitScreen() {
                   paddingVertical: 8,
                   borderRadius: 8,
                   borderWidth: 1,
-                  borderColor: colors.stone,
+                  borderColor: colors.hairline,
                   alignSelf: "flex-start",
                 }}
               >
                 <Link size={14} color={colors.slate} style={{ marginRight: 6 }} />
-                <Text
-                  style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate }}
-                  numberOfLines={1}
-                >
+                <Body size={13} color={colors.slate} numberOfLines={1}>
                   Property listing
-                </Text>
+                </Body>
               </View>
               {(instagramUrl || websiteUrl) && (
-                <Text
-                  style={{
-                    fontFamily: fonts.body,
-                    fontSize: 12,
-                    color: colors.slate,
-                    marginTop: 8,
-                  }}
-                >
+                <Body size={12} color={colors.slate} style={{ marginTop: 8 }}>
                   {instagramUrl && "Instagram"}
                   {instagramUrl && websiteUrl && " • "}
                   {websiteUrl && "Website"}
-                </Text>
+                </Body>
               )}
             </View>
 
             {/* Host Info */}
             <View>
-              <Text
-                style={{
-                  fontFamily: fonts.bodySemibold,
-                  fontSize: 13,
-                  color: colors.slate,
-                  marginBottom: 12,
-                  textTransform: "uppercase",
-                  letterSpacing: track(13, tracking.eyebrow),
-                }}
-              >
+              <EyebrowLabel size={13} color={colors.slate} style={{ marginBottom: 12 }}>
                 Host
-              </Text>
-              <Text
-                style={{
-                  fontFamily: fonts.bodySemibold,
-                  fontSize: 16,
-                  color: colors.ink,
-                  marginBottom: 4,
-                }}
-              >
+              </EyebrowLabel>
+              <Body size={16} weight="semibold" style={{ marginBottom: 4 }}>
                 {fullName}
-              </Text>
-              <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate }}>
-                {contactEmail}
-              </Text>
+              </Body>
+              <Body size={14} color={colors.slate}>{contactEmail}</Body>
             </View>
-          </View>
+          </Glass>
         </View>
 
         {/* Optional: Create First Collaboration */}
@@ -448,14 +317,12 @@ export default function HostSubmitScreen() {
               justifyContent: "space-between",
               backgroundColor: colors.bone,
               borderWidth: 1,
-              borderColor: colors.stone,
+              borderColor: colors.hairline,
               borderRadius: 12,
               padding: 16,
             }}
           >
-            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: colors.ink }}>
-              Create your first collaboration (optional)
-            </Text>
+            <Body size={16} weight="semibold">Create your first collaboration (optional)</Body>
             {showListingSection ? (
               <ChevronUp size={20} color={colors.slate} />
             ) : (
@@ -468,22 +335,15 @@ export default function HostSubmitScreen() {
               style={{
                 backgroundColor: colors.surface,
                 borderWidth: 1,
-                borderColor: colors.stone,
+                borderColor: colors.hairline,
                 borderRadius: 12,
                 padding: 16,
                 marginTop: 12,
               }}
             >
-              <Text
-                style={{
-                  fontFamily: fonts.bodySemibold,
-                  fontSize: 14,
-                  color: colors.ink,
-                  marginBottom: 12,
-                }}
-              >
+              <Body size={14} weight="semibold" style={{ marginBottom: 12 }}>
                 Collaboration type
-              </Text>
+              </Body>
               <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
                 {["Free stay", "Paid", "Hybrid"].map((type) => (
                   <TouchableOpacity
@@ -495,36 +355,20 @@ export default function HostSubmitScreen() {
                       paddingHorizontal: 12,
                       borderRadius: 8,
                       borderWidth: 1,
-                      borderColor:
-                        collaborationType === type ? colors.ink : colors.stone,
-                      backgroundColor:
-                        collaborationType === type ? colors.bone : colors.surface,
+                      borderColor: collaborationType === type ? colors.ink : colors.hairline,
+                      backgroundColor: collaborationType === type ? colors.bone : colors.surface,
                     }}
                   >
-                    <Text
-                      style={{
-                        fontFamily: collaborationType === type ? fonts.bodySemibold : fonts.bodyMedium,
-                        fontSize: 13,
-                        color: colors.ink,
-                        textAlign: "center",
-                      }}
-                    >
+                    <Body size={13} weight={collaborationType === type ? "semibold" : "medium"} style={{ textAlign: "center" }}>
                       {type}
-                    </Text>
+                    </Body>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text
-                style={{
-                  fontFamily: fonts.bodySemibold,
-                  fontSize: 14,
-                  color: colors.ink,
-                  marginBottom: 12,
-                }}
-              >
+              <Body size={14} weight="semibold" style={{ marginBottom: 12 }}>
                 Deliverable preset
-              </Text>
+              </Body>
               <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
                 {["Light", "Moderate", "Heavy"].map((preset) => (
                   <TouchableOpacity
@@ -536,37 +380,20 @@ export default function HostSubmitScreen() {
                       paddingHorizontal: 12,
                       borderRadius: 8,
                       borderWidth: 1,
-                      borderColor:
-                        deliverablePreset === preset ? colors.ink : colors.stone,
-                      backgroundColor:
-                        deliverablePreset === preset ? colors.bone : colors.surface,
+                      borderColor: deliverablePreset === preset ? colors.ink : colors.hairline,
+                      backgroundColor: deliverablePreset === preset ? colors.bone : colors.surface,
                     }}
                   >
-                    <Text
-                      style={{
-                        fontFamily:
-                          deliverablePreset === preset ? fonts.bodySemibold : fonts.bodyMedium,
-                        fontSize: 13,
-                        color: colors.ink,
-                        textAlign: "center",
-                      }}
-                    >
+                    <Body size={13} weight={deliverablePreset === preset ? "semibold" : "medium"} style={{ textAlign: "center" }}>
                       {preset}
-                    </Text>
+                    </Body>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text
-                style={{
-                  fontFamily: fonts.bodySemibold,
-                  fontSize: 14,
-                  color: colors.ink,
-                  marginBottom: 12,
-                }}
-              >
+              <Body size={14} weight="semibold" style={{ marginBottom: 12 }}>
                 Creator tier
-              </Text>
+              </Body>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {["UGC Beginner", "UGC Pro", "Micro", "Mid"].map((tier) => (
                   <TouchableOpacity
@@ -577,20 +404,13 @@ export default function HostSubmitScreen() {
                       paddingHorizontal: 14,
                       borderRadius: 8,
                       borderWidth: 1,
-                      borderColor: creatorTier === tier ? colors.ink : colors.stone,
-                      backgroundColor:
-                        creatorTier === tier ? colors.bone : colors.surface,
+                      borderColor: creatorTier === tier ? colors.ink : colors.hairline,
+                      backgroundColor: creatorTier === tier ? colors.bone : colors.surface,
                     }}
                   >
-                    <Text
-                      style={{
-                        fontFamily: creatorTier === tier ? fonts.bodySemibold : fonts.bodyMedium,
-                        fontSize: 13,
-                        color: colors.ink,
-                      }}
-                    >
+                    <Body size={13} weight={creatorTier === tier ? "semibold" : "medium"}>
                       {tier}
-                    </Text>
+                    </Body>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -608,20 +428,14 @@ export default function HostSubmitScreen() {
               justifyContent: "space-between",
               backgroundColor: colors.bone,
               borderWidth: 1,
-              borderColor: colors.stone,
+              borderColor: colors.hairline,
               borderRadius: 12,
               padding: 16,
             }}
           >
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-            >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               <DollarSign size={20} color={colors.slate} />
-              <Text
-                style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: colors.ink }}
-              >
-                Pricing & fees (host-only)
-              </Text>
+              <Body size={16} weight="semibold">Pricing & fees (host-only)</Body>
             </View>
             {showPricingSection ? (
               <ChevronUp size={20} color={colors.slate} />
@@ -635,23 +449,16 @@ export default function HostSubmitScreen() {
               style={{
                 backgroundColor: colors.surface,
                 borderWidth: 1,
-                borderColor: colors.stone,
+                borderColor: colors.hairline,
                 borderRadius: 12,
                 padding: 16,
                 marginTop: 12,
               }}
             >
               {/* Pricing Type */}
-              <Text
-                style={{
-                  fontFamily: fonts.bodySemibold,
-                  fontSize: 14,
-                  color: colors.ink,
-                  marginBottom: 12,
-                }}
-              >
+              <Body size={14} weight="semibold" style={{ marginBottom: 12 }}>
                 Collaboration pricing
-              </Text>
+              </Body>
               <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
                 {[
                   { value: "free", label: "Free/Exchange" },
@@ -666,59 +473,27 @@ export default function HostSubmitScreen() {
                       paddingHorizontal: 12,
                       borderRadius: 8,
                       borderWidth: 1,
-                      borderColor:
-                        pricingType === option.value ? colors.ink : colors.stone,
-                      backgroundColor:
-                        pricingType === option.value ? colors.bone : colors.surface,
+                      borderColor: pricingType === option.value ? colors.ink : colors.hairline,
+                      backgroundColor: pricingType === option.value ? colors.bone : colors.surface,
                     }}
                   >
-                    <Text
-                      style={{
-                        fontFamily:
-                          pricingType === option.value ? fonts.bodySemibold : fonts.bodyMedium,
-                        fontSize: 13,
-                        color: colors.ink,
-                        textAlign: "center",
-                      }}
-                    >
+                    <Body size={13} weight={pricingType === option.value ? "semibold" : "medium"} style={{ textAlign: "center" }}>
                       {option.label}
-                    </Text>
+                    </Body>
                   </TouchableOpacity>
                 ))}
               </View>
 
               {/* Cash Value (if paid) */}
               {pricingType === "paid" && (
-                <View style={{ marginBottom: 16 }}>
-                  <Text
-                    style={{
-                      fontFamily: fonts.bodySemibold,
-                      fontSize: 14,
-                      color: colors.ink,
-                      marginBottom: 8,
-                    }}
-                  >
-                    Cash value (USD)
-                  </Text>
-                  <TextInput
-                    value={cashValue}
-                    onChangeText={(text) => updateField("cashValue", text)}
-                    placeholder="500"
-                    placeholderTextColor={colors.sage}
-                    keyboardType="numeric"
-                    style={{
-                      backgroundColor: colors.bone,
-                      borderWidth: 1,
-                      borderColor: colors.stone,
-                      borderRadius: 8,
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                      fontFamily: fonts.body,
-                      fontSize: 15,
-                      color: colors.ink,
-                    }}
-                  />
-                </View>
+                <FormField
+                  label="Cash value (USD)"
+                  value={cashValue}
+                  onChangeText={(text) => updateField("cashValue", text)}
+                  placeholder="500"
+                  keyboardType="numeric"
+                  style={{ marginBottom: 16 }}
+                />
               )}
 
               {/* Fee Calculation */}
@@ -730,51 +505,31 @@ export default function HostSubmitScreen() {
                   marginBottom: 12,
                 }}
               >
-                <Text
-                  style={{
-                    fontFamily: fonts.bodySemibold,
-                    fontSize: 13,
-                    color: colors.slate,
-                    marginBottom: 6,
-                  }}
-                >
+                <Body size={13} weight="semibold" color={colors.slate} style={{ marginBottom: 6 }}>
                   Your fee (per collaboration)
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: fonts.display,
-                    fontSize: 20,
-                    color: colors.ink,
-                    letterSpacing: track(20, tracking.display),
-                    marginBottom: 4,
-                  }}
-                >
+                </Body>
+                <Display size={20} style={{ marginBottom: 4 }}>
                   ${calculatedFee.toFixed(2)}
-                </Text>
-                <Text
-                  style={{ fontFamily: fonts.body, fontSize: 12, color: colors.slate, lineHeight: 16 }}
-                >
+                </Display>
+                <Body size={12} color={colors.slate} style={{ lineHeight: 16 }}>
                   {pricingType === "free"
                     ? "Flat fee for free/exchange collaborations"
                     : `8% of cash value (min $20, max $100)`}
-                </Text>
+                </Body>
               </View>
 
               {/* Privacy Note */}
               <View
                 style={{
-                  // colors.mint at 30% opacity — no alpha token exists for it in theme.js
                   backgroundColor: "rgba(209, 235, 219, 0.3)",
                   borderRadius: 8,
                   padding: 10,
                 }}
               >
-                <Text
-                  style={{ fontFamily: fonts.body, fontSize: 12, color: colors.slate, lineHeight: 16 }}
-                >
+                <Body size={12} color={colors.slate} style={{ lineHeight: 16 }}>
                   ℹ️ Creators don't see these fees. They only see the
                   collaboration offer.
-                </Text>
+                </Body>
               </View>
             </View>
           )}
@@ -784,7 +539,6 @@ export default function HostSubmitScreen() {
         <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
           <View
             style={{
-              // colors.mint at 50% opacity — no alpha token exists for it in theme.js
               backgroundColor: "rgba(209, 235, 219, 0.5)",
               borderWidth: 1,
               borderColor: colors.mint,
@@ -792,10 +546,10 @@ export default function HostSubmitScreen() {
               padding: 16,
             }}
           >
-            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate, lineHeight: 20 }}>
+            <Body size={14} color={colors.slate} style={{ lineHeight: 20 }}>
               Our team reviews each host to ensure a great experience for
               creators.
-            </Text>
+            </Body>
           </View>
         </View>
       </ScrollView>
@@ -815,37 +569,15 @@ export default function HostSubmitScreen() {
           paddingBottom: insets.bottom + 16,
         }}
       >
-        <TouchableOpacity
+        <PillButton
+          label="Submit for review"
           onPress={handleSubmit}
           disabled={submitting}
-          style={{
-            backgroundColor: colors.ink,
-            borderRadius: 12,
-            paddingVertical: 16,
-            alignItems: "center",
-            marginBottom: 12,
-            opacity: submitting ? 0.7 : 1,
-          }}
-        >
-          {submitting ? (
-            <ActivityIndicator color={colors.surface} />
-          ) : (
-            <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface, fontSize: 16 }}>
-              Submit for review
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handleSkip}
-          style={{
-            alignItems: "center",
-            paddingVertical: 8,
-          }}
-        >
-          <Text style={{ fontFamily: fonts.bodyMedium, color: colors.sage, fontSize: 16 }}>
-            Skip for now
-          </Text>
+          loading={submitting}
+          style={{ alignSelf: "stretch", marginBottom: 12 }}
+        />
+        <TouchableOpacity onPress={handleSkip} style={{ alignItems: "center", paddingVertical: 8 }}>
+          <Body size={16} color={colors.sage}>Skip for now</Body>
         </TouchableOpacity>
       </View>
     </HostOnboardingShell>

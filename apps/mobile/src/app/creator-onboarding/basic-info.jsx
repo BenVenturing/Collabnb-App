@@ -1,12 +1,4 @@
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
+import { View, ScrollView, TouchableOpacity, Pressable, Alert, ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -16,8 +8,8 @@ import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useUpload } from "@/utils/useUpload";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
-import AtmosphericBackground from "@/components/AtmosphericBackground";
-import { colors, fonts, tracking, track } from "@/config/theme";
+import { AtmosphericBackground, Display, Body, FormField, PillButton } from "@/components/ui";
+import { colors } from "@/config/theme";
 
 export default function CreatorBasicInfoScreen() {
   const insets = useSafeAreaInsets();
@@ -134,101 +126,42 @@ export default function CreatorBasicInfoScreen() {
           paddingTop: insets.top + 16,
           paddingHorizontal: 20,
           paddingBottom: 16,
-          // colors.surface at 85% opacity
           backgroundColor: "rgba(255,255,255,0.85)",
           borderBottomWidth: 1,
-          borderBottomColor: colors.stone,
+          borderBottomColor: colors.hairline,
         }}
       >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            marginBottom: 12,
-          }}
-        >
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
           <TouchableOpacity onPress={() => router.back()}>
             <ChevronLeft color={colors.slate} size={24} />
           </TouchableOpacity>
-          <Text
-            style={{
-              flex: 1,
-              textAlign: "center",
-              fontFamily: fonts.bodySemibold,
-              fontSize: 16,
-              color: colors.ink,
-              marginRight: 24,
-            }}
-          >
+          <Body size={16} weight="semibold" style={{ flex: 1, textAlign: "center", marginRight: 24 }}>
             Step 1 of 4
-          </Text>
+          </Body>
         </View>
 
-        {/* Progress Bar */}
-        <View
-          style={{
-            height: 4,
-            backgroundColor: colors.stone,
-            borderRadius: 2,
-            overflow: "hidden",
-          }}
-        >
-          <View
-            style={{
-              width: "25%",
-              height: "100%",
-              backgroundColor: colors.slate,
-            }}
-          />
+        <View style={{ height: 4, backgroundColor: colors.stone, borderRadius: 2, overflow: "hidden" }}>
+          <View style={{ width: "25%", height: "100%", backgroundColor: colors.slate }} />
         </View>
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + 24,
-        }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Title */}
         <View style={{ paddingHorizontal: 20, paddingTop: 32 }}>
-          <Text
-            style={{
-              fontFamily: fonts.display,
-              fontSize: 28,
-              color: colors.ink,
-              letterSpacing: track(28, tracking.display),
-              marginBottom: 8,
-            }}
-          >
-            Set up your creator profile
-          </Text>
-          <Text
-            style={{
-              fontFamily: fonts.body,
-              fontSize: 15,
-              color: colors.slate,
-              lineHeight: 22,
-              marginBottom: 32,
-            }}
-          >
+          <Display size={28} style={{ marginBottom: 8 }}>Set up your creator profile</Display>
+          <Body size={15} color={colors.slate} style={{ lineHeight: 22, marginBottom: 32 }}>
             Let's start with the basics. This information will be visible to
             hosts looking for creators.
-          </Text>
+          </Body>
         </View>
 
         {/* Profile Photo */}
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
-          <Text
-            style={{
-              fontFamily: fonts.bodySemibold,
-              fontSize: 15,
-              color: colors.ink,
-              marginBottom: 12,
-            }}
-          >
-            Profile Photo *
-          </Text>
+          <Body size={15} weight="semibold" style={{ marginBottom: 12 }}>Profile Photo *</Body>
 
           <TouchableOpacity onPress={handlePickImage} disabled={uploadLoading}>
             <View
@@ -256,43 +189,20 @@ export default function CreatorBasicInfoScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Inputs (glass style) */}
-        {[
-          {
-            label: "Display Name *",
-            value: localName,
-            setter: setLocalName,
-            placeholder: "Your full name",
-          },
-          {
-            label: "Username *",
-            value: localUsername,
-            setter: handleUsernameChange,
-            placeholder: "username",
-          },
-        ].map((field, i) => (
-          <View key={i} style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.ink, marginBottom: 8 }}>
-              {field.label}
-            </Text>
-            <TextInput
-              value={field.value}
-              onChangeText={field.setter}
-              placeholder={field.placeholder}
-              placeholderTextColor={colors.sage}
-              style={{
-                // colors.surface at 85% opacity
-                backgroundColor: "rgba(255,255,255,0.85)",
-                borderRadius: 12,
-                padding: 14,
-                borderWidth: 1,
-                borderColor: colors.stone,
-                fontFamily: fonts.body,
-                color: colors.ink,
-              }}
-            />
-          </View>
-        ))}
+        <View style={{ paddingHorizontal: 20, gap: 20 }}>
+          <FormField
+            label="Display Name *"
+            value={localName}
+            onChangeText={setLocalName}
+            placeholder="Your full name"
+          />
+          <FormField
+            label="Username *"
+            value={localUsername}
+            onChangeText={handleUsernameChange}
+            placeholder="username"
+          />
+        </View>
       </ScrollView>
 
       {/* Bottom Buttons */}
@@ -301,31 +211,22 @@ export default function CreatorBasicInfoScreen() {
           paddingHorizontal: 20,
           paddingTop: 16,
           paddingBottom: insets.bottom + 12,
-          // colors.surface at 90% opacity
           backgroundColor: "rgba(255,255,255,0.9)",
           borderTopWidth: 1,
-          borderTopColor: colors.stone,
+          borderTopColor: colors.hairline,
         }}
       >
-        <TouchableOpacity
+        <PillButton
+          label="Continue"
           onPress={handleContinue}
           disabled={!isFormValid}
-          style={{
-            backgroundColor: isFormValid ? colors.slate : colors.stone,
-            padding: 16,
-            borderRadius: 12,
-            alignItems: "center",
-            marginBottom: 10,
-          }}
-        >
-          <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface }}>Continue</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={handleSaveDraft}>
-          <Text style={{ fontFamily: fonts.bodyMedium, textAlign: "center", color: colors.slate }}>
+          style={{ alignSelf: "stretch", marginBottom: 10 }}
+        />
+        <Pressable onPress={handleSaveDraft}>
+          <Body size={14} weight="medium" color={colors.slate} style={{ textAlign: "center" }}>
             Save draft
-          </Text>
-        </TouchableOpacity>
+          </Body>
+        </Pressable>
       </View>
     </AtmosphericBackground>
   );

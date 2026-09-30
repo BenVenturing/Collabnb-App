@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { View, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,8 +9,8 @@ import {
   FileText,
   Send,
 } from "lucide-react-native";
-import AtmosphericBackground from "@/components/AtmosphericBackground";
-import { colors, fonts, tracking, track } from "@/config/theme";
+import { AtmosphericBackground, Display, Body, EyebrowLabel, PillButton, Glass } from "@/components/ui";
+import { colors } from "@/config/theme";
 
 export default function HostOnboardingOverview() {
   const router = useRouter();
@@ -98,50 +98,19 @@ export default function HostOnboardingOverview() {
         <View
           style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40 }}
         >
-          <Text
-            style={{
-              fontFamily: fonts.display,
-              fontSize: 32,
-              color: colors.ink,
-              letterSpacing: track(32, tracking.display),
-              marginBottom: 12,
-              lineHeight: 38,
-            }}
-          >
+          <Display size={32} style={{ marginBottom: 12, lineHeight: 38 }}>
             It's easy to get started on Collabnb
-          </Text>
-          <Text
-            style={{
-              fontFamily: fonts.body,
-              fontSize: 17,
-              color: colors.slate,
-              lineHeight: 26,
-            }}
-          >
+          </Display>
+          <Body size={17} color={colors.slate} style={{ lineHeight: 26 }}>
             Set up your host profile and start collaborating with content
             creators
-          </Text>
+          </Body>
         </View>
 
         {/* Steps List */}
         <View style={{ paddingHorizontal: 24, gap: 20 }}>
           {steps.map((step, index) => (
-            <View
-              key={index}
-              style={{
-                backgroundColor: colors.surface,
-                borderRadius: 16,
-                padding: 20,
-                borderWidth: 1,
-                // colors.slate at 10% opacity
-                borderColor: "rgba(60, 87, 89, 0.1)",
-                shadowColor: colors.ink,
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.05,
-                shadowRadius: 8,
-                elevation: 2,
-              }}
-            >
+            <Glass key={index} variant="card" contentStyle={{ padding: 20 }}>
               <View style={{ flexDirection: "row", gap: 16 }}>
                 {/* Icon */}
                 <View
@@ -159,48 +128,18 @@ export default function HostOnboardingOverview() {
 
                 {/* Content */}
                 <View style={{ flex: 1 }}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginBottom: 8,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: fonts.bodySemibold,
-                        fontSize: 13,
-                        color: colors.sage,
-                        letterSpacing: track(13, tracking.eyebrow),
-                        marginRight: 8,
-                      }}
-                    >
-                      STEP {step.number}
-                    </Text>
+                  <View style={{ marginBottom: 8 }}>
+                    <EyebrowLabel size={13} color={colors.sage}>STEP {step.number}</EyebrowLabel>
                   </View>
-                  <Text
-                    style={{
-                      fontFamily: fonts.bodySemibold,
-                      fontSize: 18,
-                      color: colors.ink,
-                      marginBottom: 6,
-                    }}
-                  >
+                  <Body size={18} weight="semibold" style={{ marginBottom: 6 }}>
                     {step.title}
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: fonts.body,
-                      fontSize: 15,
-                      color: colors.slate,
-                      lineHeight: 22,
-                    }}
-                  >
+                  </Body>
+                  <Body size={15} color={colors.slate} style={{ lineHeight: 22 }}>
                     {step.description}
-                  </Text>
+                  </Body>
                 </View>
               </View>
-            </View>
+            </Glass>
           ))}
         </View>
 
@@ -216,17 +155,10 @@ export default function HostOnboardingOverview() {
               padding: 16,
             }}
           >
-            <Text
-              style={{
-                fontFamily: fonts.body,
-                fontSize: 14,
-                color: colors.slate,
-                lineHeight: 20,
-              }}
-            >
+            <Body size={14} color={colors.slate} style={{ lineHeight: 20 }}>
               Our team reviews each host to maintain quality collaborations for
               creators.
-            </Text>
+            </Body>
           </View>
         </View>
       </ScrollView>
@@ -240,25 +172,17 @@ export default function HostOnboardingOverview() {
           right: 0,
           backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: colors.stone,
+          borderTopColor: colors.hairline,
           paddingHorizontal: 24,
           paddingTop: 16,
           paddingBottom: insets.bottom + 16,
         }}
       >
-        <TouchableOpacity
+        <PillButton
+          label="Get started"
           onPress={() => router.push("/host-onboarding/property")}
-          style={{
-            backgroundColor: colors.ink,
-            borderRadius: 12,
-            paddingVertical: 16,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface, fontSize: 16 }}>
-            Get started
-          </Text>
-        </TouchableOpacity>
+          style={{ alignSelf: "stretch" }}
+        />
       </View>
     </AtmosphericBackground>
   );

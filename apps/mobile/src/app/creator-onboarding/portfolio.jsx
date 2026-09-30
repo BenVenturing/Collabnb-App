@@ -1,22 +1,15 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
+import { View, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { Plus, X, Image as ImageIcon, Video } from "lucide-react-native";
+import { Plus, X, Video } from "lucide-react-native";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useUpload } from "@/utils/useUpload";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
-import AtmosphericBackground from "@/components/AtmosphericBackground";
-import { colors, fonts, tracking, track } from "@/config/theme";
+import { AtmosphericBackground, Display, Body, PillButton } from "@/components/ui";
+import { colors } from "@/config/theme";
 
 const MAX_PORTFOLIO_ITEMS = 6;
 
@@ -122,34 +115,12 @@ export default function PortfolioScreen() {
       <StatusBar style="dark" />
 
       {/* Progress Bar */}
-      <View
-        style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16 }}
-      >
-        <Text
-          style={{
-            fontFamily: fonts.bodyMedium,
-            fontSize: 12,
-            color: colors.sage,
-            marginBottom: 8,
-          }}
-        >
+      <View style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16 }}>
+        <Body size={12} weight="medium" color={colors.sage} style={{ marginBottom: 8 }}>
           Step 3 of 4
-        </Text>
-        <View
-          style={{
-            height: 4,
-            backgroundColor: colors.stone,
-            borderRadius: 2,
-            overflow: "hidden",
-          }}
-        >
-          <View
-            style={{
-              width: "75%",
-              height: "100%",
-              backgroundColor: colors.slate,
-            }}
-          />
+        </Body>
+        <View style={{ height: 4, backgroundColor: colors.stone, borderRadius: 2, overflow: "hidden" }}>
+          <View style={{ width: "75%", height: "100%", backgroundColor: colors.slate }} />
         </View>
       </View>
 
@@ -159,23 +130,11 @@ export default function PortfolioScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View
-          style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 28 }}
-        >
-          <Text
-            style={{
-              fontFamily: fonts.display,
-              fontSize: 28,
-              color: colors.ink,
-              marginBottom: 8,
-              letterSpacing: track(28, tracking.display),
-            }}
-          >
-            Showcase your work
-          </Text>
-          <Text style={{ fontFamily: fonts.body, fontSize: 15, color: colors.sage, lineHeight: 22 }}>
+        <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 28 }}>
+          <Display size={28} style={{ marginBottom: 8 }}>Showcase your work</Display>
+          <Body size={15} color={colors.sage} style={{ lineHeight: 22 }}>
             Upload photos and videos from past collabs
-          </Text>
+          </Body>
         </View>
 
         {/* Portfolio Grid */}
@@ -214,16 +173,9 @@ export default function PortfolioScreen() {
                     ) : (
                       <>
                         <Plus size={26} color={colors.slate} strokeWidth={2} />
-                        <Text
-                          style={{
-                            fontFamily: fonts.bodyMedium,
-                            fontSize: 12,
-                            color: colors.slate,
-                            marginTop: 4,
-                          }}
-                        >
+                        <Body size={12} weight="medium" color={colors.slate} style={{ marginTop: 4 }}>
                           Add
-                        </Text>
+                        </Body>
                       </>
                     )}
                   </TouchableOpacity>
@@ -297,24 +249,14 @@ export default function PortfolioScreen() {
 
         {/* Helper info */}
         <View style={{ paddingHorizontal: 24 }}>
-          <Text
-            style={{
-              fontFamily: fonts.body,
-              fontSize: 14,
-              color: colors.sage,
-              lineHeight: 20,
-              marginBottom: 12,
-            }}
-          >
+          <Body size={14} color={colors.sage} style={{ lineHeight: 20, marginBottom: 12 }}>
             Optional, but highly recommended.
-          </Text>
+          </Body>
           <View
             style={{
-              // colors.mint at 50% opacity
               backgroundColor: "rgba(209,235,219,0.5)",
               borderRadius: 12,
               borderWidth: 1,
-              // colors.mint at 80% opacity
               borderColor: "rgba(209,235,219,0.8)",
               paddingHorizontal: 14,
               paddingVertical: 10,
@@ -323,18 +265,10 @@ export default function PortfolioScreen() {
               gap: 8,
             }}
           >
-            <Text style={{ fontSize: 14 }}>✦</Text>
-            <Text
-              style={{
-                flex: 1,
-                fontFamily: fonts.body,
-                fontSize: 13,
-                color: colors.slate,
-                lineHeight: 18,
-              }}
-            >
+            <Body size={14}>✦</Body>
+            <Body size={13} color={colors.slate} style={{ flex: 1, lineHeight: 18 }}>
               Uploads are reviewed for quality and policy compliance.
-            </Text>
+            </Body>
           </View>
         </View>
       </ScrollView>
@@ -346,42 +280,17 @@ export default function PortfolioScreen() {
           bottom: 0,
           left: 0,
           right: 0,
-          // colors.surface at 95% opacity
           backgroundColor: "rgba(255,255,255,0.95)",
           borderTopWidth: 1,
-          borderTopColor: colors.stone,
+          borderTopColor: colors.hairline,
           paddingHorizontal: 24,
           paddingTop: 16,
           paddingBottom: insets.bottom + 16,
         }}
       >
-        {/* Primary CTA */}
-        <TouchableOpacity
-          onPress={handleContinue}
-          style={{
-            backgroundColor: colors.slate,
-            borderRadius: 16,
-            paddingVertical: 16,
-            alignItems: "center",
-            marginBottom: 12,
-          }}
-        >
-          <Text style={{ fontFamily: fonts.bodySemibold, color: colors.bone, fontSize: 16 }}>
-            Continue
-          </Text>
-        </TouchableOpacity>
-
-        {/* Secondary CTA */}
-        <TouchableOpacity
-          onPress={handleSkip}
-          style={{
-            alignItems: "center",
-            paddingVertical: 8,
-          }}
-        >
-          <Text style={{ fontFamily: fonts.bodyMedium, color: colors.sage, fontSize: 15 }}>
-            Skip for now
-          </Text>
+        <PillButton label="Continue" onPress={handleContinue} style={{ alignSelf: "stretch", marginBottom: 12 }} />
+        <TouchableOpacity onPress={handleSkip} style={{ alignItems: "center", paddingVertical: 8 }}>
+          <Body size={15} color={colors.sage}>Skip for now</Body>
         </TouchableOpacity>
       </View>
     </AtmosphericBackground>
