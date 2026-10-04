@@ -74,7 +74,7 @@ function AppShell() {
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemedBackground style={{ flex: 1 }}>
-          <Stack screenOptions={{ headerShown: false }} initialRouteName="index">
+          <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
           </Stack>
         </ThemedBackground>
