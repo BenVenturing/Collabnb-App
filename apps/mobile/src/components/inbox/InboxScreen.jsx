@@ -5,13 +5,47 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
-import { Search, Settings, MessageCircle, X, Trash2 } from "lucide-react-native";
+import { useQuery } from "convex/react";
+import { Search, Settings, MessageCircle, X, Trash2, Plus, ChevronRight } from "lucide-react-native";
+import { api } from "@/convex/_generated/api";
 import { useConversations } from "@/hooks/useConversations";
+import { useSavedCollections } from "@/hooks/useSavedCollections";
+import { normalizeListing } from "@/utils/listingHelpers";
 import { TAG_COLORS, TAG_TEXT_COLORS } from "@/lib/threadTags";
 import { threadTheme } from "@/lib/threadColors";
 import { colors } from "@/config/theme";
 
 const FILTERS = ["All", "Applications", "Collabs", "Pitches"];
+
+function ListingRow({ listing, onPress }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.stone,
+      }}
+    >
+      <View style={{ width: 40, height: 40, borderRadius: 10, overflow: "hidden", backgroundColor: colors.mint, marginRight: 12 }}>
+        <Image source={{ uri: listing.image }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 15, fontWeight: "600", color: colors.ink }} numberOfLines={1}>
+          {listing.title}
+        </Text>
+        <Text style={{ fontSize: 12, color: colors.sage }} numberOfLines={1}>
+          {listing.host_name ? `${listing.host_name} · ${listing.location}` : listing.location}
+        </Text>
+      </View>
+      <ChevronRight color={colors.sage} size={18} />
+    </TouchableOpacity>
+  );
+}
 
 function Avatar({ name, uri, size = 56, unread = 0, isFounder = false }) {
   const initials = (name || "?")
@@ -85,11 +119,15 @@ function Avatar({ name, uri, size = 56, unread = 0, isFounder = false }) {
 export default function SharedInboxScreen({ viewAs = "creator" }) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { threads, isLoading, deleteThread } = useConversations();
+  const { threads, isLoading, deleteThread, createThread } = useConversations();
+  const { savedIds } = useSavedCollections();
+  const realListings = useQuery(api.listings.getAll, {}) ?? [];
+  const sampleListings = useQuery(api.listings.getSamples) ?? [];
   const [activeFilter, setActiveFilter] = useState("All");
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSettings, setShowSettings] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
 
   // Matches web's `activeThreads = threads.filter(t => !t.archived)` — archived
   // threads drop out of the main list with no "view archived" surface on web
@@ -113,6 +151,33 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
     );
   }, [tagFiltered, searchQuery]);
 
+  // "Start new conversation" candidates — listings nobody has a thread with
+  // yet. Mirrors web Inbox's matchedListings/suggestedListings split.
+  const newChatBase = useMemo(() => {
+    const existingTitles = new Set(threads.map((t) => t.listing_title));
+    return [...realListings, ...sampleListings]
+      .map((l) => ({ ...normalizeListing(l), host_id: l.host_id }))
+      .filter((l) => !existingTitles.has(l.title));
+  }, [threads, realListings, sampleListings]);
+
+  const matchedListings = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return newChatBase.filter(
+      (l) =>
+        (l.title || "").toLowerCase().includes(q) ||
+        (l.location || "").toLowerCase().includes(q) ||
+        (l.host_name || "").toLowerCase().includes(q)
+    );
+  }, [newChatBase, searchQuery]);
+
+  const suggestedListings = useMemo(() => {
+    if (searchQuery.trim()) return [];
+    const savedFirst = newChatBase.filter((l) => savedIds?.has?.(l.id));
+    const rest = newChatBase.filter((l) => !savedIds?.has?.(l.id));
+    return [...savedFirst, ...rest].slice(0, 6);
+  }, [newChatBase, searchQuery, savedIds]);
+
   const openThread = (item) => {
     router.push({
       pathname: `/messages/${encodeURIComponent(item.thread_key || item.id)}`,
@@ -124,6 +189,33 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
         isFounder: item.is_founder ? "1" : "",
       },
     });
+  };
+
+  const startFromListing = async (listing) => {
+    if (startingChat) return;
+    const existing = threads.find((t) => !t.archived && t.listing_title === listing.title);
+    if (existing) {
+      openThread(existing);
+      return;
+    }
+    setStartingChat(true);
+    try {
+      const created = await createThread(listing);
+      if (created) {
+        setShowSearch(false);
+        setSearchQuery("");
+        openThread({
+          thread_key: created.threadKey,
+          id: created.id,
+          listing_title: listing.title,
+          host_name: listing.host_name,
+          host_avatar: listing.image,
+          tag: "Collab",
+        });
+      }
+    } finally {
+      setStartingChat(false);
+    }
   };
 
   const headerTitle = viewAs === "host" ? "Inbox" : "Messages";
@@ -270,6 +362,19 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
                 <TouchableOpacity onPress={() => setShowSearch(true)}>
                   <Search color={colors.ink} size={24} />
                 </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setShowSearch(true)}
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    backgroundColor: colors.ink,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Plus color="#fff" size={16} />
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => setShowSettings((s) => !s)}>
                   <Settings color={colors.ink} size={24} />
                 </TouchableOpacity>
@@ -334,17 +439,10 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
         </TouchableOpacity>
       )}
 
-      {visible.length === 0 ? (
+      {isLoading ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40 }}>
           <MessageCircle color={colors.stone} size={64} />
-          <Text style={{ fontSize: 20, fontWeight: "600", color: colors.ink, marginTop: 20 }}>
-            {isLoading ? "Loading..." : searchQuery ? "No matches found" : "No messages yet"}
-          </Text>
-          {!isLoading && (
-            <Text style={{ fontSize: 14, color: colors.slate, textAlign: "center", marginTop: 8 }}>
-              {searchQuery ? "Try a different search term" : emptyStateText}
-            </Text>
-          )}
+          <Text style={{ fontSize: 20, fontWeight: "600", color: colors.ink, marginTop: 20 }}>Loading...</Text>
         </View>
       ) : (
         <FlatList
@@ -352,6 +450,46 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
           renderItem={renderThread}
           keyExtractor={(item) => item.thread_key || item.id}
           contentContainerStyle={{ paddingBottom: insets.bottom + 64 }}
+          ListEmptyComponent={
+            !showSearch ? (
+              <View style={{ alignItems: "center", paddingHorizontal: 40, paddingTop: 80 }}>
+                <MessageCircle color={colors.stone} size={64} />
+                <Text style={{ fontSize: 20, fontWeight: "600", color: colors.ink, marginTop: 20 }}>No messages yet</Text>
+                <Text style={{ fontSize: 14, color: colors.slate, textAlign: "center", marginTop: 8 }}>
+                  {emptyStateText}
+                </Text>
+              </View>
+            ) : null
+          }
+          ListFooterComponent={
+            showSearch ? (
+              <View>
+                <Text
+                  style={{
+                    paddingHorizontal: 20,
+                    paddingTop: 16,
+                    paddingBottom: 8,
+                    fontSize: 11,
+                    fontWeight: "700",
+                    color: colors.sage,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Start new conversation
+                </Text>
+                {(searchQuery.trim() ? matchedListings : suggestedListings).length > 0 ? (
+                  (searchQuery.trim() ? matchedListings : suggestedListings).map((listing) => (
+                    <ListingRow key={listing.id} listing={listing} onPress={() => startFromListing(listing)} />
+                  ))
+                ) : (
+                  <Text style={{ paddingHorizontal: 20, paddingVertical: 12, fontSize: 13, color: colors.sage }}>
+                    {searchQuery.trim() ? "No listings match" : "Save a stay to start chatting"}
+                  </Text>
+                )}
+              </View>
+            ) : null
+          }
         />
       )}
     </View>

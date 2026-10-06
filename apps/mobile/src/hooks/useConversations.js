@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api } from "@/convex/_generated/api";
@@ -46,6 +46,7 @@ export function useConversations() {
   const mineQuery = useQuery(api.threads.getMine, ownerId ? {} : "skip");
   const incomingQuery = useQuery(api.threads.getIncomingForMe, ownerId ? {} : "skip");
   const adminThread = useQuery(api.adminThreads.getMineAsUser, ownerId ? {} : "skip");
+  const createThreadMutation = useMutation(api.threads.create);
 
   const mine = mineQuery ?? [];
   const incoming = incomingQuery ?? [];
@@ -153,6 +154,32 @@ export function useConversations() {
     [mutateOverlay],
   );
 
+  // Mirrors the working createThread pattern from ListingDetail.jsx's
+  // handleMessageHost — a deterministic threadKey + participantId, unlike
+  // web Inbox's own handleStartFromListing (which omits both and, per
+  // threadMessages.ts's resolveThreadParties looking threads up only by its
+  // thread_key index, leaves the resulting thread unable to authorize
+  // getByThread/sendMessage for a non-admin). Matching web's intent here
+  // means using the pattern that actually works, not the one that doesn't.
+  const createThread = useCallback(
+    async (listing) => {
+      if (!ownerId) return null;
+      const hostId = listing.host_id ? String(listing.host_id) : null;
+      const threadKey = hostId ? `premsg_${listing.id}_${ownerId}` : null;
+      const id = await createThreadMutation({
+        listingTitle: listing.title,
+        hostName: listing.host_name || "Host",
+        hostAvatar: listing.image || undefined,
+        tag: "Collab",
+        lastMessage: "Start a conversation...",
+        participantId: hostId || undefined,
+        threadKey: threadKey || undefined,
+      });
+      return { id: String(id), threadKey: threadKey || String(id) };
+    },
+    [ownerId, createThreadMutation],
+  );
+
   const isLoading =
     email != null &&
     (profile === undefined || mineQuery === undefined || incomingQuery === undefined || overlay === null);
@@ -167,5 +194,6 @@ export function useConversations() {
     deleteThread,
     updateTag,
     setThreadColor,
+    createThread,
   };
 }
