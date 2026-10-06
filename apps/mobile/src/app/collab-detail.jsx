@@ -334,6 +334,114 @@ function StarRow({ value, onChange }) {
   );
 }
 
+function MetricField({ label, value, onChange, placeholder }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 10, color: colors.sage, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+        {label}
+      </Text>
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        placeholderTextColor={colors.sage}
+        keyboardType="number-pad"
+        style={{
+          backgroundColor: "rgba(255,255,255,0.75)",
+          borderWidth: 1,
+          borderColor: colors.hairline,
+          borderRadius: radii.md,
+          paddingHorizontal: 10,
+          paddingVertical: 10,
+          fontFamily: fonts.body,
+          fontSize: 14,
+          color: colors.ink,
+        }}
+      />
+    </View>
+  );
+}
+
+// Mirrors CollabDetail.jsx's content-metrics form — also local-only on web
+// (submitContentMetrics never calls Convex either), so AsyncStorage here too.
+function ContentMetricsPanel({ stageData, updateStageData }) {
+  const existing = stageData.content_metrics;
+  const [postUrl, setPostUrl] = useState(existing?.post_url || "");
+  const [views, setViews] = useState(existing ? String(existing.views) : "");
+  const [likes, setLikes] = useState(existing ? String(existing.likes) : "");
+  const [comments, setComments] = useState(existing ? String(existing.comments) : "");
+  const [saves, setSaves] = useState(existing ? String(existing.saves) : "");
+  const [submitted, setSubmitted] = useState(!!existing);
+
+  const canSubmit = views.trim() && comments.trim() && likes.trim();
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    const v = parseInt(views, 10) || 0;
+    const l = parseInt(likes, 10) || 0;
+    const c = parseInt(comments, 10) || 0;
+    const s = parseInt(saves, 10) || 0;
+    const er = v > 0 ? parseFloat((((l + c) / v) * 100).toFixed(2)) : 0;
+    updateStageData({ content_metrics: { post_url: postUrl, views: v, likes: l, comments: c, saves: s }, content_er: er });
+    setSubmitted(true);
+  };
+
+  const er = stageData.content_er;
+
+  return (
+    <PanelCard>
+      <PanelHeading icon={RefreshCw}>Post performance</PanelHeading>
+      <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate, lineHeight: 20, marginBottom: 16 }}>
+        Log how the final post performed. Engagement rate is calculated for you.
+      </Text>
+      <TextInput
+        value={postUrl}
+        onChangeText={setPostUrl}
+        placeholder="Post URL (optional)"
+        placeholderTextColor={colors.sage}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="url"
+        style={{
+          backgroundColor: "rgba(255,255,255,0.75)",
+          borderWidth: 1,
+          borderColor: colors.hairline,
+          borderRadius: radii.md,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          fontFamily: fonts.body,
+          fontSize: 14,
+          color: colors.ink,
+          marginBottom: 12,
+        }}
+      />
+      <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+        <MetricField label="Views" value={views} onChange={setViews} placeholder="0" />
+        <MetricField label="Likes" value={likes} onChange={setLikes} placeholder="0" />
+      </View>
+      <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
+        <MetricField label="Comments" value={comments} onChange={setComments} placeholder="0" />
+        <MetricField label="Saves" value={saves} onChange={setSaves} placeholder="0" />
+      </View>
+      {submitted && er != null && (
+        <View
+          style={{
+            backgroundColor: "rgba(209,235,221,0.3)",
+            borderRadius: radii.md,
+            padding: 12,
+            marginBottom: 12,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 20, color: colors.slate }}>{er}%</Text>
+          <Text style={{ fontFamily: fonts.body, fontSize: 11, color: colors.sage, marginTop: 2 }}>Engagement rate</Text>
+        </View>
+      )}
+      <PrimaryButton label={submitted ? "Update metrics" : "Submit metrics"} onPress={handleSubmit} disabled={!canSubmit} />
+    </PanelCard>
+  );
+}
+
 function ClosedPanel({ collab, router }) {
   const collabId = String(collab._id);
   const existingReviews = useQuery(api.reviews.getForCollab, { collabId }) || [];
@@ -559,7 +667,12 @@ export default function CollabDetailScreen() {
         {currentStage === "uploaded_tagged" && (
           <UploadedPanel stageData={stageData} updateStageData={updateStageData} onAdvance={() => handleAdvance("closed")} working={working} />
         )}
-        {currentStage === "closed" && <ClosedPanel collab={collab} router={router} />}
+        {currentStage === "closed" && (
+          <View style={{ gap: 16 }}>
+            <ContentMetricsPanel stageData={stageData} updateStageData={updateStageData} />
+            <ClosedPanel collab={collab} router={router} />
+          </View>
+        )}
         {currentStage === "archived" && (
           <PanelCard>
             <PanelHeading icon={CheckCircle2}>Archived</PanelHeading>
