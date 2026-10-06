@@ -12,19 +12,38 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { useSignIn } from "@clerk/clerk-expo";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { colors, fonts, radii, shadows } from "@/config/theme";
 
 export default function SigninScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { signIn, setActive, isLoaded } = useSignIn();
+  const { signInWithGoogle } = useGoogleAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+    setGoogleLoading(true);
+    try {
+      const { createdSessionId, setActive: activateSSO } = await signInWithGoogle();
+      if (createdSessionId && activateSSO) {
+        await activateSSO({ session: createdSessionId });
+        router.replace("/(tabs)");
+      }
+    } catch (err) {
+      setError(err?.errors?.[0]?.message || "Google sign-in failed. Please try again.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSignIn = async () => {
     if (!isLoaded) return;
@@ -105,6 +124,42 @@ export default function SigninScreen() {
               ...shadows.md,
             }}
           >
+            <TouchableOpacity
+              onPress={handleGoogleSignIn}
+              disabled={googleLoading}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: colors.bone,
+                borderWidth: 1,
+                borderColor: colors.stone,
+                borderRadius: radii.md,
+                paddingVertical: 14,
+                marginBottom: 20,
+                opacity: googleLoading ? 0.7 : 1,
+              }}
+            >
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}>
+                {googleLoading ? "Opening Google…" : "Continue with Google"}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: colors.stone }} />
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 12,
+                  color: colors.sage,
+                  marginHorizontal: 12,
+                }}
+              >
+                or
+              </Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: colors.stone }} />
+            </View>
+
             <Field
               label="Email"
               value={email}

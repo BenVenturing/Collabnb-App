@@ -67,7 +67,7 @@ function normalizeCollab(c) {
 export default function CreatorCollaborationsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user } = useUser();
+  const { user, isSignedIn } = useUser();
   const email = user?.primaryEmailAddress?.emailAddress;
 
   const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
@@ -77,6 +77,40 @@ export default function CreatorCollaborationsScreen() {
   );
 
   const [activeFilter, setActiveFilter] = useState("active");
+
+  if (!isSignedIn) {
+    return (
+      <AtmosphericBackground>
+        <StatusBar style="dark" />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40 }}>
+          <Text style={{ fontSize: 80, marginBottom: 16, opacity: 0.2 }}>✦</Text>
+          <Text
+            style={{
+              fontFamily: fonts.displaySemibold,
+              fontSize: 18,
+              color: colors.ink,
+              textAlign: "center",
+              marginBottom: 8,
+              letterSpacing: track(18, tracking.display),
+            }}
+          >
+            Sign in to see your collaborations
+          </Text>
+          <Text
+            style={{ fontFamily: fonts.body, fontSize: 15, color: colors.slate, textAlign: "center", marginBottom: 24 }}
+          >
+            Applications and collabs sync to your account once you're signed in.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push("/signin")}
+            style={{ backgroundColor: colors.slate, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 32 }}
+          >
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.surface }}>Sign in</Text>
+          </TouchableOpacity>
+        </View>
+      </AtmosphericBackground>
+    );
+  }
 
   const isLoading = collabsRaw === undefined;
   const collabs = useMemo(() => (collabsRaw || []).map(normalizeCollab), [collabsRaw]);

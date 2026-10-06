@@ -9,18 +9,23 @@ import { useUser } from "@clerk/clerk-expo";
 import { ArrowLeft, Send, MoreVertical } from "lucide-react-native";
 import { api } from "@/convex/_generated/api";
 import { useThreadMessages } from "@/hooks/useThreadMessages";
+import { useConversations } from "@/hooks/useConversations";
 import ConversationDetailsSheet from "@/components/ConversationDetailsSheet";
 import { colors } from "@/config/theme";
 
 export default function ThreadScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { threadId, listingTitle, hostName, hostAvatar, tag } = useLocalSearchParams();
+  const { threadId, listingTitle, hostName, hostAvatar, tag: tagParam } = useLocalSearchParams();
   const threadKey = decodeURIComponent(threadId || "");
 
   const { user } = useUser();
   const email = user?.primaryEmailAddress?.emailAddress;
   const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+
+  const { threads, archiveThread, updateTag, setThreadColor } = useConversations();
+  const currentThread = threads.find((t) => (t.thread_key || t.id) === threadKey);
+  const tag = currentThread?.tag || tagParam;
 
   const { messages, isLoading, sending, error, send, markRead } = useThreadMessages(threadKey, profile);
   const [draft, setDraft] = useState("");
@@ -211,6 +216,14 @@ export default function ThreadScreen() {
         <ConversationDetailsSheet
           hostName={hostName}
           hostAvatar={hostAvatar}
+          tag={tag}
+          themeColor={currentThread?.theme_color}
+          onArchive={() => {
+            archiveThread(threadKey);
+            router.back();
+          }}
+          onUpdateTag={(newTag) => updateTag(threadKey, newTag)}
+          onSetColor={(color) => setThreadColor(threadKey, color)}
           onClose={() => setShowDetails(false)}
         />
       )}

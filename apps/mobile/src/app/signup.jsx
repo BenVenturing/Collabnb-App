@@ -15,6 +15,7 @@ import { useSignUp } from "@clerk/clerk-expo";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import useRoleStore from "@/utils/RoleStore";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { colors, fonts, radii, shadows } from "@/config/theme";
 
 export default function SignupScreen() {
@@ -22,6 +23,7 @@ export default function SignupScreen() {
   const router = useRouter();
   const { signUp, setActive, isLoaded } = useSignUp();
   const { setRole } = useRoleStore();
+  const { signInWithGoogle } = useGoogleAuth();
   const getOrCreateProfile = useMutation(api.profiles.getOrCreate);
 
   const [step, setStep] = useState("form"); // "form" | "verify"
@@ -31,15 +33,16 @@ export default function SignupScreen() {
   const [code, setCode] = useState("");
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
-  const finalizeSession = async (createdSessionId) => {
-    await setActive({ session: createdSessionId });
+  const finalizeSession = async (createdSessionId, finalEmail, activate = setActive) => {
+    await activate({ session: createdSessionId });
     const profile = await getOrCreateProfile({
-      email: email.trim(),
-      full_name: email.trim().split("@")[0],
+      email: finalEmail.trim(),
+      full_name: finalEmail.trim().split("@")[0],
       role: selectedRole,
     });
     await setRole(profile?.role || selectedRole);
@@ -48,6 +51,27 @@ export default function SignupScreen() {
         ? "/host-onboarding/property"
         : "/creator-onboarding/basic-info",
     );
+  };
+
+  const handleGoogleSignUp = async () => {
+    setError("");
+    setGoogleLoading(true);
+    try {
+      const { createdSessionId, setActive: activateSSO, signUp: ssoSignUp } =
+        await signInWithGoogle();
+      if (createdSessionId && activateSSO) {
+        const googleEmail = ssoSignUp?.emailAddress;
+        if (!googleEmail) {
+          setError("Couldn't read your Google email. Please try again.");
+          return;
+        }
+        await finalizeSession(createdSessionId, googleEmail, activateSSO);
+      }
+    } catch (err) {
+      setError(err?.errors?.[0]?.message || "Google sign-up failed. Please try again.");
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const handleSignUp = async () => {
@@ -71,7 +95,7 @@ export default function SignupScreen() {
       });
 
       if (result.status === "complete") {
-        await finalizeSession(result.createdSessionId);
+        await finalizeSession(result.createdSessionId, email);
         return;
       }
 
@@ -93,7 +117,7 @@ export default function SignupScreen() {
         code: code.trim(),
       });
       if (result.status === "complete") {
-        await finalizeSession(result.createdSessionId);
+        await finalizeSession(result.createdSessionId, email);
       } else {
         setError("That code didn't work. Please try again.");
       }
@@ -160,6 +184,42 @@ export default function SignupScreen() {
             {step === "form" ? (
               <>
                 <RoleToggle selectedRole={selectedRole} onChange={setSelectedRole} />
+
+                <TouchableOpacity
+                  onPress={handleGoogleSignUp}
+                  disabled={googleLoading}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: colors.bone,
+                    borderWidth: 1,
+                    borderColor: colors.stone,
+                    borderRadius: radii.md,
+                    paddingVertical: 14,
+                    marginBottom: 20,
+                    opacity: googleLoading ? 0.7 : 1,
+                  }}
+                >
+                  <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}>
+                    {googleLoading ? "Opening Google…" : "Continue with Google"}
+                  </Text>
+                </TouchableOpacity>
+
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
+                  <View style={{ flex: 1, height: 1, backgroundColor: colors.stone }} />
+                  <Text
+                    style={{
+                      fontFamily: fonts.body,
+                      fontSize: 12,
+                      color: colors.sage,
+                      marginHorizontal: 12,
+                    }}
+                  >
+                    or
+                  </Text>
+                  <View style={{ flex: 1, height: 1, backgroundColor: colors.stone }} />
+                </View>
 
                 <Field
                   label="Email"

@@ -1,29 +1,17 @@
 import { useMemo, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, TextInput, Alert } from "react-native";
+import { Swipeable } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
-import { Search, Settings, MessageCircle, X } from "lucide-react-native";
+import { Search, Settings, MessageCircle, X, Trash2 } from "lucide-react-native";
 import { useConversations } from "@/hooks/useConversations";
+import { TAG_COLORS, TAG_TEXT_COLORS } from "@/lib/threadTags";
+import { threadTheme } from "@/lib/threadColors";
 import { colors } from "@/config/theme";
 
 const FILTERS = ["All", "Applications", "Collabs", "Pitches"];
-
-const TAG_COLORS = {
-  Collab: colors.mint,
-  Application: colors.stone,
-  Pitch: "#F7DCD3",
-  Collabnb: colors.ink,
-  Notifications: colors.slate,
-};
-const TAG_TEXT_COLORS = {
-  Collab: colors.slate,
-  Application: colors.slate,
-  Pitch: "#B5502F",
-  Collabnb: colors.bone,
-  Notifications: colors.bone,
-};
 
 function Avatar({ name, uri, size = 56, unread = 0, isFounder = false }) {
   const initials = (name || "?")
@@ -97,17 +85,22 @@ function Avatar({ name, uri, size = 56, unread = 0, isFounder = false }) {
 export default function SharedInboxScreen({ viewAs = "creator" }) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { threads, isLoading } = useConversations();
+  const { threads, isLoading, deleteThread } = useConversations();
   const [activeFilter, setActiveFilter] = useState("All");
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSettings, setShowSettings] = useState(false);
 
+  // Matches web's `activeThreads = threads.filter(t => !t.archived)` — archived
+  // threads drop out of the main list with no "view archived" surface on web
+  // either, so mobile doesn't add one.
+  const activeThreads = useMemo(() => threads.filter((t) => !t.archived), [threads]);
+
   const tagFiltered = useMemo(() => {
-    if (activeFilter === "All") return threads;
+    if (activeFilter === "All") return activeThreads;
     const singular = activeFilter.slice(0, -1);
-    return threads.filter((t) => t.tag === singular || t.tag === activeFilter);
-  }, [threads, activeFilter]);
+    return activeThreads.filter((t) => t.tag === singular || t.tag === activeFilter);
+  }, [activeThreads, activeFilter]);
 
   const visible = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -139,9 +132,32 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
       ? "Start chatting with creators about collaborations"
       : "Start chatting with hosts about collaborations";
 
+  const confirmDelete = (item) => {
+    Alert.alert("Delete conversation", "This removes it from your inbox. This can't be undone.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: () => deleteThread(item.thread_key || item.id) },
+    ]);
+  };
+
+  const renderRightActions = (item) => (
+    <TouchableOpacity
+      onPress={() => confirmDelete(item)}
+      style={{
+        width: 76,
+        backgroundColor: "#C0392B",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Trash2 color="#fff" size={22} />
+    </TouchableOpacity>
+  );
+
   const renderThread = ({ item }) => {
     const isCollabnb = item.tag === "Collabnb" || item.tag === "Notifications";
+    const accentColor = threadTheme(item).dot;
     return (
+      <Swipeable renderRightActions={() => renderRightActions(item)} overshootRight={false}>
       <TouchableOpacity
         onPress={() => openThread(item)}
         activeOpacity={0.7}
@@ -152,6 +168,8 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
           backgroundColor: "#fff",
           borderBottomWidth: 1,
           borderBottomColor: colors.stone,
+          borderLeftWidth: item.theme_color ? 3 : 0,
+          borderLeftColor: accentColor,
         }}
       >
         <View style={{ marginRight: 12 }}>
@@ -194,6 +212,7 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
           </Text>
         </View>
       </TouchableOpacity>
+      </Swipeable>
     );
   };
 
