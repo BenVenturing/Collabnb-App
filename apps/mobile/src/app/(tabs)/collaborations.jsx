@@ -245,7 +245,7 @@ export default function CreatorCollaborationsScreen() {
                       overflow: "hidden",
                       ...shadows.md,
                     }}
-                    onPress={() => router.push({ pathname: "/listing-detail", params: { id: collab.listingId } })}
+                    onPress={() => router.push({ pathname: "/collab-detail", params: { id: collab.id } })}
                     activeOpacity={0.85}
                   >
                     <View style={{ flexDirection: "row" }}>
