@@ -13,10 +13,13 @@ import { useState } from "react";
 import { useRouter } from "expo-router";
 import { useSignUp } from "@clerk/clerk-expo";
 import { useMutation } from "convex/react";
+import { Eye, EyeOff, ArrowLeft } from "lucide-react-native";
 import { api } from "@/convex/_generated/api";
 import useRoleStore from "@/utils/RoleStore";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
-import { colors, fonts, radii, shadows } from "@/config/theme";
+import { AtmosphericBackground } from "@/components/ui";
+import Glass from "@/components/Glass";
+import { colors, fonts, radii } from "@/config/theme";
 
 export default function SignupScreen() {
   const insets = useSafeAreaInsets();
@@ -37,6 +40,7 @@ export default function SignupScreen() {
   const [error, setError] = useState("");
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const finalizeSession = async (createdSessionId, finalEmail, activate = setActive) => {
     await activate({ session: createdSessionId });
@@ -68,7 +72,8 @@ export default function SignupScreen() {
         await finalizeSession(createdSessionId, googleEmail, activateSSO);
       }
     } catch (err) {
-      setError(err?.errors?.[0]?.message || "Google sign-up failed. Please try again.");
+      console.error("[GoogleAuth] sign-up failed:", err?.message, JSON.stringify(err?.errors || err));
+      setError(err?.errors?.[0]?.message || err?.message || "Google sign-up failed. Please try again.");
     } finally {
       setGoogleLoading(false);
     }
@@ -129,8 +134,26 @@ export default function SignupScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bone }}>
+    <AtmosphericBackground style={{ flex: 1 }}>
       <StatusBar style="dark" />
+      <TouchableOpacity
+        onPress={() => router.back()}
+        hitSlop={8}
+        style={{
+          position: "absolute",
+          top: insets.top + 8,
+          left: 16,
+          zIndex: 10,
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: "rgba(255,255,255,0.6)",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <ArrowLeft color={colors.ink} size={20} />
+      </TouchableOpacity>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -171,16 +194,7 @@ export default function SignupScreen() {
               : `We sent a code to ${email.trim()}`}
           </Text>
 
-          <View
-            style={{
-              backgroundColor: colors.surface,
-              borderRadius: radii.lg,
-              borderWidth: 1,
-              borderColor: colors.hairline,
-              padding: 24,
-              ...shadows.md,
-            }}
-          >
+          <Glass variant="card" contentStyle={{ padding: 24 }}>
             {step === "form" ? (
               <>
                 <RoleToggle selectedRole={selectedRole} onChange={setSelectedRole} />
@@ -192,9 +206,9 @@ export default function SignupScreen() {
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: colors.bone,
+                    backgroundColor: "rgba(255,255,255,0.6)",
                     borderWidth: 1,
-                    borderColor: colors.stone,
+                    borderColor: colors.hairline,
                     borderRadius: radii.md,
                     paddingVertical: 14,
                     marginBottom: 20,
@@ -207,7 +221,7 @@ export default function SignupScreen() {
                 </TouchableOpacity>
 
                 <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
-                  <View style={{ flex: 1, height: 1, backgroundColor: colors.stone }} />
+                  <View style={{ flex: 1, height: 1, backgroundColor: colors.hairline }} />
                   <Text
                     style={{
                       fontFamily: fonts.body,
@@ -218,7 +232,7 @@ export default function SignupScreen() {
                   >
                     or
                   </Text>
-                  <View style={{ flex: 1, height: 1, backgroundColor: colors.stone }} />
+                  <View style={{ flex: 1, height: 1, backgroundColor: colors.hairline }} />
                 </View>
 
                 <Field
@@ -233,15 +247,15 @@ export default function SignupScreen() {
                   autoCorrect={false}
                   keyboardType="email-address"
                 />
-                <Field
+                <PasswordField
                   label="Password"
                   value={password}
                   onChangeText={setPassword}
                   focused={passwordFocused}
                   onFocus={() => setPasswordFocused(true)}
                   onBlur={() => setPasswordFocused(false)}
-                  placeholder="••••••••"
-                  secureTextEntry
+                  visible={showPassword}
+                  onToggleVisible={() => setShowPassword((v) => !v)}
                 />
 
                 <TouchableOpacity
@@ -309,7 +323,7 @@ export default function SignupScreen() {
                 />
               </>
             )}
-          </View>
+          </Glass>
 
           <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 24 }}>
             <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage }}>
@@ -323,7 +337,7 @@ export default function SignupScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </AtmosphericBackground>
   );
 }
 
@@ -430,9 +444,9 @@ function Field({ label, focused, containerStyle, ...inputProps }) {
       <TextInput
         placeholderTextColor={colors.sage}
         style={{
-          backgroundColor: colors.bone,
+          backgroundColor: "rgba(255,255,255,0.6)",
           borderWidth: 1,
-          borderColor: focused ? colors.slate : colors.stone,
+          borderColor: focused ? colors.slate : colors.hairline,
           borderRadius: radii.md,
           paddingHorizontal: 16,
           paddingVertical: 14,
@@ -442,6 +456,41 @@ function Field({ label, focused, containerStyle, ...inputProps }) {
         }}
         {...inputProps}
       />
+    </View>
+  );
+}
+
+function PasswordField({ label, value, onChangeText, focused, onFocus, onBlur, visible, onToggleVisible, containerStyle }) {
+  return (
+    <View style={[{ marginBottom: 16 }, containerStyle]}>
+      <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.ink, marginBottom: 8 }}>{label}</Text>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: "rgba(255,255,255,0.6)",
+          borderWidth: 1,
+          borderColor: focused ? colors.slate : colors.hairline,
+          borderRadius: radii.md,
+          paddingHorizontal: 16,
+        }}
+      >
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={onFocus}
+          onBlur={onBlur}
+          placeholder="••••••••"
+          placeholderTextColor={colors.sage}
+          secureTextEntry={!visible}
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={{ flex: 1, paddingVertical: 14, fontFamily: fonts.body, fontSize: 16, color: colors.ink }}
+        />
+        <TouchableOpacity onPress={onToggleVisible} hitSlop={8}>
+          {visible ? <EyeOff color={colors.sage} size={19} /> : <Eye color={colors.sage} size={19} />}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

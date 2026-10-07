@@ -11,19 +11,20 @@
 // Map view mirrors CollabMap.jsx's phone-width behavior specifically (map on
 // top, in-view listings docked below) rather than its desktop split.
 
-import { View, FlatList, Dimensions, ActivityIndicator, Pressable } from "react-native";
+import { View, FlatList, Dimensions, ActivityIndicator, Pressable, TouchableOpacity, TextInput, ScrollView } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { List, Map as MapIcon } from "lucide-react-native";
+import { List, X, MapPin } from "lucide-react-native";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import { useSavedCollections } from "@/hooks/useSavedCollections";
 import { useAccessGate } from "@/hooks/useAccessGate";
+import useMapViewStore from "@/utils/MapViewStore";
 import { normalizeListing } from "@/utils/listingHelpers";
-import { colors, radii, shadows } from "@/config/theme";
+import { colors, radii, shadows, fonts } from "@/config/theme";
 import ExploreMap from "@/components/ExploreMap";
 import {
   AtmosphericBackground,
@@ -31,6 +32,7 @@ import {
   Chip,
   CompactListRow,
   Display,
+  EyebrowLabel,
   ListingCard,
   PillButton,
   SearchBar,
@@ -38,11 +40,67 @@ import {
 } from "@/components/ui";
 
 const PROP_FILTERS = ["All", "Cabin", "Villa", "Treehouse", "Glamping", "Lodge", "Estate", "Cottage"];
+
+// Mirrors Collabnb Website's lib/searchData.js — same option sets, so "What"
+// and "When" offer the same real choices as web, not placeholder content.
+const COLLAB_TYPES = [
+  { label: "UGC Video", emoji: "🎬" },
+  { label: "Instagram Reels", emoji: "📸" },
+  { label: "TikTok", emoji: "🎵" },
+  { label: "Photography", emoji: "📷" },
+  { label: "YouTube Vlog", emoji: "▶️" },
+  { label: "Blog Post", emoji: "✍️" },
+  { label: "Full Package", emoji: "✦" },
+];
+const AVAIL_OPTIONS = ["Any time", "This month", "Next month", "Next 3 months", "Next 6 months"];
+
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
 
 // Web's trending carousel lets the next card peek past the screen edge as the
 // affordance that the row scrolls. Keep the peek — don't pad it away.
 const TRENDING_CARD_WIDTH = Math.round(Dimensions.get("window").width * 0.78);
+
+// Backdrop + sliding sheet for the Where/What/When fields — phone-sized
+// equivalent of web's under-field dropdown (Explore.jsx's <Dropdown>).
+function FieldSheet({ title, onClose, children }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <TouchableOpacity
+      activeOpacity={1}
+      onPress={onClose}
+      style={{ position: "absolute", inset: 0, backgroundColor: "rgba(25,37,36,0.4)", zIndex: 50 }}
+    >
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={(e) => e.stopPropagation()}
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: colors.surface,
+          borderTopLeftRadius: radii.xl,
+          borderTopRightRadius: radii.xl,
+          paddingTop: 10,
+          paddingBottom: insets.bottom + 16,
+          maxHeight: "75%",
+          ...shadows.lg,
+        }}
+      >
+        <View
+          style={{ alignSelf: "center", width: 44, height: 5, borderRadius: radii.pill, backgroundColor: colors.stone, marginBottom: 12 }}
+        />
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, marginBottom: 12 }}>
+          <Body size={15} weight="semibold">{title}</Body>
+          <TouchableOpacity onPress={onClose}>
+            <X color={colors.ink} size={20} />
+          </TouchableOpacity>
+        </View>
+        {children}
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+}
 
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
@@ -55,6 +113,10 @@ export default function ExploreScreen() {
   const samplesRaw = useQuery(api.listings.getSamples);
 
   const [filter, setFilter] = useState("All");
+  const [collabTypeFilter, setCollabTypeFilter] = useState(null);
+  const [whereQuery, setWhereQuery] = useState("");
+  const [whenLabel, setWhenLabel] = useState("");
+  const [activeField, setActiveField] = useState(null); // 'where' | 'what' | 'when' | null
   const { isSignedIn, savedIds, toggleSaved } = useSavedCollections();
 
   // Same gate the website checks (api.gates.getMyAccess) — a trial-ended
@@ -70,16 +132,29 @@ export default function ExploreScreen() {
       .filter((l) => l.status === "published" || l.status === "active")
       .map(normalizeListing);
     const samples = (samplesRaw || []).map(normalizeListing);
-    const all = [...real, ...samples].map((l) => (isLimited ? { ...l, _redacted: true } : l));
-    if (filter === "All") return all;
-    return all.filter((l) => l.property_type?.toLowerCase() === filter.toLowerCase());
-  }, [convexRaw, samplesRaw, filter, isLimited]);
+    let all = [...real, ...samples].map((l) => (isLimited ? { ...l, _redacted: true } : l));
+    if (filter !== "All") {
+      all = all.filter((l) => l.property_type?.toLowerCase() === filter.toLowerCase());
+    }
+    if (collabTypeFilter) {
+      all = all.filter((l) => (l.collab_type || "").toLowerCase() === collabTypeFilter.toLowerCase());
+    }
+    const q = whereQuery.trim().toLowerCase();
+    if (q) {
+      all = all.filter(
+        (l) => (l.location || "").toLowerCase().includes(q) || (l.title || "").toLowerCase().includes(q)
+      );
+    }
+    return all;
+  }, [convexRaw, samplesRaw, filter, collabTypeFilter, whereQuery, isLimited]);
 
   const trending = useMemo(() => listings.filter((l) => l.is_featured).slice(0, 8), [listings]);
 
   // ── Map view ──────────────────────────────────────────────────────────────
   const mapRef = useRef(null);
-  const [mapOpen, setMapOpen] = useState(false);
+  // Lives in a store rather than local state so the tab layout can draw the
+  // bulge in the bar's silhouette and slide the bar down while the map is up.
+  const { mapOpen, setMapOpen, setHasMapPoints } = useMapViewStore();
   const [activePinId, setActivePinId] = useState(null);
   const [mapBounds, setMapBounds] = useState(null);
 
@@ -91,6 +166,11 @@ export default function ExploreScreen() {
     () => mapListings.map((l) => ({ id: l.id, lat: l.lat, lng: l.lng, label: l.compensation })),
     [mapListings]
   );
+
+  // The bar only bulges when there's actually something to show on a map.
+  useEffect(() => {
+    setHasMapPoints(mapPoints.length > 0);
+  }, [mapPoints.length, setHasMapPoints]);
   // Seed the initial map fit from featured listings so a widely-scattered
   // catalog doesn't open zoomed out to a near-blank world view (Explore.jsx's
   // focusMapPoints does the same with its trending/for-you ranking).
@@ -119,6 +199,17 @@ export default function ExploreScreen() {
   // Reverse-geocode the map's current center → "near {area}" label, mirroring
   // Explore.jsx's mapAreaLabel (same Mapbox token/endpoint).
   const [mapAreaLabel, setMapAreaLabel] = useState("");
+
+  // Opening from the tab bar's arc can't reset these itself, so clear the
+  // previous session's viewport whenever the map comes back up.
+  useEffect(() => {
+    if (mapOpen) {
+      setMapBounds(null);
+      setMapAreaLabel("");
+    } else {
+      setActivePinId(null);
+    }
+  }, [mapOpen]);
   useEffect(() => {
     if (!mapOpen || !mapBounds || !MAPBOX_TOKEN) return;
     const centerLat = (mapBounds.north + mapBounds.south) / 2;
@@ -184,24 +275,18 @@ export default function ExploreScreen() {
 
         <SearchBar
           segments={[
-            { label: "Where", placeholder: "Anywhere", onPress: () => router.push("/search") },
-            { label: "What", placeholder: "Any type", onPress: () => router.push("/search") },
-            { label: "When", placeholder: "Any dates", onPress: () => router.push("/search") },
+            { label: "Where", placeholder: "Anywhere", value: whereQuery, onPress: () => setActiveField("where") },
+            {
+              label: "What",
+              placeholder: "Any type",
+              value: [filter !== "All" ? filter : null, collabTypeFilter].filter(Boolean).join(" · "),
+              onPress: () => setActiveField("what"),
+            },
+            { label: "When", placeholder: "Any dates", value: whenLabel, onPress: () => setActiveField("when") },
           ]}
-          onSubmit={() => router.push("/search")}
+          onSubmit={() => setActiveField("where")}
         />
       </View>
-
-      <FlatList
-        data={PROP_FILTERS}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item}
-        contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }}
-        renderItem={({ item }) => (
-          <Chip label={item} active={filter === item} onPress={() => setFilter(item)} />
-        )}
-      />
 
       {trending.length > 0 && (
         <View style={{ gap: 0 }}>
@@ -209,8 +294,6 @@ export default function ExploreScreen() {
             <SectionHeading
               title="Trending Now"
               subtitle="Top picks this week"
-              actionLabel="see all"
-              onAction={() => setFilter("All")}
             />
           </View>
           <FlatList
@@ -311,24 +394,8 @@ export default function ExploreScreen() {
         />
       )}
 
-      {/* Floating Map pill — opens the full-screen map view */}
-      {!mapOpen && mapPoints.length > 0 && (
-        <PillButton
-          label="Map"
-          iconRight={<MapIcon color={colors.surface} size={16} />}
-          onPress={() => {
-            setMapBounds(null);
-            setMapAreaLabel("");
-            setMapOpen(true);
-          }}
-          style={{
-            position: "absolute",
-            bottom: insets.bottom + 20,
-            alignSelf: "center",
-            ...shadows.lg,
-          }}
-        />
-      )}
+      {/* The map toggle is drawn into the tab bar's own silhouette — see
+          (tabs)/_layout.jsx and BulgeTabBarBackground. */}
 
       {/* Map view (full-screen) — map on top, in-view listings docked below,
           matching CollabMap's phone-width layout on the website. */}
@@ -428,6 +495,107 @@ export default function ExploreScreen() {
             )}
           </View>
         </View>
+      )}
+
+      {activeField === "where" && (
+        <FieldSheet title="Where" onClose={() => setActiveField(null)}>
+          <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: colors.bone,
+                borderRadius: radii.md,
+                paddingHorizontal: 14,
+                paddingVertical: 10,
+              }}
+            >
+              <MapPin color={colors.sage} size={16} style={{ marginRight: 8 }} />
+              <TextInput
+                value={whereQuery}
+                onChangeText={setWhereQuery}
+                placeholder="Search by city or stay name"
+                placeholderTextColor={colors.sage}
+                autoFocus
+                style={{ flex: 1, fontFamily: fonts.body, fontSize: 15, color: colors.ink }}
+              />
+              {whereQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setWhereQuery("")}>
+                  <X color={colors.sage} size={16} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+          <ScrollView style={{ maxHeight: 280 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 8 }}>
+            <EyebrowLabel size={10} style={{ marginBottom: 8 }}>
+              {whereQuery ? "Matching stays" : "Suggested"}
+            </EyebrowLabel>
+            {listings.slice(0, 8).map((l) => (
+              <TouchableOpacity
+                key={l.id}
+                onPress={() => {
+                  setWhereQuery(l.location || l.title);
+                  setActiveField(null);
+                }}
+                style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.hairline }}
+              >
+                <Body size={14} weight="medium">{l.title}</Body>
+                <Body size={12} color={colors.sage}>{l.location}</Body>
+              </TouchableOpacity>
+            ))}
+            {listings.length === 0 && (
+              <Body size={13} color={colors.sage}>No matches yet — try a different search.</Body>
+            )}
+          </ScrollView>
+        </FieldSheet>
+      )}
+
+      {activeField === "what" && (
+        <FieldSheet title="What" onClose={() => setActiveField(null)}>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 8 }}>
+            <EyebrowLabel size={10} style={{ marginBottom: 10 }}>Collab type</EyebrowLabel>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+              {COLLAB_TYPES.map((ct) => (
+                <Chip
+                  key={ct.label}
+                  label={`${ct.emoji} ${ct.label}`}
+                  active={collabTypeFilter === ct.label}
+                  onPress={() => setCollabTypeFilter(collabTypeFilter === ct.label ? null : ct.label)}
+                />
+              ))}
+            </View>
+            <EyebrowLabel size={10} style={{ marginBottom: 10 }}>Property type</EyebrowLabel>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+              {PROP_FILTERS.map((f) => (
+                <Chip key={f} label={f} active={filter === f} onPress={() => setFilter(f)} />
+              ))}
+            </View>
+          </ScrollView>
+        </FieldSheet>
+      )}
+
+      {activeField === "when" && (
+        <FieldSheet title="When" onClose={() => setActiveField(null)}>
+          <View style={{ paddingHorizontal: 20, paddingBottom: 8, gap: 8 }}>
+            {AVAIL_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt}
+                onPress={() => {
+                  setWhenLabel(opt === "Any time" ? "" : opt);
+                  setActiveField(null);
+                }}
+                style={{
+                  paddingVertical: 12,
+                  paddingHorizontal: 14,
+                  borderRadius: radii.md,
+                  backgroundColor: (whenLabel || "Any time") === opt ? colors.mint : colors.bone,
+                }}
+              >
+                <Body size={14} weight={(whenLabel || "Any time") === opt ? "semibold" : "regular"}>{opt}</Body>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </FieldSheet>
       )}
     </AtmosphericBackground>
   );
