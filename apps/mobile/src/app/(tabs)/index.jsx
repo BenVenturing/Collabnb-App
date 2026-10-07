@@ -11,8 +11,9 @@
 // Map view mirrors CollabMap.jsx's phone-width behavior specifically (map on
 // top, in-view listings docked below) rather than its desktop split.
 
-import { View, FlatList, Dimensions, ActivityIndicator, Pressable, TouchableOpacity, TextInput, ScrollView } from "react-native";
+import { View, FlatList, Dimensions, ActivityIndicator, Pressable, TouchableOpacity, TextInput, ScrollView, Animated } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { List, X, MapPin } from "lucide-react-native";
@@ -58,7 +59,9 @@ const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
 
 // Web's trending carousel lets the next card peek past the screen edge as the
 // affordance that the row scrolls. Keep the peek — don't pad it away.
-const TRENDING_CARD_WIDTH = Math.round(Dimensions.get("window").width * 0.78);
+// Same width as the All Stays cards below (screen minus the list's 20pt side
+// padding), so the two sections read as one size of card rather than two.
+const TRENDING_CARD_WIDTH = Dimensions.get("window").width - 40;
 
 // Backdrop + sliding sheet for the Where/What/When fields — phone-sized
 // equivalent of web's under-field dropdown (Explore.jsx's <Dropdown>).
@@ -200,6 +203,17 @@ export default function ExploreScreen() {
   // Explore.jsx's mapAreaLabel (same Mapbox token/endpoint).
   const [mapAreaLabel, setMapAreaLabel] = useState("");
 
+  // Content scrolling up under the notch would otherwise collide with the
+  // clock/wifi/battery glyphs. A frosted strip fades in behind the status bar
+  // as soon as anything scrolls under it, and stays invisible at rest so the
+  // background reads clean. Opacity only, so it can run on the native driver.
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const topBlurOpacity = scrollY.interpolate({
+    inputRange: [0, 28],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
+
   // Opening from the tab bar's arc can't reset these itself, so clear the
   // previous session's viewport whenever the map comes back up.
   useEffect(() => {
@@ -302,6 +316,8 @@ export default function ExploreScreen() {
             showsHorizontalScrollIndicator={false}
             keyExtractor={(item) => `trending-${item.id}`}
             snapToInterval={TRENDING_CARD_WIDTH + 14}
+            snapToAlignment="start"
+            disableIntervalMomentum
             decelerationRate="fast"
             contentContainerStyle={{ gap: 14, paddingHorizontal: 20, paddingBottom: 4 }}
             renderItem={({ item }) => renderCard(item, TRENDING_CARD_WIDTH)}
@@ -318,12 +334,16 @@ export default function ExploreScreen() {
     </View>
   );
 
+  const showTrialBanner =
+    !access.loading && access.state === "trial" && access.daysLeft !== null && access.daysLeft <= 7;
+  const hasTopBanner = showTrialBanner || isLimited;
+
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
       <StatusBar style="dark" />
 
       {/* Trial countdown */}
-      {!access.loading && access.state === "trial" && access.daysLeft !== null && access.daysLeft <= 7 && (
+      {showTrialBanner && (
         <View
           style={{
             backgroundColor: colors.mint,
@@ -368,10 +388,14 @@ export default function ExploreScreen() {
           <ActivityIndicator color={colors.slate} />
         </View>
       ) : (
-        <FlatList
+        <Animated.FlatList
           data={listings}
           keyExtractor={(item) => item.id}
           ListHeaderComponent={header}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+            useNativeDriver: true,
+          })}
+          scrollEventThrottle={16}
           contentContainerStyle={{
             paddingHorizontal: 20,
             gap: 16,
@@ -392,6 +416,25 @@ export default function ExploreScreen() {
           }
           renderItem={({ item }) => renderCard(item, undefined)}
         />
+      )}
+
+      {/* Frosted status-bar strip. Skipped while a top banner is showing —
+          those draw their own solid background behind the status bar. */}
+      {!mapOpen && !hasTopBanner && (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: insets.top,
+            opacity: topBlurOpacity,
+          }}
+        >
+          <BlurView intensity={70} tint="light" style={{ flex: 1 }} />
+          <View style={{ height: 0.5, backgroundColor: "rgba(208,213,206,0.5)" }} />
+        </Animated.View>
       )}
 
       {/* The map toggle is drawn into the tab bar's own silhouette — see
