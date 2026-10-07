@@ -11,7 +11,7 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useRouter } from "expo-router";
-import { useSignUp } from "@clerk/clerk-expo";
+import { useSignUp } from "@clerk/expo";
 import { useMutation } from "convex/react";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react-native";
 import { api } from "@/convex/_generated/api";

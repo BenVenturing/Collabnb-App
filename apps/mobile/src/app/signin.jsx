@@ -11,7 +11,7 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useRouter } from "expo-router";
-import { useSignIn } from "@clerk/clerk-expo";
+import { useSignIn } from "@clerk/expo";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react-native";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { AtmosphericBackground } from "@/components/ui";

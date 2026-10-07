@@ -4,7 +4,7 @@ import {
   ClerkLoading,
   useAuth as useClerkAuth,
   useUser,
-} from "@clerk/clerk-expo";
+} from "@clerk/expo";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { useQuery } from "convex/react";
 import { Stack } from "expo-router";

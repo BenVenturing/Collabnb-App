@@ -25,7 +25,7 @@ import { BlurView } from "expo-blur";
 import MapView, { Marker } from "react-native-maps";
 import { Share2, Heart, Quote, Star, Check, Plus, ArrowRight } from "lucide-react-native";
 import { useQuery, useMutation } from "convex/react";
-import { useUser } from "@clerk/clerk-expo";
+import { useUser } from "@clerk/expo";
 import { api } from "@/convex/_generated/api";
 import ListingDraftStore from "@/utils/ListingDraftStore";
 import { AmenityIcon } from "@/lib/amenityIcons";

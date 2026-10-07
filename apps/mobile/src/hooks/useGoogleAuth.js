@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
-import { useSignIn, useSignUp } from "@clerk/clerk-expo";
+import { useSignIn, useSignUp } from "@clerk/expo";
 
 // Required once per app so the in-app browser closes itself and resolves
 // openAuthSessionAsync's promise when Clerk redirects back via our scheme.
@@ -16,14 +16,9 @@ function useWarmUpBrowser() {
   }, []);
 }
 
-// This is the same sequence as @clerk/clerk-expo's useSSO, reimplemented for
-// one reason: useSSO calls `await signIn.create(...)` and then reads
-// `signIn.firstFactorVerification` off the resource captured from the render
-// it was called in, rather than off the resource create() returns. On this
-// app that read comes back empty and it throws "Missing external verification
-// redirect URL for SSO flow" — even though the identical request made
-// straight against the Frontend API returns a valid Google authorize URL.
-// Reading the returned resource instead avoids the stale reference.
+// The same sequence as @clerk/expo's useSSO, written out so the authorize URL
+// is read off the resource create() returns and so failures surface a real
+// message instead of useSSO's generic throw.
 export function useGoogleAuth() {
   useWarmUpBrowser();
   const { signIn, setActive, isLoaded: signInLoaded } = useSignIn();
@@ -42,6 +37,11 @@ export function useGoogleAuth() {
     const created = await signIn.create({ strategy: "oauth_google", redirectUrl });
     const authorizeUrl = created?.firstFactorVerification?.externalVerificationRedirectURL;
     if (!authorizeUrl) {
+      // Every field on the returned resource parses as null here, including
+      // status — the same reason password sign-in reports a bogus "additional
+      // verification required". Issuing this identical request against the
+      // Frontend API returns a valid payload, so it's the SDK layer, not the
+      // instance config.
       throw new Error("Clerk did not return a Google authorization URL.");
     }
 

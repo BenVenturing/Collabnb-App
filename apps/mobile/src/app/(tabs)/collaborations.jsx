@@ -27,7 +27,7 @@ import {
 import { useState, useMemo } from "react";
 import { useRouter } from "expo-router";
 import { useQuery } from "convex/react";
-import { useUser } from "@clerk/clerk-expo";
+import { useUser } from "@clerk/expo";
 import { api } from "@/convex/_generated/api";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import { colors, fonts, radii, shadows, tracking, track, lineHeights } from "@/config/theme";

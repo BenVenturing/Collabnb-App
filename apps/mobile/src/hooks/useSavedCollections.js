@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { useUser } from "@clerk/clerk-expo";
+import { useUser } from "@clerk/expo";
 import { api } from "@/convex/_generated/api";
 import { normalizeListing } from "@/utils/listingHelpers";
 
