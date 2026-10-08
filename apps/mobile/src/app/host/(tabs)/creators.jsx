@@ -13,7 +13,7 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { useUser } from "@clerk/expo";
+import { useUser } from "@clerk/clerk-expo";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,

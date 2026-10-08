@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "convex/react";
-import { useUser } from "@clerk/expo";
+import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 
 // Mirrors the website's isHostVerified/isCreatorVerified logic (Settings.jsx,

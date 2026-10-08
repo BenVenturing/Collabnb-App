@@ -16,7 +16,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react-native";
 import { useMutation, useQuery } from "convex/react";
-import { useUser } from "@clerk/expo";
+import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
 import { AtmosphericBackground, Display, Body, EyebrowLabel, PillButton, Glass } from "@/components/ui";

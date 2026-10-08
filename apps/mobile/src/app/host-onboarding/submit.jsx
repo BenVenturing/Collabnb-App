@@ -13,7 +13,7 @@ import {
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useMutation, useQuery } from "convex/react";
-import { useUser } from "@clerk/expo";
+import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import useHostOnboardingStore from "@/utils/HostOnboardingStore";
 import HostOnboardingShell from "@/components/HostOnboardingShell";

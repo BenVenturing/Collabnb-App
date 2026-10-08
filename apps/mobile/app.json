@@ -66,8 +66,7 @@
       "expo-font",
       "expo-secure-store",
       "expo-web-browser",
-      "expo-notifications",
-      "@clerk/expo"
+      "expo-notifications"
     ],
     "web": {
       "bundler": "metro",

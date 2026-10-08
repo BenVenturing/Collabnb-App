@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Image } from "expo-image";
 import { useQuery } from "convex/react";
-import { useUser } from "@clerk/expo";
+import { useUser } from "@clerk/clerk-expo";
 import { ArrowLeft, Send, MoreVertical } from "lucide-react-native";
 import { api } from "@/convex/_generated/api";
 import { useThreadMessages } from "@/hooks/useThreadMessages";

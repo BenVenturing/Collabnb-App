@@ -19,7 +19,7 @@ import { useRouter } from "expo-router";
 import { List, X, MapPin } from "lucide-react-native";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useQuery } from "convex/react";
-import { useUser } from "@clerk/expo";
+import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import { useSavedCollections } from "@/hooks/useSavedCollections";
 import { useAccessGate } from "@/hooks/useAccessGate";
