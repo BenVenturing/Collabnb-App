@@ -129,7 +129,7 @@ export default function CreateListingOffer() {
     <>
       <ListingCreationShell
         currentStep={2}
-        totalSteps={4}
+        totalSteps={5}
         onBack={() => router.back()}
         onSaveExit={handleSaveExit}
         onNext={handleNext}

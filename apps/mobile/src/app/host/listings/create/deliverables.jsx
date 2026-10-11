@@ -262,7 +262,7 @@ export default function CreateListingDeliverables() {
   return (
     <ListingCreationShell
       currentStep={3}
-      totalSteps={4}
+      totalSteps={5}
       onBack={() => router.back()}
       onSaveExit={handleSaveExit}
       onNext={handleNext}

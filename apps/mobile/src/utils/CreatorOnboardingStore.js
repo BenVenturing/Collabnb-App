@@ -9,6 +9,7 @@ const useCreatorOnboardingStore = create((set, get) => ({
   displayName: "",
   username: "",
   shortBio: "",
+  niches: [],
 
   // Step 2: Social Links
   instagramUrl: "",
@@ -46,6 +47,7 @@ const useCreatorOnboardingStore = create((set, get) => ({
         youtubeUrl: state.youtubeUrl,
         personalWebsite: state.personalWebsite,
         portfolioItems: state.portfolioItems,
+        niches: state.niches,
         creatorApprovalStatus: state.creatorApprovalStatus,
       };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(draftData));
@@ -78,6 +80,7 @@ const useCreatorOnboardingStore = create((set, get) => ({
         youtubeUrl: "",
         personalWebsite: "",
         portfolioItems: [],
+        niches: [],
         creatorApprovalStatus: "not_submitted",
       });
     } catch (error) {

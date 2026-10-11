@@ -8,7 +8,8 @@ import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useUpload } from "@/utils/useUpload";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
-import { AtmosphericBackground, Display, Body, FormField, PillButton } from "@/components/ui";
+import { AtmosphericBackground, Display, Body, FormField, PillButton, Chip } from "@/components/ui";
+import { NICHE_OPTIONS } from "@/config/niches";
 import { colors } from "@/config/theme";
 
 export default function CreatorBasicInfoScreen() {
@@ -19,6 +20,8 @@ export default function CreatorBasicInfoScreen() {
     profilePhoto,
     displayName,
     username,
+    shortBio,
+    niches,
     updateMultipleFields,
     loadDraft,
   } = useCreatorOnboardingStore();
@@ -26,6 +29,13 @@ export default function CreatorBasicInfoScreen() {
   const [localPhoto, setLocalPhoto] = useState(profilePhoto || null);
   const [localName, setLocalName] = useState(displayName || "");
   const [localUsername, setLocalUsername] = useState(username || "");
+  const [localBio, setLocalBio] = useState(shortBio || "");
+  const [localNiches, setLocalNiches] = useState(niches || []);
+
+  const toggleNiche = (niche) =>
+    setLocalNiches((current) =>
+      current.includes(niche) ? current.filter((n) => n !== niche) : [...current, niche],
+    );
 
   useEffect(() => {
     loadDraft();
@@ -100,6 +110,8 @@ export default function CreatorBasicInfoScreen() {
       profilePhoto: localPhoto,
       displayName: localName.trim(),
       username: localUsername.trim(),
+      shortBio: localBio.trim(),
+      niches: localNiches,
     });
 
     router.push("/creator-onboarding/social-links");
@@ -110,6 +122,8 @@ export default function CreatorBasicInfoScreen() {
       profilePhoto: localPhoto,
       displayName: localName.trim(),
       username: localUsername.trim(),
+      shortBio: localBio.trim(),
+      niches: localNiches,
     });
     Alert.alert("Draft Saved", "Your progress has been saved.");
   };
@@ -202,6 +216,32 @@ export default function CreatorBasicInfoScreen() {
             onChangeText={handleUsernameChange}
             placeholder="username"
           />
+          <FormField
+            label="Short bio"
+            value={localBio}
+            onChangeText={setLocalBio}
+            placeholder="A sentence or two about what you make"
+            multiline
+            numberOfLines={3}
+          />
+
+          {/* Hosts filter creators by niche, so an empty list means this
+              creator doesn't surface in host search at all. */}
+          <View style={{ gap: 10 }}>
+            <Body size={13} weight="medium" color={colors.slate}>
+              What do you create? Pick a few.
+            </Body>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {NICHE_OPTIONS.map((niche) => (
+                <Chip
+                  key={niche}
+                  label={niche}
+                  active={localNiches.includes(niche)}
+                  onPress={() => toggleNiche(niche)}
+                />
+              ))}
+            </View>
+          </View>
         </View>
       </ScrollView>
 

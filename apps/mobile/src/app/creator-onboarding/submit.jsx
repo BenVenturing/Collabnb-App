@@ -50,6 +50,8 @@ export default function CreatorSubmitApplicationScreen() {
     profilePhoto,
     displayName,
     username,
+    shortBio,
+    niches,
     instagramUrl,
     tiktokUrl,
     youtubeUrl,
@@ -75,6 +77,11 @@ export default function CreatorSubmitApplicationScreen() {
           full_name: displayName || undefined,
           username: username || undefined,
           avatar_url: profilePhoto || undefined,
+          // Collected on the basic-info step but never sent, so a creator who
+          // onboarded on mobile had no bio and no niches — and hosts filter
+          // creator search on niches.
+          bio: shortBio || undefined,
+          niches: niches?.length ? niches : undefined,
           instagram_handle: extractHandle(instagramUrl),
           tiktok_handle: extractHandle(tiktokUrl),
           youtube_handle: extractHandle(youtubeUrl),

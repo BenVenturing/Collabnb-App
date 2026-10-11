@@ -1,126 +1,17 @@
-import { View, Text, TouchableOpacity, Alert, Animated } from "react-native";
-import { useState, useEffect, useRef } from "react";
+import { View, Text, TouchableOpacity, Alert } from "react-native";
+import { useState, useEffect } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronDown, ChevronUp, Eye, DollarSign } from "lucide-react-native";
 import ListingCreationShell from "@/components/ListingCreationShell";
 import ListingDraftStore from "@/utils/ListingDraftStore";
 import { colors as theme, fonts, tracking, track } from "@/config/theme";
 
-// Simple confetti particle component
-// Falls with randomized per-particle timing — a decorative one-off effect,
-// not a UI transition, so it intentionally doesn't route through
-// durations.*/motion.* (those durations are far shorter than a good confetti
-// fall needs).
-const ConfettiParticle = ({ delay, duration, startX }) => {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const translateX = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(1)).current;
-  const rotate = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(translateY, {
-        toValue: 600,
-        duration: duration,
-        delay: delay,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateX, {
-        toValue: (Math.random() - 0.5) * 200,
-        duration: duration,
-        delay: delay,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: duration,
-        delay: delay,
-        useNativeDriver: true,
-      }),
-      Animated.timing(rotate, {
-        toValue: Math.random() * 720,
-        duration: duration,
-        delay: delay,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-
-  const confettiColors = [theme.mint, theme.slate, theme.bone, theme.stone];
-  const color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
-
-  return (
-    <Animated.View
-      style={{
-        position: "absolute",
-        left: startX,
-        top: -20,
-        width: 10,
-        height: 10,
-        backgroundColor: color,
-        borderRadius: 5,
-        transform: [
-          { translateY },
-          { translateX },
-          {
-            rotate: rotate.interpolate({
-              inputRange: [0, 720],
-              outputRange: ["0deg", "720deg"],
-            }),
-          },
-        ],
-        opacity,
-      }}
-    />
-  );
-};
-
-const ConfettiOverlay = ({ onComplete }) => {
-  const [particles] = useState(() =>
-    Array.from({ length: 40 }, (_, i) => ({
-      key: i,
-      delay: Math.random() * 200,
-      duration: 1500 + Math.random() * 500,
-      startX: Math.random() * 400,
-    })),
-  );
-
-  useEffect(() => {
-    const timer = setTimeout(onComplete, 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  return (
-    <View
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 9999,
-        pointerEvents: "none",
-      }}
-    >
-      {particles.map((p) => (
-        <ConfettiParticle
-          key={p.key}
-          delay={p.delay}
-          duration={p.duration}
-          startX={p.startX}
-        />
-      ))}
-    </View>
-  );
-};
 
 export default function CreateListingReview() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [draft, setDraft] = useState(ListingDraftStore.getDraft());
   const [showFees, setShowFees] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -176,43 +67,16 @@ export default function CreateListingReview() {
     }
   };
 
-  const handlePublish = async () => {
-    setPublishing(true);
-    try {
-      // If editing, update the existing listing; otherwise publish new
-      if (params.editMode === "true" && params.id) {
-        // Update existing listing
-        await ListingDraftStore.updateExistingListing(params.id, draft);
-        Alert.alert("Changes Saved! ✓", "Your listing has been updated.", [
-          {
-            text: "View Listing",
-            onPress: () =>
-              router.replace(`/listing-detail?id=${params.id}&isHost=true`),
-          },
-        ]);
-      } else {
-        // Publish new listing
-        await ListingDraftStore.publishListing();
-        setShowConfetti(true);
-      }
-    } catch (error) {
-      Alert.alert("Error", "Failed to save listing. Please try again.");
-      setPublishing(false);
-    }
-  };
-
-  const handleConfettiComplete = () => {
-    setShowConfetti(false);
-    Alert.alert(
-      "Listing Created! 🎉",
-      "Your listing is now live and visible to creators.",
-      [
-        {
-          text: "View Listings",
-          onPress: () => router.replace("/host/(tabs)/dashboard"),
-        },
-      ],
-    );
+  // Publishing moved to the payment step so a listing can't go live without a
+  // method on file for the platform fee; the draft (and editMode) carries over.
+  const goToPayment = () => {
+    router.push({
+      pathname: "/host/listings/create/payment",
+      params:
+        params.editMode === "true" && params.id
+          ? { editMode: "true", id: String(params.id) }
+          : {},
+    });
   };
 
   const handleSaveDraft = async () => {
@@ -246,20 +110,11 @@ export default function CreateListingReview() {
     <>
       <ListingCreationShell
         currentStep={4}
-        totalSteps={4}
+        totalSteps={5}
         onBack={() => router.back()}
         onSaveExit={() => router.push("/host/(tabs)/dashboard")}
-        onNext={handlePublish}
-        nextLabel={
-          publishing
-            ? isEditMode
-              ? "Saving..."
-              : "Publishing..."
-            : isEditMode
-              ? "Save Changes"
-              : "Publish listing"
-        }
-        nextDisabled={publishing}
+        onNext={goToPayment}
+        nextLabel="Next: payment"
       >
         <View style={{ paddingHorizontal: 20, paddingTop: 24 }}>
           <View
@@ -757,7 +612,6 @@ export default function CreateListingReview() {
         </View>
       </ListingCreationShell>
 
-      {showConfetti && <ConfettiOverlay onComplete={handleConfettiComplete} />}
     </>
   );
 }
