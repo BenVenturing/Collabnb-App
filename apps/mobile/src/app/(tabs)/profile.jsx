@@ -3,7 +3,6 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  Share,
   Dimensions,
   Animated,
 } from "react-native";
@@ -50,6 +49,7 @@ import LinksSection from "@/components/Profile/LinksSection";
 import SpecialtiesSection from "@/components/Profile/SpecialtiesSection";
 import SettingsModal from "@/components/Profile/SettingsModal";
 import RoleSwitchModal from "@/components/Profile/RoleSwitchModal";
+import ShareProfileSheet from "@/components/Profile/ShareProfileSheet";
 
 const LOCATION_PREF_KEY = "@collabnb_creator_location_prefs_v1";
 const DEFAULT_PHOTO = {
@@ -183,6 +183,7 @@ function PastCollabCard({ collab, sample = false, onPress }) {
 export default function CreatorProfileScreen() {
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
+  const [showShare, setShowShare] = useState(false);
   const router = useRouter();
   const { loadDraft: loadHostDraft } = useHostOnboardingStore();
   const { loadDraft: loadCreatorDraft } = useCreatorOnboardingStore();
@@ -237,10 +238,7 @@ export default function CreatorProfileScreen() {
 
   const handleShare = () => {
     if (!profile) return;
-    Share.share({
-      message: `${profile.full_name} on Collabnb`,
-      url: `https://collabnb.com/profile/${profile.username}`,
-    }).catch(() => {});
+    setShowShare(true);
   };
 
   // Web treats only real, finished collabs as content; samples exist purely to
@@ -542,6 +540,12 @@ export default function CreatorProfileScreen() {
         isSwitching={isSwitching}
         onHostModePress={handleHostModePress}
       />
+      <ShareProfileSheet
+        visible={showShare}
+        onClose={() => setShowShare(false)}
+        profile={profile}
+      />
+
       <RoleSwitchModal
         visible={showRoleSwitchModal}
         onClose={() => setShowRoleSwitchModal(false)}
