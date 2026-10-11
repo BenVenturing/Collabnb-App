@@ -112,13 +112,13 @@ export default function HostSettingsScreen() {
     const isAdmin = await AsyncStorage.getItem("@collabnb_is_admin_v1");
     if (isAdmin === "true") {
       await AsyncStorage.setItem("@collabnb_active_mode_v1", "creator");
-      router.replace("/(tabs)");
+      router.replace("/explore");
       return;
     }
     // Non-admin: use role store
     try {
       await setRole("creator");
-      router.replace("/(tabs)");
+      router.replace("/explore");
     } catch (e) {
       Alert.alert("Error", "Failed to switch. Please try again.");
     }

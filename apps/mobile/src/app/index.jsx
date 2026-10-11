@@ -30,5 +30,5 @@ export default function Index() {
   }
 
   // Default to creator tabs (for creators or users without role set)
-  return <Redirect href="/(tabs)" />;
+  return <Redirect href="/explore" />;
 }

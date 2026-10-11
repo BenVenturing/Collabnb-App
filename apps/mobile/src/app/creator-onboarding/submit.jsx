@@ -91,7 +91,7 @@ export default function CreatorSubmitApplicationScreen() {
   };
 
   const handleReturnToBrowse = () => {
-    router.replace("/(tabs)");
+    router.replace("/explore");
   };
 
   const hasInstagram = !!instagramUrl;

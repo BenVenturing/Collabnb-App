@@ -38,6 +38,8 @@ export default function SigninScreen() {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [secondFactor, setSecondFactor] = useState(null);
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -49,7 +51,7 @@ export default function SigninScreen() {
       const { createdSessionId, setActive: activateSSO } = await signInWithGoogle();
       if (createdSessionId && activateSSO) {
         await activateSSO({ session: createdSessionId });
-        router.replace("/(tabs)");
+        router.replace("/explore");
       }
     } catch (err) {
       console.error("[GoogleAuth] sign-in failed:", err?.message, JSON.stringify(err?.errors || err));
@@ -57,6 +59,15 @@ export default function SigninScreen() {
     } finally {
       setGoogleLoading(false);
     }
+  };
+
+  const SIGN_IN_STATUS_MESSAGES = {
+    needs_first_factor:
+      "This account has no password set. Use Continue with Google, or tap Forgot password to create one.",
+    needs_second_factor:
+      "Two-factor authentication is on for this account. Use Continue with Google to sign in.",
+    needs_identifier: "Enter the email address for your account.",
+    needs_new_password: "Your password must be reset. Tap Forgot password to continue.",
   };
 
   const handleSignIn = async () => {
@@ -76,12 +87,76 @@ export default function SigninScreen() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        router.replace("/(tabs)");
+        router.replace("/explore");
+      } else if (result.status === "needs_second_factor") {
+        await startSecondFactor(result);
       } else {
-        setError("Additional verification is required for this account.");
+        // Clerk returns a non-complete status rather than throwing when the
+        // password alone can't finish sign-in. Naming the case matters:
+        // needs_first_factor on a password attempt means the account has no
+        // password (Google-created), which "additional verification" hid.
+        setError(SIGN_IN_STATUS_MESSAGES[result.status] ?? `Sign-in needs another step (${result.status}).`);
       }
     } catch (err) {
       setError(err?.errors?.[0]?.message || "Invalid email or password.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // phone_code has to be requested before it can be attempted; totp and
+  // backup_code are already in the user's possession, so they go straight to
+  // the code screen.
+  const startSecondFactor = async (result) => {
+    const supported = result.supportedSecondFactors ?? [];
+    const pick =
+      supported.find((f) => f.strategy === "totp") ??
+      supported.find((f) => f.primary) ??
+      supported[0];
+
+    if (!pick) {
+      setError("This account needs a second factor, but none is available on this device.");
+      return;
+    }
+
+    // Anything Clerk delivers (SMS, email) has to be requested first or the
+    // attempt fails with verification_not_sent. Only totp and backup_code,
+    // which the user already holds, skip this.
+    if (pick.strategy === "phone_code") {
+      await signIn.prepareSecondFactor({
+        strategy: "phone_code",
+        phoneNumberId: pick.phoneNumberId,
+      });
+    } else if (pick.strategy === "email_code") {
+      await signIn.prepareSecondFactor({
+        strategy: "email_code",
+        emailAddressId: pick.emailAddressId,
+      });
+    }
+
+    setSecondFactor(pick);
+    setTwoFactorCode("");
+    setError("");
+    setMode("2fa");
+  };
+
+  const handleVerifySecondFactor = async () => {
+    if (!isLoaded || !twoFactorCode.trim() || !secondFactor) return;
+    setError("");
+    setLoading(true);
+    try {
+      const result = await signIn.attemptSecondFactor({
+        strategy: secondFactor.strategy,
+        code: twoFactorCode.trim(),
+      });
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+        router.replace("/explore");
+      } else {
+        setError(`Couldn't finish sign-in (${result.status}).`);
+      }
+    } catch (err) {
+      setError(err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || "That code didn't work. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -119,7 +194,7 @@ export default function SigninScreen() {
       });
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        router.replace("/(tabs)");
+        router.replace("/explore");
       } else {
         setError("That code didn't work. Please try again.");
       }
@@ -131,13 +206,27 @@ export default function SigninScreen() {
   };
 
   const heading =
-    mode === "forgot" ? "Reset your password" : mode === "reset" ? "Check your email" : "Welcome back";
+    mode === "forgot"
+      ? "Reset your password"
+      : mode === "reset"
+        ? "Check your email"
+        : mode === "2fa"
+          ? "Two-factor authentication"
+          : "Welcome back";
   const subheading =
     mode === "forgot"
       ? "We'll email you a code to reset it"
       : mode === "reset"
         ? `We sent a code to ${email.trim()}`
-        : "Sign in to continue your collaborations";
+        : mode === "2fa"
+          ? secondFactor?.strategy === "phone_code"
+            ? `We texted a code to ${secondFactor.safeIdentifier ?? "your phone"}`
+            : secondFactor?.strategy === "email_code"
+              ? `We emailed a code to ${secondFactor.safeIdentifier ?? email.trim()}`
+              : secondFactor?.strategy === "backup_code"
+                ? "Enter one of your backup codes"
+                : "Enter the code from your authenticator app"
+          : "Sign in to continue your collaborations";
 
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
@@ -259,6 +348,33 @@ export default function SigninScreen() {
                 <PrimaryButton label={loading ? "Sending…" : "Send reset code"} onPress={handleSendResetCode} disabled={loading || !isLoaded} />
                 <TouchableOpacity onPress={() => { setMode("signin"); setError(""); }} style={{ alignItems: "center", marginTop: 16 }}>
                   <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.slate }}>Back to sign in</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {mode === "2fa" && (
+              <>
+                <Field
+                  label={secondFactor?.strategy === "backup_code" ? "Backup code" : "Verification code"}
+                  value={twoFactorCode}
+                  onChangeText={setTwoFactorCode}
+                  placeholder={secondFactor?.strategy === "backup_code" ? "xxxxxxxx" : "123456"}
+                  keyboardType={secondFactor?.strategy === "backup_code" ? "default" : "number-pad"}
+                  autoFocus
+                />
+                {error ? <ErrorText>{error}</ErrorText> : null}
+                <PrimaryButton
+                  label={loading ? "Verifying…" : "Verify"}
+                  onPress={handleVerifySecondFactor}
+                  disabled={loading || !isLoaded}
+                />
+                <TouchableOpacity
+                  onPress={() => { setMode("signin"); setError(""); setTwoFactorCode(""); }}
+                  style={{ alignItems: "center", marginTop: 16 }}
+                >
+                  <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate }}>
+                    Back to sign in
+                  </Text>
                 </TouchableOpacity>
               </>
             )}

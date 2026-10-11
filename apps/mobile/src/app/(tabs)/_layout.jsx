@@ -25,8 +25,8 @@ export default function TabLayout() {
   const segments = useSegments();
   const { mapOpen, hasMapPoints, setMapOpen } = useMapViewStore();
 
-  // segments is ["(tabs)"] on Explore itself, ["(tabs)", "saved"] elsewhere.
-  const onExplore = segments[segments.length - 1] === "(tabs)";
+  // segments is ["(tabs)", "explore"] on Explore, ["(tabs)", "saved"] elsewhere.
+  const onExplore = segments[segments.length - 1] === "explore";
   const showBulge = onExplore && hasMapPoints;
 
   const barHeight = ROW_HEIGHT + BULGE_RISE + insets.bottom;
@@ -62,7 +62,7 @@ export default function TabLayout() {
         }}
       >
         <Tabs.Screen
-          name="index"
+          name="explore"
           options={{
             title: "Explore",
             tabBarIcon: ({ color, size }) => <Search color={color} size={22} />,

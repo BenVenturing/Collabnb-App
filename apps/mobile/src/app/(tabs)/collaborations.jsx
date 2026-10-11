@@ -220,7 +220,7 @@ export default function CreatorCollaborationsScreen() {
                         paddingHorizontal: 24,
                         borderRadius: radii.pill,
                       }}
-                      onPress={() => router.push("/(tabs)")}
+                      onPress={() => router.push("/explore")}
                     >
                       <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.surface }}>
                         Discover Stays

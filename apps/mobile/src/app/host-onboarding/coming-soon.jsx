@@ -61,7 +61,7 @@ export default function HostComingSoonScreen() {
 
         {/* Back Button */}
         <TouchableOpacity
-          onPress={() => router.replace("/(tabs)")}
+          onPress={() => router.replace("/explore")}
           style={{
             flexDirection: "row",
             alignItems: "center",

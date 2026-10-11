@@ -10,7 +10,19 @@ const getURLFromArgs = (...args: Parameters<typeof fetch>) => {
   if (typeof urlArg === 'string') {
     url = urlArg;
   } else if (typeof urlArg === 'object' && urlArg !== null) {
-    url = urlArg.url;
+    // A Request exposes `.url`, a URL object exposes `.href`. Without the
+    // href branch a URL argument yields undefined here, and the caller below
+    // treats "no URL" as unclassifiable and falls through to expoFetch —
+    // which is how Clerk (it passes URL objects) ended up off the native
+    // transport, failing and retrying /v1/client and /v1/environment until
+    // it gave up initializing and returned all-null resources.
+    const asRecord = urlArg as { url?: unknown; href?: unknown };
+    url =
+      typeof asRecord.url === 'string'
+        ? asRecord.url
+        : typeof asRecord.href === 'string'
+          ? asRecord.href
+          : null;
   } else {
     url = null;
   }
@@ -19,6 +31,21 @@ const getURLFromArgs = (...args: Parameters<typeof fetch>) => {
 
 const isFileURL = (url: string) => {
   return url.startsWith('file://') || url.startsWith('data:');
+};
+
+// Keep Clerk's Frontend API on the native transport. It is auth-critical and
+// needs no first-party headers, and native fetch is the path its request and
+// response handling is verified against here; routing it through expo/fetch
+// is untested and a failure there degrades silently (Clerk retries, never
+// finishes initializing, then hands back all-null resources).
+const isClerkURL = (url: string) => {
+  const host = url.match(/^https?:\/\/([^/?#]+)/i)?.[1]?.toLowerCase();
+  if (!host) return false;
+  return (
+    host.startsWith('clerk.') ||
+    host.endsWith('.clerk.accounts.dev') ||
+    host.endsWith('.clerk.com')
+  );
 };
 
 const isFirstPartyURL = (url: string) => {
@@ -72,7 +99,7 @@ const fetchToWeb = async function fetchWithHeaders(...args: Params) {
     return expoFetch(input, init);
   }
 
-  if (isFileURL(url)) {
+  if (isFileURL(url) || isClerkURL(url)) {
     return originalFetch(input, init);
   }
 

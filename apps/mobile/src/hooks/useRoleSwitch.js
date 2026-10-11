@@ -30,7 +30,7 @@ export function useRoleSwitch() {
           if (targetRole === "host") {
             router.replace("/host/(tabs)/dashboard");
           } else {
-            router.replace("/(tabs)");
+            router.replace("/explore");
           }
         }, 400);
       } catch (error) {
