@@ -30,6 +30,7 @@ import { useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
+import CollabCrmOverview, { useCrmChart } from "@/components/collabs/CollabCrmOverview";
 import { colors, fonts, radii, shadows, tracking, track, lineHeights } from "@/config/theme";
 
 const IMG_FALLBACK = "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=400";
@@ -60,6 +61,8 @@ function normalizeCollab(c) {
     deliverables: c.deliverables,
     daysLeft: c.days_left,
     isActive: c.is_active !== false,
+    isDemo: c.is_demo === true,
+    isSample: c.is_sample === true,
     appliedDate: stages?.pending?.date,
   };
 }
@@ -75,8 +78,130 @@ export default function CreatorCollaborationsScreen() {
     api.collaborations.getByCreator,
     profile?._id ? { creatorId: String(profile._id) } : "skip",
   );
+  const pitches = useQuery(
+    api.pitches.getByCreator,
+    profile?._id ? { creatorId: String(profile._id) } : "skip",
+  );
+  const contracts = useQuery(
+    api.contracts.getForParty,
+    profile?._id ? { userId: String(profile._id) } : "skip",
+  );
 
   const [activeFilter, setActiveFilter] = useState("active");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [listingFilter, setListingFilter] = useState("all");
+  const [dueFilter, setDueFilter] = useState("all");
+
+  const collabs = useMemo(() => (collabsRaw || []).map(normalizeCollab), [collabsRaw]);
+
+  // Demo and sample rows are there to show an empty state what it will look
+  // like; counting them would overstate every number on the dashboard.
+  const realActive = useMemo(
+    () => collabs.filter((c) => c.isActive && !c.isDemo && !c.isSample),
+    [collabs],
+  );
+
+  const chart = useCrmChart(pitches, contracts);
+
+  const listingOptions = useMemo(() => {
+    const names = new Set(collabs.map((c) => c.propertyName).filter(Boolean));
+    return ["all", ...Array.from(names)];
+  }, [collabs]);
+
+  const OPEN_STAGES_EXCLUDED = ["uploaded_tagged", "closed", "archived"];
+
+  const stats = useMemo(() => {
+    const uniqueListings = new Set(realActive.map((c) => c.propertyName).filter(Boolean));
+    const pendingCount = (pitches || []).filter((p) => p.status === "pending").length;
+    const paid = (contracts || []).filter((c) => c.paid);
+    const earned = paid.reduce((sum, c) => sum + (c.payment_amount ?? c.cash_value ?? 0), 0);
+    const due = realActive.filter(
+      (c) => c.daysLeft != null && !OPEN_STAGES_EXCLUDED.includes(c.currentStage),
+    );
+    const soonest = due.length ? Math.min(...due.map((c) => c.daysLeft)) : null;
+
+    return [
+      {
+        key: "active",
+        label: "Active",
+        value: String(realActive.length),
+        sub: `Across ${uniqueListings.size} listing${uniqueListings.size === 1 ? "" : "s"}`,
+        onPress: () => { setActiveFilter("active"); setStatusFilter("all"); },
+      },
+      {
+        key: "pending",
+        label: "Pending",
+        value: String(pendingCount),
+        sub: "Awaiting host reply",
+        onPress: () => { setActiveFilter("active"); setStatusFilter("pending"); },
+      },
+      {
+        key: "earned",
+        label: "Earned",
+        value: `$${earned.toLocaleString()}`,
+        sub: `${paid.length} contract${paid.length === 1 ? "" : "s"} paid`,
+        onPress: () => { setActiveFilter("active"); setStatusFilter("closed"); },
+      },
+      {
+        key: "due",
+        label: "Content due",
+        value: String(due.length),
+        sub: soonest !== null ? `Next due in ${soonest} day${soonest === 1 ? "" : "s"}` : "Nothing due",
+        onPress: () => { setActiveFilter("active"); setStatusFilter("pending"); },
+      },
+    ];
+  }, [realActive, pitches, contracts]);
+
+  const todoItems = useMemo(() => {
+    const items = [];
+    realActive.forEach((c) => {
+      if (c.daysLeft != null && !OPEN_STAGES_EXCLUDED.includes(c.currentStage)) {
+        items.push({
+          type: "deadline",
+          title: `Upload content — ${c.propertyName}`,
+          date: c.daysLeft === 0 ? "Due today" : `Due in ${c.daysLeft} day${c.daysLeft === 1 ? "" : "s"}`,
+        });
+      }
+    });
+    (pitches || []).forEach((p) => {
+      if (p.counter_pending === "creator") {
+        items.push({
+          type: "pending_action",
+          title: `Respond to counter-pitch — ${p.listing_title || "listing"}`,
+        });
+      }
+    });
+    return items;
+  }, [realActive, pitches]);
+
+  const filteredCollabs = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return collabs
+      .filter((c) => (activeFilter === "active" ? c.isActive : !c.isActive))
+      .filter((c) =>
+        activeFilter !== "active" || statusFilter === "all"
+          ? true
+          : c.currentStage === statusFilter || c.status === statusFilter,
+      )
+      .filter((c) => listingFilter === "all" || c.propertyName === listingFilter)
+      .filter((c) => {
+        if (dueFilter === "all") return true;
+        if (dueFilter === "none") return !c.daysLeft;
+        if (!c.daysLeft) return false;
+        if (dueFilter === "week") return c.daysLeft <= 7;
+        if (dueFilter === "month") return c.daysLeft <= 30;
+        return true;
+      })
+      .filter((c) => !term || c.propertyName?.toLowerCase().includes(term))
+      // Soonest deadline first; anything without one sinks to the bottom.
+      .sort((a, b) => {
+        if (a.daysLeft == null && b.daysLeft == null) return 0;
+        if (a.daysLeft == null) return 1;
+        if (b.daysLeft == null) return -1;
+        return a.daysLeft - b.daysLeft;
+      });
+  }, [collabs, activeFilter, statusFilter, listingFilter, dueFilter, search]);
 
   if (!isSignedIn) {
     return (
@@ -113,10 +238,6 @@ export default function CreatorCollaborationsScreen() {
   }
 
   const isLoading = collabsRaw === undefined;
-  const collabs = useMemo(() => (collabsRaw || []).map(normalizeCollab), [collabsRaw]);
-  const filteredCollabs = collabs.filter((c) =>
-    activeFilter === "active" ? c.isActive : !c.isActive,
-  );
 
   return (
     <AtmosphericBackground>
@@ -185,6 +306,50 @@ export default function CreatorCollaborationsScreen() {
             contentContainerStyle={{ paddingBottom: insets.bottom + 80, paddingTop: 16 }}
             showsVerticalScrollIndicator={false}
           >
+            <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+              <CollabCrmOverview
+                stats={stats}
+                chart={chart}
+                todoItems={todoItems}
+                search={search}
+                onSearchChange={setSearch}
+                filters={[
+                  {
+                    key: "status",
+                    value: statusFilter,
+                    onChange: setStatusFilter,
+                    options: [
+                      { value: "all", label: "All statuses" },
+                      { value: "pending", label: "Application sent" },
+                      { value: "accepted", label: "Accepted" },
+                      { value: "uploaded_tagged", label: "Uploaded" },
+                      { value: "closed", label: "Completed" },
+                    ],
+                  },
+                  {
+                    key: "listing",
+                    value: listingFilter,
+                    onChange: setListingFilter,
+                    options: listingOptions.map((name) => ({
+                      value: name,
+                      label: name === "all" ? "All listings" : name,
+                    })),
+                  },
+                  {
+                    key: "due",
+                    value: dueFilter,
+                    onChange: setDueFilter,
+                    options: [
+                      { value: "all", label: "Any due date" },
+                      { value: "week", label: "Due this week" },
+                      { value: "month", label: "Due this month" },
+                      { value: "none", label: "No deadline" },
+                    ],
+                  },
+                ]}
+              />
+            </View>
+
             {filteredCollabs.length === 0 ? (
               <View style={{ alignItems: "center", paddingTop: 40, paddingHorizontal: 40 }}>
                 <Text style={{ fontSize: 32, marginBottom: 12 }}>✦</Text>
