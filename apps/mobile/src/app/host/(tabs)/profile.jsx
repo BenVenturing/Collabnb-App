@@ -20,7 +20,12 @@ import useHostOnboardingStore from "@/utils/HostOnboardingStore";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
 import ListingDraftStore from "@/utils/ListingDraftStore";
 import { useConversations } from "@/hooks/useConversations";
+import { useQuery } from "convex/react";
+import { useUser } from "@clerk/clerk-expo";
+import { api } from "@/convex/_generated/api";
 
+// Shown only until the signed-in host's own profile loads, and for the fields
+// Convex has no column for (the property photo is the listing's hero).
 const SAMPLE_HOST = {
   name: "Ben",
   propertyName: "The Grove",
@@ -47,6 +52,37 @@ export default function HostProfileScreen() {
     useCreatorOnboardingStore();
   const { unreadCount } = useConversations();
 
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  const hostId = profile?._id ? String(profile._id) : null;
+  const hostCollabs = useQuery(api.collaborations.getByHost, hostId ? { hostId } : "skip");
+  const hostListings = useQuery(api.listings.getByHost, hostId ? { host_id: hostId } : "skip");
+
+  // Samples exist to populate an empty dashboard; counting them would inflate
+  // both figures below.
+  const realCollabs = (hostCollabs ?? []).filter((c) => c.is_sample !== true);
+  const distinctCreators = new Set(
+    realCollabs.map((c) => c.creator_id).filter(Boolean),
+  ).size;
+
+  // SAMPLE_HOST used to supply all of this, so every host saw "Ben" and
+  // "The Grove" on their own profile.
+  const host = {
+    name: profile?.full_name || SAMPLE_HOST.name,
+    propertyName: profile?.business_name || SAMPLE_HOST.propertyName,
+    location:
+      [profile?.city, profile?.region || profile?.country].filter(Boolean).join(", ") ||
+      SAMPLE_HOST.location,
+    verified: profile ? profile.is_verified === true : SAMPLE_HOST.verified,
+    bio: profile?.bio || SAMPLE_HOST.bio,
+    totalCollabs: hostCollabs ? realCollabs.length : SAMPLE_HOST.totalCollabs,
+    // Distinct creators, not a second copy of the collab count.
+    creatorsWorkedWith: hostCollabs ? distinctCreators : SAMPLE_HOST.creatorsWorkedWith,
+    hostPhoto: profile?.avatar_url ? { uri: profile.avatar_url } : SAMPLE_HOST.hostPhoto,
+    propertyPhoto: profile?.banner_url ? { uri: profile.banner_url } : SAMPLE_HOST.propertyPhoto,
+  };
+
   const [showRoleSwitchModal, setShowRoleSwitchModal] = useState(false);
   const [pendingTargetRole, setPendingTargetRole] = useState(null);
   const [isSwitching, setIsSwitching] = useState(false);
@@ -68,10 +104,13 @@ export default function HostProfileScreen() {
   const refreshStats = useCallback(async () => {
     setLoading(true);
     try {
-      const listings = await ListingDraftStore.getPublishedListings();
-      const published = listings.filter((l) => l.status === "published").length;
-      const unpublished = listings.filter(
-        (l) => l.status === "unpublished",
+      const convexListings = hostListings ?? [];
+      const localListings = convexListings.length
+        ? convexListings
+        : await ListingDraftStore.getPublishedListings();
+      const published = localListings.filter((l) => l.status === "published").length;
+      const unpublished = localListings.filter(
+        (l) => l.status === "unpublished" || l.status === "draft",
       ).length;
       setStats({
         publishedListings: published,
@@ -84,7 +123,7 @@ export default function HostProfileScreen() {
     } finally {
       setLoading(false);
     }
-  }, [unreadCount]);
+  }, [unreadCount, hostListings]);
 
   useFocusEffect(
     useCallback(() => {
@@ -97,7 +136,7 @@ export default function HostProfileScreen() {
     if (isAdmin === "true") {
       await AsyncStorage.setItem("@collabnb_active_mode_v1", targetRole);
       router.replace(
-        targetRole === "host" ? "/host/(tabs)/dashboard" : "/(tabs)",
+        targetRole === "host" ? "/host/(tabs)/dashboard" : "/explore",
       );
       return;
     }
@@ -110,7 +149,7 @@ export default function HostProfileScreen() {
         setTimeout(() => {
           setIsSwitching(false);
           router.replace(
-            targetRole === "host" ? "/host/(tabs)/collabs" : "/(tabs)",
+            targetRole === "host" ? "/host/(tabs)/proposals" : "/explore",
           );
         }, 400);
       } catch (error) {
@@ -184,7 +223,7 @@ export default function HostProfileScreen() {
             }}
           >
             <Image
-              source={SAMPLE_HOST.propertyPhoto}
+              source={host.propertyPhoto}
               style={{ width: "100%", height: 220, borderRadius: 16 }}
               resizeMode="cover"
             />
@@ -202,7 +241,7 @@ export default function HostProfileScreen() {
               }}
             >
               <Image
-                source={SAMPLE_HOST.hostPhoto}
+                source={host.hostPhoto}
                 style={{ width: "100%", height: "100%" }}
                 resizeMode="cover"
               />
@@ -226,9 +265,9 @@ export default function HostProfileScreen() {
                   marginRight: 8,
                 }}
               >
-                {SAMPLE_HOST.name}
+                {host.name}
               </Text>
-              {SAMPLE_HOST.verified && (
+              {host.verified && (
                 <View
                   style={{
                     backgroundColor: "rgba(74,155,127,0.15)",
@@ -259,7 +298,7 @@ export default function HostProfileScreen() {
                 marginBottom: 6,
               }}
             >
-              {SAMPLE_HOST.propertyName}
+              {host.propertyName}
             </Text>
             <Text
               style={{
@@ -268,7 +307,7 @@ export default function HostProfileScreen() {
                 color: "#959D90",
               }}
             >
-              📍 {SAMPLE_HOST.location}
+              📍 {host.location}
             </Text>
           </View>
 
@@ -283,7 +322,7 @@ export default function HostProfileScreen() {
               }}
               numberOfLines={bioExpanded ? undefined : 4}
             >
-              {SAMPLE_HOST.bio}
+              {host.bio}
             </Text>
             <TouchableOpacity onPress={() => setBioExpanded(!bioExpanded)}>
               <Text
@@ -373,9 +412,9 @@ export default function HostProfileScreen() {
           <View style={{ marginBottom: 24 }}>
             <View style={{ flexDirection: "row", gap: 10, marginBottom: 24 }}>
               {[
-                { value: SAMPLE_HOST.totalCollabs, label: "Total Collabs" },
+                { value: host.totalCollabs, label: "Total Collabs" },
                 {
-                  value: SAMPLE_HOST.creatorsWorkedWith,
+                  value: host.creatorsWorkedWith,
                   label: "Creators\nWorked With",
                 },
               ].map((stat) => (
