@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
+import useSaveToastStore from "@/utils/SaveToastStore";
 import { normalizeListing } from "@/utils/listingHelpers";
 
 // Backs the Saved tab and the save/heart toggle everywhere else with the
@@ -27,6 +28,10 @@ export function useSavedCollections() {
   const deleteMutation = useMutation(api.collections.deleteCollection);
   const moveToListingMutation = useMutation(api.collections.moveToListing);
 
+  const lastListId = useSaveToastStore((st) => st.lastListId);
+  const rememberList = useSaveToastStore((st) => st.rememberList);
+  const showToast = useSaveToastStore((st) => st.showToast);
+
   const collections = collectionsRaw || [];
   const isLoading = !!creatorId && collectionsRaw === undefined;
 
@@ -49,12 +54,29 @@ export function useSavedCollections() {
   async function toggleSaved(listingId) {
     if (!creatorId) return false;
     const id = String(listingId);
-    let target = collections.find((c) => c.listing_ids.includes(id)) || collections[0];
+
+    // Un-saving has to act on whichever list actually holds it, not the
+    // most-recent one, or the heart clears while the card stays in its list.
+    const holding = collections.find((c) => c.listing_ids.includes(id));
+    if (holding) {
+      await toggleSaveMutation({ collectionId: String(holding._id), listingId: id });
+      showToast({ listingId: id, listId: String(holding._id), listName: holding.name, saved: false });
+      return true;
+    }
+
+    let target = collections.find((c) => String(c._id) === lastListId) || collections[0];
     if (!target) {
       const newId = await createMutation({ name: "Saved", creatorId });
-      target = { _id: newId };
+      target = { _id: newId, name: "Saved" };
     }
     await toggleSaveMutation({ collectionId: String(target._id), listingId: id });
+    await rememberList(String(target._id));
+    showToast({
+      listingId: id,
+      listId: String(target._id),
+      listName: target.name || "Saved",
+      saved: true,
+    });
     return true;
   }
 

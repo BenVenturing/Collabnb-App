@@ -20,6 +20,7 @@ import { useAuthStore } from "@/utils/auth/store";
 import { api } from "@/convex/_generated/api";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { LoadingScreen } from "@/components/ui";
+import SaveToast from "@/components/SaveToast";
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -77,6 +78,7 @@ function AppShell() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
           </Stack>
+          {convexClient ? <SaveToast /> : null}
         </ThemedBackground>
       </GestureHandlerRootView>
     </QueryClientProvider>

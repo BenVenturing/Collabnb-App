@@ -5,12 +5,13 @@ import {
   ActivityIndicator,
   Share,
   Dimensions,
+  Animated,
 } from "react-native";
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery } from "convex/react";
@@ -181,6 +182,7 @@ function PastCollabCard({ collab, sample = false, onPress }) {
 
 export default function CreatorProfileScreen() {
   const insets = useSafeAreaInsets();
+  const scrollY = useRef(new Animated.Value(0)).current;
   const router = useRouter();
   const { loadDraft: loadHostDraft } = useHostOnboardingStore();
   const { loadDraft: loadCreatorDraft } = useCreatorOnboardingStore();
@@ -347,13 +349,19 @@ export default function CreatorProfileScreen() {
     <AtmosphericBackground style={{ flex: 1 }}>
       <StatusBar style="light" />
 
-      <ScrollView
+      <Animated.ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true },
+        )}
+        scrollEventThrottle={16}
       >
         <ProfileHeader
+          scrollY={scrollY}
           hero={profile?.banner_url ? { uri: profile.banner_url } : null}
           avatar={profile?.avatar_url ? { uri: profile.avatar_url } : DEFAULT_PHOTO}
           name={profile?.full_name || "Your profile"}
@@ -525,7 +533,7 @@ export default function CreatorProfileScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       <SettingsModal
         visible={showSettings}

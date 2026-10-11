@@ -1,7 +1,8 @@
 // Screen chrome: sticky bars, sheets, headers, bubbles.
 // See COMPONENT-SPEC.md §12, §13, §18, §19.
 
-import { View, Image, ScrollView } from "react-native";
+import { View, Image, ScrollView, Animated } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -131,23 +132,72 @@ export function ProfileHeader({
   location,
   action,
   topRight,
-  heroHeight = 300,
+  heroHeight = 260,
+  scrollY,
   style,
 }) {
   const insets = useSafeAreaInsets();
 
+  // Pass scrollY to recede the banner as the page scrolls: it lifts at roughly
+  // a third of the content's speed and grows on over-pull. Scale never drops
+  // below 1, so the image can't pull away from the edges and expose the
+  // gradient beneath it.
+  const heroMotion = scrollY
+    ? {
+        transform: [
+          {
+            translateY: scrollY.interpolate({
+              inputRange: [-heroHeight, 0, heroHeight],
+              outputRange: [heroHeight / 2, 0, heroHeight * 0.35],
+              extrapolate: "clamp",
+            }),
+          },
+          {
+            scale: scrollY.interpolate({
+              inputRange: [-heroHeight, 0],
+              outputRange: [1.5, 1],
+              extrapolate: "clamp",
+            }),
+          },
+        ],
+      }
+    : null;
+
   return (
     <View style={style}>
       <View style={{ height: heroHeight }}>
-        <LinearGradient
-          colors={[colors.ink, colors.slate]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ position: "absolute", inset: 0 }}
-        />
-        {hero ? (
-          <Image source={hero} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
-        ) : null}
+        {/* Clips the banner's own motion. It can't sit on the outer view: the
+            avatar hangs past the bottom edge and would be cut in half. */}
+        <View
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            overflow: "hidden",
+          }}
+        >
+          <Animated.View style={[{ flex: 1 }, heroMotion]}>
+            <LinearGradient
+              colors={[colors.ink, colors.slate]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ position: "absolute", inset: 0 }}
+            />
+            {hero ? (
+              <ExpoImage
+                source={hero}
+                style={{ width: "100%", height: "100%" }}
+                contentFit="cover"
+                // Matches web's `objectPosition: top center`. Centre-cropping a
+                // wide banner into this strip cuts the subject out of it.
+                contentPosition="top center"
+                transition={200}
+              />
+            ) : null}
+          </Animated.View>
+        </View>
         <LinearGradient
           colors={["transparent", "rgba(239,236,233,0.55)", colors.bone]}
           locations={[0, 0.55, 1]}

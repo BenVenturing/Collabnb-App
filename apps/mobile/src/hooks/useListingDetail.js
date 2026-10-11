@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
-import SavedStore from "@/utils/SavedStore";
+import { useState } from "react";
+import useSavedCollections from "@/hooks/useSavedCollections";
 
 export function useListingDetail(listing) {
-  const [isSaved, setIsSaved] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showAllDeliverables, setShowAllDeliverables] = useState(false);
   const [showBrandGuidelines, setShowBrandGuidelines] = useState(false);
@@ -13,39 +12,18 @@ export function useListingDetail(listing) {
     dispute: false,
   });
 
-  useEffect(() => {
-    if (!listing) return;
-
-    setIsSaved(SavedStore.isSaved(listing.id));
-
-    const unsubscribe = SavedStore.subscribe(() => {
-      setIsSaved(SavedStore.isSaved(listing.id));
-    });
-
-    return unsubscribe;
-  }, [listing]);
+  // Was SavedStore (AsyncStorage, device-local) while Explore and the Saved tab
+  // read Convex collections, so a save made here never showed up in Saved and
+  // never reached the user's other devices.
+  const { isSaved, toggleSaved } = useSavedCollections();
 
   const handleSaveToggle = async () => {
     if (!listing) return;
-
-    const snapshot = {
-      id: listing.id,
-      title: listing.title,
-      location_city: listing.location_city,
-      location_country: listing.location_country,
-      image: listing.images[0],
-      deliverablesSummary: `${listing.deliverables.reduce((sum, d) => sum + d.quantity, 0)} deliverables`,
-      offerSummary:
-        listing.compensation_type === "free_stay"
-          ? `${listing.stay_nights}N free stay`
-          : `$${listing.cash_payout} cash`,
-    };
-
-    await SavedStore.toggleSaved(snapshot);
+    await toggleSaved(listing.id);
   };
 
   return {
-    isSaved,
+    isSaved: listing ? isSaved(listing.id) : false,
     currentImageIndex,
     setCurrentImageIndex,
     showAllDeliverables,
