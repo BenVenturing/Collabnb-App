@@ -38,11 +38,8 @@ import {
 import SavedCreatorsStore from "@/utils/SavedCreatorsStore";
 import ListingDraftStore from "@/utils/ListingDraftStore";
 import { addInvitedProposal } from "@/utils/ProposalsStore";
-import {
-  mockCreators,
-  mockReviews,
-  mockPastCollaborations,
-} from "@/data/mockCreators";
+import { mockReviews, mockPastCollaborations } from "@/data/mockCreators";
+import useHostCreators from "@/hooks/useHostCreators";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
 import { colors, fonts, tracking, track } from "@/config/theme";
@@ -52,6 +49,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
 
 export default function HostCreatorsScreen() {
+  const { creators, hasRealCreators, hideSamples, toggleHideSamples } = useHostCreators();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [savedCreatorIds, setSavedCreatorIds] = useState([]);
@@ -151,7 +149,7 @@ export default function HostCreatorsScreen() {
     if (!listing) return;
 
     const hostId = String(profile._id);
-    const selectedCreators = mockCreators.filter((c) =>
+    const selectedCreators = creators.filter((c) =>
       selectedCreatorsForBulk.includes(c.id),
     );
 
@@ -252,6 +250,37 @@ export default function HostCreatorsScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* Only offered once there are real creators to fall back on, so the
+            directory can't be emptied to nothing. */}
+        {hasRealCreators && (
+          <TouchableOpacity
+            onPress={toggleHideSamples}
+            style={{
+              alignSelf: "flex-start",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              paddingHorizontal: 12,
+              paddingVertical: 7,
+              borderRadius: 20,
+              marginBottom: 20,
+              backgroundColor: hideSamples ? colors.ink : colors.surface,
+              borderWidth: 1,
+              borderColor: hideSamples ? colors.ink : colors.stone,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.bodyMedium,
+                fontSize: 12,
+                color: hideSamples ? colors.surface : colors.slate,
+              }}
+            >
+              {hideSamples ? "Showing real creators only" : "Hide sample creators"}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Recent Reviews Carousel */}
         <View style={{ marginBottom: 28 }}>
@@ -393,7 +422,7 @@ export default function HostCreatorsScreen() {
           Swipe to Match
         </Text>
         <SwipeDeck
-          creators={mockCreators}
+          creators={creators}
           currentIndex={currentCreatorIndex}
           onIndexChange={setCurrentCreatorIndex}
           onSwipeLeft={handleSwipeLeft}
@@ -413,6 +442,7 @@ export default function HostCreatorsScreen() {
       {/* Saved Creators Modal */}
       <SavedCreatorsModal
         visible={showSavedCreators}
+        creators={creators}
         savedCreatorIds={savedCreatorIds}
         selectedForBulk={selectedCreatorsForBulk}
         onToggleSelect={(creatorId) => {
@@ -1055,6 +1085,7 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
 // PastCollaborationsSheet for why this stays a raw BlurView.
 function SavedCreatorsModal({
   visible,
+  creators,
   savedCreatorIds,
   selectedForBulk,
   onToggleSelect,
@@ -1064,9 +1095,7 @@ function SavedCreatorsModal({
 }) {
   if (!visible) return null;
 
-  const savedCreators = mockCreators.filter((c) =>
-    savedCreatorIds.includes(c.id),
-  );
+  const savedCreators = creators.filter((c) => savedCreatorIds.includes(c.id));
 
   return (
     <Modal
