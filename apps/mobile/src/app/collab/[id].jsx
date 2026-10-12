@@ -16,6 +16,7 @@ import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import { buildTimeline } from "@/utils/collabTimeline";
+import * as haptic from "@/utils/haptics";
 import ContractSection from "@/components/collab/ContractSection";
 import { useCollabContract } from "@/hooks/useCollabContract";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
@@ -64,6 +65,7 @@ export default function CollabDetailScreen() {
   );
 
   const openMessages = () => {
+    haptic.tap();
     const threadKey = `thread_${raw.listing_id}_${String(profile._id)}`;
     router.push({
       pathname: `/messages/${encodeURIComponent(threadKey)}`,

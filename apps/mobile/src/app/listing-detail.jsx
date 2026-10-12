@@ -3,6 +3,7 @@
 // File: /apps/mobile/src/app/listing-detail.jsx
 // ============================================================
 
+import * as haptic from "@/utils/haptics";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -404,6 +405,7 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
 
       setSubmitting(false);
       setSubmitted(true);
+      haptic.success();
     } catch (err) {
       setSubmitting(false);
       setError(err?.data || err?.message || "Could not submit your application — try again.");

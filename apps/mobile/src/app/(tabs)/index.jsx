@@ -28,6 +28,7 @@ import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
 import ExploreMap from "@/components/ExploreMap";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
+import * as haptic from "@/utils/haptics";
 
 const PROP_FILTERS = ["All", "Cabin", "Villa", "Treehouse", "Glamping", "Lodge", "Estate", "Cottage"];
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
@@ -92,6 +93,7 @@ export default function ExploreScreen() {
 
   const dockListRef = useRef(null);
   const handlePinPress = (id) => {
+    haptic.select();
     setActivePinId(id);
     const idx = mapListInBounds.findIndex((l) => l.id === id);
     if (idx >= 0) dockListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.5 });
@@ -119,6 +121,7 @@ export default function ExploreScreen() {
   }, [mapOpen, mapBounds]);
 
   const toggleSave = async (listing) => {
+    haptic.tap();
     if (!isSignedIn) {
       router.push("/signin");
       return;
@@ -192,7 +195,7 @@ export default function ExploreScreen() {
             const active = filter === item;
             return (
               <TouchableOpacity
-                onPress={() => setFilter(item)}
+                onPress={() => { haptic.select(); setFilter(item); }}
                 style={{
                   paddingHorizontal: 16,
                   paddingVertical: 9,
@@ -248,7 +251,7 @@ export default function ExploreScreen() {
       {/* Floating Map pill — dark pill button (COMPONENT-SPEC #10), opens the full-screen map view */}
       {!mapOpen && mapPoints.length > 0 && (
         <TouchableOpacity
-          onPress={() => { setMapBounds(null); setMapAreaLabel(""); setMapOpen(true); }}
+          onPress={() => { haptic.tap(); setMapBounds(null); setMapAreaLabel(""); setMapOpen(true); }}
           activeOpacity={0.9}
           style={{
             position: "absolute", bottom: insets.bottom + 20, alignSelf: "center",

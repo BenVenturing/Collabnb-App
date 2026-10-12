@@ -9,6 +9,7 @@ import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeabl
 import { Search, Settings, MessageCircle, X, Pin, PinOff, BellOff, Bell, Archive, ArchiveRestore, ChevronLeft, Check } from "lucide-react-native";
 import { useConversations } from "@/hooks/useConversations";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
+import * as haptic from "@/utils/haptics";
 import { colors, fonts, tracking, track, lineHeights } from "@/config/theme";
 
 const FILTERS = ["All", "Unread", "Applications", "Collabs", "Pitches"];
@@ -154,10 +155,13 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
     });
   };
 
-  const toggleSelected = (key) =>
+  const toggleSelected = (key) => {
+    haptic.select();
     setSelected((s) => (s.includes(key) ? s.filter((k) => k !== key) : [...s, key]));
+  };
 
   const act = (list, ids) => {
+    haptic.tap();
     toggle(list, ids);
     setSelected([]);
   };
@@ -195,18 +199,21 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
         overshootRight={false}
         friction={2}
         onSwipeableWillOpen={() => {
+          haptic.tap();
           // one open row at a time, like WhatsApp
           Object.entries(rows.current).forEach(([k, r]) => k !== key && r?.close());
         }}
         renderLeftActions={() =>
           swipeAction(colors.slate, isPinned ? PinOff : Pin, isPinned ? "Unpin" : "Pin", () => {
             close();
+            haptic.tap();
             toggle("pinned", [key]);
           })
         }
         renderRightActions={() =>
           swipeAction(colors.sage, archived.has(key) ? ArchiveRestore : Archive, archived.has(key) ? "Unarchive" : "Archive", () => {
             close();
+            haptic.tap();
             toggle("archived", [key]);
           })
         }
@@ -216,7 +223,7 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
       >
         <TouchableOpacity
           onPress={() => (selecting ? toggleSelected(key) : openThread(item))}
-          onLongPress={() => !selecting && setSelected([key])}
+          onLongPress={() => { if (!selecting) { haptic.press(); setSelected([key]); } }}
           delayLongPress={250}
           activeOpacity={0.6}
           style={{ flexDirection: "row", paddingLeft: 16, backgroundColor: isSel ? colors.mint : colors.surface }}
@@ -363,7 +370,7 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
           contentContainerStyle={{ gap: 8, paddingBottom: 10 }}
           renderItem={({ item: f }) => (
             <TouchableOpacity
-              onPress={() => setActiveFilter(f)}
+              onPress={() => { haptic.select(); setActiveFilter(f); }}
               style={{
                 paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
                 backgroundColor: activeFilter === f ? colors.ink : colors.mint,

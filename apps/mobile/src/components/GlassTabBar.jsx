@@ -26,7 +26,8 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
+import { GlassContainer, GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
+import * as haptic from "@/utils/haptics";
 import Glass from "@/components/Glass";
 import { colors, fonts, shadows } from "@/config/theme";
 
@@ -34,6 +35,7 @@ const PAD = 6;
 const BAR_H = 64;
 const FAST = { damping: 17, stiffness: 300, mass: 0.7 };
 const SLOW = { damping: 20, stiffness: 110, mass: 1 };
+const AnimatedGlass = Animated.createAnimatedComponent(GlassView);
 const clamp = (v, lo, hi) => {
   "worklet";
   return Math.min(Math.max(v, lo), hi);
@@ -67,6 +69,7 @@ function TabItem({ index, label, icon, active, tabW, center, lens, onPress }) {
 export default function GlassTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
+  const native = isLiquidGlassAvailable();
 
   // Routes hidden with href:null (sub-screens) don't get a slot.
   const routes = state.routes.filter((r) => descriptors[r.key].options.href !== null);
@@ -104,10 +107,10 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
   }, [activeIdx, width, n, reduced]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const go = useCallback(
-    (i, haptic) => {
+    (i, withHaptic) => {
       const route = routes[i];
       if (!route) return;
-      if (haptic) Haptics.selectionAsync().catch(() => {});
+      if (withHaptic) haptic.select();
       const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
       if (state.routes[state.index]?.key !== route.key && !event.defaultPrevented) {
         navigation.navigate(route.name, route.params);
@@ -122,7 +125,7 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
     .onStart(() => {
       dragging.value = true;
       lens.value = withSpring(1, { damping: 14, stiffness: 220 });
-      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+      runOnJS(haptic.tap)();
     })
     .onUpdate((e) => {
       const tw = tabW.value;
@@ -140,6 +143,7 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
     .onFinalize(() => {
       if (!dragging.value) return;
       dragging.value = false;
+      runOnJS(haptic.settle)();
       lens.value = withSpring(0, { damping: 16, stiffness: 200 });
       const L = lastIdx.value * tabW.value;
       left.value = withSpring(L, FAST);
@@ -164,27 +168,47 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
           onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
           style={{ height: BAR_H, borderRadius: BAR_H / 2, ...shadows.lg }}
         >
+          {native ? (
+            // iOS 26+: real Liquid Glass. GlassContainer lets the bubble and the
+            // bar merge/morph like the system tab bar; isInteractive gives the
+            // bubble Apple's native touch response.
+            <GlassContainer spacing={12} pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}>
+              <GlassView
+                glassEffectStyle="regular"
+                style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, borderRadius: BAR_H / 2 }}
+              />
+              <AnimatedGlass
+                glassEffectStyle="clear"
+                isInteractive
+                tintColor="rgba(255,255,255,0.35)"
+                style={[{ position: "absolute", top: PAD, height: BAR_H - PAD * 2, borderRadius: (BAR_H - PAD * 2) / 2 }, bubble]}
+              />
+            </GlassContainer>
+          ) : (
+            <>
           {/* Frosted pill. Separate layer so the bubble can overflow it when it becomes a lens. */}
-          <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}>
-            <Glass variant="regular" style={{ borderRadius: BAR_H / 2 }} contentStyle={{ height: BAR_H }} />
-          </View>
+            <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}>
+              <Glass variant="regular" style={{ borderRadius: BAR_H / 2 }} contentStyle={{ height: BAR_H }} />
+            </View>
 
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              {
-                position: "absolute",
-                top: PAD,
-                height: BAR_H - PAD * 2,
-                borderRadius: (BAR_H - PAD * 2) / 2,
-                backgroundColor: "rgba(255,255,255,0.7)",
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.95)",
-                ...shadows.md,
-              },
-              bubble,
-            ]}
-          />
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                {
+                  position: "absolute",
+                  top: PAD,
+                  height: BAR_H - PAD * 2,
+                  borderRadius: (BAR_H - PAD * 2) / 2,
+                  backgroundColor: "rgba(255,255,255,0.7)",
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.95)",
+                  ...shadows.md,
+                },
+                bubble,
+              ]}
+            />
+            </>
+          )}
 
           <View style={{ flex: 1, flexDirection: "row", paddingHorizontal: PAD }}>
             {routes.map((route, i) => {
@@ -200,7 +224,7 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
                   tabW={tabW}
                   center={center}
                   lens={lens}
-                  onPress={() => go(i, false)}
+                  onPress={() => go(i, true)}
                 />
               );
             })}

@@ -7,6 +7,7 @@ import { View, Text, TouchableOpacity, Modal, TextInput, ScrollView, KeyboardAvo
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
 import { CONTRACT_FIELDS, latestFields, waitingOn } from "@/utils/contract";
+import * as haptic from "@/utils/haptics";
 
 const eyebrow = { fontFamily: fonts.bodyMedium, fontSize: 11, color: colors.sage, letterSpacing: track(11, tracking.eyebrow) };
 
@@ -61,7 +62,7 @@ export default function ContractSection({ contract, seed, onCounter, onSign }) {
 
   const run = async (fn) => {
     setBusy(true);
-    try { await fn(); setMode(null); } catch (e) { Alert.alert("Couldn't save", e?.message || "Try again."); }
+    try { await fn(); haptic.success(); setMode(null); } catch (e) { haptic.warning(); Alert.alert("Couldn't save", e?.message || "Try again."); }
     setBusy(false);
   };
 

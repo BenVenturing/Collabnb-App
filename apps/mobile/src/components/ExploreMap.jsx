@@ -7,6 +7,7 @@ import { forwardRef, useMemo, useState, useCallback } from "react";
 import { View, Text, Platform } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { colors, fonts, radii, shadows } from "@/config/theme";
+import * as haptic from "@/utils/haptics";
 
 const DEFAULT_REGION = { latitude: 39.5, longitude: -98.5, latitudeDelta: 40, longitudeDelta: 40 };
 
@@ -107,6 +108,7 @@ const ExploreMap = forwardRef(function ExploreMap(
   }, [onRegionChange]);
 
   const handleClusterPress = (cluster) => {
+    haptic.tap();
     ref?.current?.fitToCoordinates(
       cluster.points.map((p) => ({ latitude: p.lat, longitude: p.lng })),
       { edgePadding: { top: 80, right: 80, bottom: 80, left: 80 }, animated: true }
