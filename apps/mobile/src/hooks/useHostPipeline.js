@@ -14,7 +14,7 @@ import { api } from "@/convex/_generated/api";
 import { collabToProposal } from "@/utils/hostPipeline";
 import { creatorPatchFor } from "@/utils/collabStages";
 
-const noRemote = { remote: [], loading: false, setStage: async () => false, saveDetails: async () => false };
+const noRemote = { remote: [], loading: false, setStage: async () => false, saveDetails: async () => false, saveContract: async () => false };
 function useLocalOnly() { return noRemote; }
 
 function useConvexPipeline() {
@@ -26,6 +26,7 @@ function useConvexPipeline() {
   const rows = useQuery(api.hostCollaborations.getByHost, hostId ? { hostId } : "skip");
   const setStageCvx = useMutation(api.hostCollaborations.setStage);
   const saveDetailsCvx = useMutation(api.hostCollaborations.saveDetails);
+  const saveContractCvx = useMutation(api.hostCollaborations.saveContract);
 
   const remote = useMemo(() => (rows || []).map(collabToProposal), [rows]);
 
@@ -37,6 +38,12 @@ function useConvexPipeline() {
       const patch = creatorPatchFor(crmStage);
       if (!proposal.convexId || !patch || !hostId) return false;
       await setStageCvx({ id: proposal.convexId, hostId, ...patch });
+      return true;
+    },
+    // `contract` is the next { history, signatures, locked } (see utils/contract.js).
+    saveContract: async (proposal, contract) => {
+      if (!proposal.convexId || !hostId) return false;
+      await saveContractCvx({ id: proposal.convexId, role: "host", profileId: hostId, contract: JSON.stringify(contract) });
       return true;
     },
     saveDetails: async (proposal, fields) => {

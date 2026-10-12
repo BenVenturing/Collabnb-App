@@ -65,3 +65,42 @@ export const saveDetails = mutation({
     await ctx.db.patch(id, patch);
   },
 });
+
+// ── Contract (shared by host and creator) ─────────────────────────────────
+// ASSUMPTION: a `contract` string column (JSON) on collaborations holding
+// { history, signatures, locked } — see src/utils/contract.js. The caller
+// passes the whole next contract; the server re-checks ownership, lock state
+// and that a lock really has both signatures before accepting it.
+export const saveContract = mutation({
+  args: {
+    id: v.id("collaborations"),
+    role: v.union(v.literal("host"), v.literal("creator")),
+    profileId: v.string(),
+    contract: v.string(),
+  },
+  handler: async (ctx, { id, role, profileId, contract }) => {
+    const collab = await ctx.db.get(id);
+    if (!collab) throw new Error("Collaboration not found");
+    const owner = role === "host" ? collab.host_id : collab.creator_id; // ASSUMPTION
+    if (owner !== profileId) throw new Error("Not your collaboration");
+
+    let prev = {};
+    try { prev = collab.contract ? JSON.parse(collab.contract) : {}; } catch { /* treat as empty */ }
+    if (prev.locked) throw new Error("Contract is locked");
+
+    let next;
+    try { next = JSON.parse(contract); } catch { throw new Error("Invalid contract"); }
+    const sigs = next.signatures || {};
+    const bothSigned = !!(sigs.hostSignature && sigs.creatorSignature);
+    if (!!next.locked !== bothSigned) throw new Error("Lock must match signatures");
+
+    const patch = { contract: JSON.stringify(next) };
+    if (next.locked) {
+      // Both signed -> Confirmed (creator-side "accepted").
+      patch.current_stage = "accepted";
+    } else if ((next.history || []).length && collab.current_stage === "pending") {
+      patch.current_stage = "updated"; // negotiating
+    }
+    await ctx.db.patch(id, patch);
+  },
+});

@@ -27,6 +27,7 @@ import Glass from "@/components/Glass";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
 import { useHostPipeline } from "@/hooks/useHostPipeline";
 import { mergeProposals } from "@/utils/hostPipeline";
+import { addRound, sign as signContract, parseContract } from "@/utils/contract";
 
 const STORAGE_KEY = "@collabnb_proposals_v1";
 
@@ -901,48 +902,62 @@ export default function ProposalsScreen() {
 
   const STAGE_ORDER = ["invited", "applied", "negotiating", "confirmed", "live"];
 
-  const handleCounterSend = async (id, fields, note) => {
-    const updated = proposals.map((p) => {
-      if (p.id !== id) return p;
-      const history = p.contractHistory || [];
-      const nextHistory = [
-        ...history,
-        { version: history.length + 1, modifiedBy: "host", fields, note },
-      ];
-      const curIdx = STAGE_ORDER.indexOf(p.stage);
-      const negotiatingIdx = STAGE_ORDER.indexOf("negotiating");
-      const nextStage =
-        curIdx >= 0 && curIdx < negotiatingIdx ? "negotiating" : p.stage;
-      return {
-        ...p,
-        contractHistory: nextHistory,
-        stage: nextStage,
-        lastUpdate: "just now",
-      };
-    });
-    await persist(updated);
-    setSelected((prev) =>
-      prev ? updated.find((p) => p.id === prev.id) : prev,
+  // Contract rounds/signatures go through utils/contract.js — the same model
+  // the creator's collab screen uses — and, for server proposals, are saved to
+  // the shared record so the creator sees them.
+  const contractOf = (p) => ({
+    history: p.contractHistory || [],
+    signatures: p.signatures || {},
+    locked: !!p.locked,
+  });
+
+  const applyContract = async (id, next, extra = () => ({})) => {
+    const target = proposals.find((p) => p.id === id);
+    if (target?.source === "convex") {
+      try {
+        await pipeline.saveContract(target, next);
+      } catch (e) {
+        console.error("Failed to sync contract:", e);
+        return false; // keep the card as the server has it
+      }
+    }
+    const updated = proposals.map((p) =>
+      p.id === id
+        ? { ...p, contractHistory: next.history, signatures: next.signatures, locked: next.locked, lastUpdate: "just now", ...extra(p) }
+        : p,
     );
-    setCounterTarget(null);
+    await persist(updated);
+    setSelected((prev) => (prev ? updated.find((p) => p.id === prev.id) : prev));
+    return true;
+  };
+
+  const handleCounterSend = async (id, fields, note) => {
+    const p = proposals.find((x) => x.id === id);
+    if (!p) return;
+    const next = addRound(parseContract(contractOf(p)), { modifiedBy: "host", fields, note });
+    // A first counter moves an invited/applied proposal into Negotiating.
+    const curIdx = STAGE_ORDER.indexOf(p.stage);
+    const bump = curIdx >= 0 && curIdx < STAGE_ORDER.indexOf("negotiating");
+    if (await applyContract(id, next, (q) => (bump ? { stage: "negotiating" } : {}))) setCounterTarget(null);
   };
 
   const handleSign = async (id, name) => {
-    const updated = proposals.map((p) => {
-      if (p.id !== id) return p;
-      const signatures = {
-        ...(p.signatures || {}),
-        hostSignature: name,
-        hostSignedAt: new Date().toISOString(),
-      };
-      const locked = !!(signatures.hostSignature && signatures.creatorSignature);
-      return { ...p, signatures, locked, lastUpdate: "just now" };
-    });
-    await persist(updated);
-    setSelected((prev) =>
-      prev ? updated.find((p) => p.id === prev.id) : prev,
-    );
-    setSignTarget(null);
+    const p = proposals.find((x) => x.id === id);
+    if (!p) return;
+    let next;
+    try {
+      let base = parseContract(contractOf(p));
+      // Signing with no negotiation yet: record the terms on screen as round 1
+      // so the creator has something concrete to review and countersign.
+      if (!base.history.length) {
+        base = addRound(base, { modifiedBy: "host", fields: getLatestContractFields(p), note: "" });
+      }
+      next = signContract(base, "host", name);
+    } catch (e) {
+      console.error(e.message);
+      return;
+    }
+    if (await applyContract(id, next, () => (next.locked ? { stage: "confirmed" } : {}))) setSignTarget(null);
   };
 
   const handleExportPdf = async (proposal) => {

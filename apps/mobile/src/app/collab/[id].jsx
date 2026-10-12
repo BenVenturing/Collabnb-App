@@ -16,6 +16,8 @@ import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import { buildTimeline } from "@/utils/collabTimeline";
+import ContractSection from "@/components/collab/ContractSection";
+import { useCollabContract } from "@/hooks/useCollabContract";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
 
 const IMG_FALLBACK = "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=800";
@@ -56,6 +58,10 @@ export default function CollabDetailScreen() {
   };
   const steps = useMemo(() => (collab ? buildTimeline(collab) : []), [raw]); // eslint-disable-line react-hooks/exhaustive-deps
   const terminated = raw?.status === "terminated";
+
+  const contractApi = useCollabContract(
+    raw && { id: String(raw._id), creatorId: profile?._id ? String(profile._id) : null, contractRaw: raw.contract },
+  );
 
   const openMessages = () => {
     const threadKey = `thread_${raw.listing_id}_${String(profile._id)}`;
@@ -149,6 +155,13 @@ export default function CollabDetailScreen() {
               );
             })}
           </View>
+
+          <ContractSection
+            contract={contractApi.contract}
+            seed={{ deliverables: raw.deliverables }}
+            onCounter={contractApi.counter}
+            onSign={contractApi.sign}
+          />
 
           <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 11, color: colors.sage, marginTop: 24, marginBottom: 6, letterSpacing: track(11, tracking.eyebrow) }}>DETAILS</Text>
           <View style={{ backgroundColor: colors.surface, borderRadius: radii.lg, paddingHorizontal: 16, paddingVertical: 6, ...shadows.sm }}>
