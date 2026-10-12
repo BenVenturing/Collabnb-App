@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, TextInput, Alert } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, TextInput, Alert, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -25,7 +25,7 @@ const TAG_TEXT_COLORS = {
   Notifications: colors.bone,
 };
 
-function Avatar({ name, uri, size = 56, unread = 0, isFounder = false }) {
+function Avatar({ name, uri, size = 54, isFounder = false }) {
   const initials = (name || "?")
     .split(" ")
     .map((n) => n[0])
@@ -68,26 +68,6 @@ function Avatar({ name, uri, size = 56, unread = 0, isFounder = false }) {
           }}
         >
           <Text style={{ fontSize: 9, color: "#fff" }}>★</Text>
-        </View>
-      )}
-      {unread > 0 && (
-        <View
-          style={{
-            position: "absolute",
-            top: -2,
-            right: -2,
-            minWidth: 20,
-            height: 20,
-            borderRadius: 10,
-            backgroundColor: colors.slate,
-            alignItems: "center",
-            justifyContent: "center",
-            paddingHorizontal: 5,
-            borderWidth: 2,
-            borderColor: "#fff",
-          }}
-        >
-          <Text style={{ fontSize: 11, fontWeight: "700", color: "#fff" }}>{unread}</Text>
         </View>
       )}
     </View>
@@ -141,57 +121,78 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
 
   const renderThread = ({ item }) => {
     const isCollabnb = item.tag === "Collabnb" || item.tag === "Notifications";
+    const unread = item.unread > 0;
     return (
       <TouchableOpacity
         onPress={() => openThread(item)}
-        activeOpacity={0.7}
-        style={{
-          flexDirection: "row",
-          paddingHorizontal: 20,
-          paddingVertical: 14,
-          backgroundColor: "#fff",
-          borderBottomWidth: 1,
-          borderBottomColor: colors.stone,
-        }}
+        activeOpacity={0.6}
+        style={{ flexDirection: "row", paddingLeft: 16, backgroundColor: "#fff" }}
       >
-        <View style={{ marginRight: 12 }}>
-          <Avatar name={item.host_name} uri={item.host_avatar} unread={item.unread} isFounder={item.is_founder} />
+        <View style={{ marginRight: 14, paddingVertical: 10 }}>
+          <Avatar name={item.host_name} uri={item.host_avatar} isFounder={item.is_founder} />
         </View>
-        <View style={{ flex: 1, justifyContent: "center" }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+        {/* Text column carries the divider, inset from the avatar like WhatsApp */}
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            paddingVertical: 12,
+            paddingRight: 16,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: colors.stone,
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 3 }}>
             <Text
-              style={{ flex: 1, marginRight: 8, fontSize: 16, fontWeight: item.unread ? "700" : "600", color: colors.ink }}
+              style={{ flex: 1, marginRight: 8, fontSize: 16.5, fontWeight: "600", color: colors.ink }}
               numberOfLines={1}
             >
               {item.listing_title}
             </Text>
-            <Text style={{ fontSize: 12, color: colors.sage }}>{item.timestamp}</Text>
+            <Text style={{ fontSize: 12, color: unread ? colors.slate : colors.sage, fontWeight: unread ? "600" : "400" }}>
+              {item.timestamp}
+            </Text>
           </View>
-          {!isCollabnb && (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text
+              numberOfLines={1}
+              style={{ flex: 1, fontSize: 14.5, color: unread ? colors.ink : colors.sage, fontWeight: unread ? "500" : "400" }}
+            >
+              {!isCollabnb && item.host_name ? `${item.host_name}: ` : ""}
+              {item.last_message}
+            </Text>
+            {!isCollabnb && (
               <View
                 style={{
-                  paddingHorizontal: 8,
-                  paddingVertical: 2,
-                  borderRadius: 8,
+                  marginLeft: 8,
+                  paddingHorizontal: 7,
+                  paddingVertical: 1.5,
+                  borderRadius: 6,
                   backgroundColor: TAG_COLORS[item.tag] || colors.stone,
                 }}
               >
-                <Text style={{ fontSize: 11, fontWeight: "600", color: TAG_TEXT_COLORS[item.tag] || colors.slate }}>
+                <Text style={{ fontSize: 10.5, fontWeight: "600", color: TAG_TEXT_COLORS[item.tag] || colors.slate }}>
                   {item.tag}
                 </Text>
               </View>
-              <Text style={{ fontSize: 12, color: colors.sage, flexShrink: 1 }} numberOfLines={1}>
-                {item.host_name}
-              </Text>
-            </View>
-          )}
-          <Text
-            numberOfLines={1}
-            style={{ fontSize: 14, color: item.unread ? colors.ink : colors.slate, fontWeight: item.unread ? "500" : "400" }}
-          >
-            {item.last_message}
-          </Text>
+            )}
+            {unread && (
+              <View
+                style={{
+                  marginLeft: 8,
+                  minWidth: 21,
+                  height: 21,
+                  borderRadius: 11,
+                  paddingHorizontal: 6,
+                  backgroundColor: colors.slate,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>{item.unread}</Text>
+              </View>
+            )}
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -205,10 +206,8 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
         style={{
           backgroundColor: "#fff",
           paddingHorizontal: 20,
-          paddingTop: 16,
-          paddingBottom: 12,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.stone,
+          paddingTop: 12,
+          paddingBottom: 4,
         }}
       >
         {showSearch ? (
@@ -219,8 +218,8 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
                 flexDirection: "row",
                 alignItems: "center",
                 backgroundColor: colors.bone,
-                borderRadius: 12,
-                paddingHorizontal: 12,
+                borderRadius: 22,
+                paddingHorizontal: 14,
                 paddingVertical: 10,
               }}
             >
@@ -246,7 +245,7 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
         ) : (
           <>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <Text style={{ fontSize: 28, fontWeight: "700", color: colors.ink }}>{headerTitle}</Text>
+              <Text style={{ fontSize: 30, fontWeight: "800", color: colors.ink, letterSpacing: -0.5 }}>{headerTitle}</Text>
               <View style={{ flexDirection: "row", gap: 16 }}>
                 <TouchableOpacity onPress={() => setShowSearch(true)}>
                   <Search color={colors.ink} size={24} />
@@ -263,14 +262,12 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
                   onPress={() => setActiveFilter(f)}
                   style={{
                     paddingHorizontal: 14,
-                    paddingVertical: 6,
+                    paddingVertical: 7,
                     borderRadius: 20,
-                    backgroundColor: activeFilter === f ? colors.slate : "rgba(255,255,255,0.5)",
-                    borderWidth: 1,
-                    borderColor: activeFilter === f ? colors.slate : "rgba(60,87,89,0.15)",
+                    backgroundColor: activeFilter === f ? colors.mint : colors.bone,
                   }}
                 >
-                  <Text style={{ fontSize: 12, fontWeight: "500", color: activeFilter === f ? colors.bone : colors.slate }}>
+                  <Text style={{ fontSize: 13.5, fontWeight: "500", color: activeFilter === f ? colors.slate : colors.sage }}>
                     {f}
                   </Text>
                 </TouchableOpacity>
