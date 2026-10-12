@@ -8,7 +8,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import { Search, Settings, MessageCircle, X, Pin, PinOff, BellOff, Bell, Archive, ArchiveRestore, ChevronLeft, Check } from "lucide-react-native";
 import { useConversations } from "@/hooks/useConversations";
-import { colors } from "@/config/theme";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { colors, fonts, tracking, track, lineHeights } from "@/config/theme";
 
 const FILTERS = ["All", "Unread", "Applications", "Collabs", "Pitches"];
 const PREFS_KEY = "inbox.prefs.v1";
@@ -75,7 +76,7 @@ function Avatar({ name, uri, size = 54, isFounder = false }) {
         {uri ? (
           <Image source={{ uri }} style={{ width: "100%", height: "100%" }} contentFit="cover" transition={200} />
         ) : (
-          <Text style={{ fontSize: size * 0.32, fontWeight: "700", color: colors.slate }}>{initials}</Text>
+          <Text style={{ fontSize: size * 0.32, fontFamily: fonts.display, color: colors.slate }}>{initials}</Text>
         )}
       </View>
       {isFounder && (
@@ -91,10 +92,10 @@ function Avatar({ name, uri, size = 54, isFounder = false }) {
             alignItems: "center",
             justifyContent: "center",
             borderWidth: 2,
-            borderColor: "#fff",
+            borderColor: colors.surface,
           }}
         >
-          <Text style={{ fontSize: 9, color: "#fff" }}>★</Text>
+          <Text style={{ fontSize: 9, color: colors.surface }}>★</Text>
         </View>
       )}
     </View>
@@ -173,8 +174,8 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
       activeOpacity={0.8}
       style={{ width: 84, backgroundColor: bg, alignItems: "center", justifyContent: "center", gap: 4 }}
     >
-      <Icon color="#fff" size={20} />
-      <Text style={{ color: "#fff", fontSize: 11, fontWeight: "600" }}>{label}</Text>
+      <Icon color={colors.surface} size={20} />
+      <Text style={{ color: colors.surface, fontSize: 11, fontFamily: fonts.bodySemibold }}>{label}</Text>
     </TouchableOpacity>
   );
 
@@ -218,7 +219,7 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
           onLongPress={() => !selecting && setSelected([key])}
           delayLongPress={250}
           activeOpacity={0.6}
-          style={{ flexDirection: "row", paddingLeft: 16, backgroundColor: isSel ? colors.mint : "#fff" }}
+          style={{ flexDirection: "row", paddingLeft: 16, backgroundColor: isSel ? colors.mint : colors.surface }}
         >
           <View style={{ marginRight: 14, paddingVertical: 10 }}>
             <Avatar name={item.host_name} uri={item.host_avatar} isFounder={item.is_founder} />
@@ -227,10 +228,10 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
                 style={{
                   position: "absolute", right: -2, bottom: 8, width: 22, height: 22, borderRadius: 11,
                   backgroundColor: colors.slate, alignItems: "center", justifyContent: "center",
-                  borderWidth: 2, borderColor: "#fff",
+                  borderWidth: 2, borderColor: colors.surface,
                 }}
               >
-                <Check color="#fff" size={12} strokeWidth={3} />
+                <Check color={colors.surface} size={12} strokeWidth={3} />
               </View>
             )}
           </View>
@@ -241,17 +242,17 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
             }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 3 }}>
-              <Text style={{ flex: 1, marginRight: 8, fontSize: 16.5, fontWeight: "600", color: colors.ink }} numberOfLines={1}>
+              <Text style={{ flex: 1, marginRight: 8, fontSize: 16.5, fontFamily: fonts.bodySemibold, color: colors.ink }} numberOfLines={1}>
                 {item.listing_title}
               </Text>
-              <Text style={{ fontSize: 12, color: unread && !isMuted ? colors.slate : colors.sage, fontWeight: unread && !isMuted ? "600" : "400" }}>
+              <Text style={{ fontSize: 12, color: unread && !isMuted ? colors.slate : colors.sage, fontFamily: unread && !isMuted ? fonts.bodySemibold : fonts.body }}>
                 {item.timestamp}
               </Text>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Text
                 numberOfLines={1}
-                style={{ flex: 1, fontSize: 14.5, color: unread ? colors.ink : colors.sage, fontWeight: unread ? "500" : "400" }}
+                style={{ flex: 1, fontSize: 14.5, color: unread ? colors.ink : colors.sage, fontFamily: unread ? fonts.bodyMedium : fonts.body }}
               >
                 {!isCollabnb && item.host_name ? `${item.host_name}: ` : ""}
                 {item.last_message}
@@ -263,7 +264,7 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
                     backgroundColor: TAG_COLORS[item.tag] || colors.stone,
                   }}
                 >
-                  <Text style={{ fontSize: 10.5, fontWeight: "600", color: TAG_TEXT_COLORS[item.tag] || colors.slate }}>
+                  <Text style={{ fontSize: 10.5, fontFamily: fonts.bodySemibold, color: TAG_TEXT_COLORS[item.tag] || colors.slate }}>
                     {item.tag}
                   </Text>
                 </View>
@@ -277,7 +278,7 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
                     backgroundColor: isMuted ? colors.sage : colors.slate, alignItems: "center", justifyContent: "center",
                   }}
                 >
-                  <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>{item.unread}</Text>
+                  <Text style={{ fontSize: 12, fontFamily: fonts.bodySemibold, color: colors.surface }}>{item.unread}</Text>
                 </View>
               )}
             </View>
@@ -294,17 +295,18 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
   const iconBtn = { padding: 6 };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff", paddingTop: insets.top }}>
+    <AtmosphericBackground style={{ flex: 1 }}>
+      <View style={{ flex: 1, paddingTop: insets.top }}>
       <StatusBar style="dark" />
 
       {/* Header — title, or the selection action bar */}
-      <View style={{ backgroundColor: "#fff", paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 }}>
         {selecting ? (
           <View style={{ flexDirection: "row", alignItems: "center", height: 42, marginBottom: 12 }}>
             <TouchableOpacity onPress={() => setSelected([])} style={iconBtn}>
               <X color={colors.ink} size={24} />
             </TouchableOpacity>
-            <Text style={{ flex: 1, marginLeft: 8, fontSize: 20, fontWeight: "600", color: colors.ink }}>{selected.length}</Text>
+            <Text style={{ flex: 1, marginLeft: 8, fontSize: 20, fontFamily: fonts.bodySemibold, color: colors.ink }}>{selected.length}</Text>
             <TouchableOpacity onPress={() => act("pinned", selected)} style={iconBtn}>
               {allPinned ? <PinOff color={colors.ink} size={22} /> : <Pin color={colors.ink} size={22} />}
             </TouchableOpacity>
@@ -322,7 +324,7 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
                 <ChevronLeft color={colors.ink} size={28} />
               </TouchableOpacity>
             )}
-            <Text style={{ flex: 1, fontSize: showArchived ? 22 : 30, fontWeight: "800", color: colors.ink, letterSpacing: -0.5 }}>
+            <Text style={{ flex: 1, fontSize: showArchived ? 22 : 30, fontFamily: fonts.display, color: colors.ink, letterSpacing: track(showArchived ? 22 : 30, tracking.display), lineHeight: (showArchived ? 22 : 30) * lineHeights.display }}>
               {showArchived ? "Archived" : headerTitle}
             </Text>
             <TouchableOpacity onPress={() => setShowSettings((v) => !v)} style={iconBtn}>
@@ -364,10 +366,11 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
               onPress={() => setActiveFilter(f)}
               style={{
                 paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
-                backgroundColor: activeFilter === f ? colors.mint : colors.bone,
+                backgroundColor: activeFilter === f ? colors.ink : colors.mint,
+                borderWidth: 1, borderColor: activeFilter === f ? colors.ink : colors.hairline,
               }}
             >
-              <Text style={{ fontSize: 13.5, fontWeight: "500", color: activeFilter === f ? colors.slate : colors.sage }}>{f}</Text>
+              <Text style={{ fontSize: 13.5, fontFamily: fonts.bodyMedium, color: activeFilter === f ? colors.bone : colors.ink }}>{f}</Text>
             </TouchableOpacity>
           )}
         />
@@ -381,7 +384,7 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
         >
           <View
             style={{
-              position: "absolute", top: insets.top + 56, right: 16, backgroundColor: "#fff", borderRadius: 16,
+              position: "absolute", top: insets.top + 56, right: 16, backgroundColor: colors.surface, borderRadius: 16,
               padding: 8, minWidth: 200, shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.15, shadowRadius: 12, elevation: 5,
             }}
@@ -402,7 +405,7 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
       {visible.length === 0 && !(archivedCount > 0 && !showArchived) ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40 }}>
           <MessageCircle color={colors.stone} size={64} />
-          <Text style={{ fontSize: 20, fontWeight: "600", color: colors.ink, marginTop: 20 }}>
+          <Text style={{ fontSize: 20, fontFamily: fonts.bodySemibold, color: colors.ink, marginTop: 20 }}>
             {isLoading ? "Loading..." : searchQuery ? "No matches found" : showArchived ? "Nothing archived" : activeFilter === "Unread" ? "No unread messages" : "No messages yet"}
           </Text>
           {!isLoading && (
@@ -425,7 +428,7 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
                 style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, gap: 24 }}
               >
                 <Archive color={colors.slate} size={20} style={{ marginLeft: 17 }} />
-                <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: colors.ink }}>Archived</Text>
+                <Text style={{ flex: 1, fontSize: 15, fontFamily: fonts.bodySemibold, color: colors.ink }}>Archived</Text>
                 <Text style={{ fontSize: 13, color: colors.sage }}>{archivedCount}</Text>
               </TouchableOpacity>
             ) : null
@@ -433,6 +436,7 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
           contentContainerStyle={{ paddingBottom: insets.bottom + 64 }}
         />
       )}
-    </View>
+      </View>
+    </AtmosphericBackground>
   );
 }

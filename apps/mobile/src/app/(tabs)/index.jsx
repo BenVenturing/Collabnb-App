@@ -245,21 +245,21 @@ export default function ExploreScreen() {
         />
       )}
 
-      {/* Floating Map pill — frosted glass, opens the full-screen map view */}
+      {/* Floating Map pill — dark pill button (COMPONENT-SPEC #10), opens the full-screen map view */}
       {!mapOpen && mapPoints.length > 0 && (
         <TouchableOpacity
           onPress={() => { setMapBounds(null); setMapAreaLabel(""); setMapOpen(true); }}
-          activeOpacity={0.85}
-          style={{ position: "absolute", bottom: insets.bottom + 20, alignSelf: "center", borderRadius: radii.pill, ...shadows.lg }}
+          activeOpacity={0.9}
+          style={{
+            position: "absolute", bottom: insets.bottom + 20, alignSelf: "center",
+            flexDirection: "row", alignItems: "center", gap: 8,
+            backgroundColor: colors.ink, borderRadius: radii.pill,
+            paddingHorizontal: 20, paddingVertical: 13,
+            ...shadows.lg,
+          }}
         >
-          <Glass
-            variant="regular"
-            style={{ borderRadius: radii.pill }}
-            contentStyle={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 20, paddingVertical: 13 }}
-          >
-            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.ink }}>Map</Text>
-            <MapIcon color={colors.ink} size={16} />
-          </Glass>
+          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.surface }}>Map</Text>
+          <MapIcon color={colors.surface} size={16} />
         </TouchableOpacity>
       )}
 

@@ -115,7 +115,7 @@ export default function CollabDetailScreen() {
           )}
 
           {/* Stage stepper — vertical on a phone (the web page lays it out horizontally) */}
-          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.sage, marginTop: 24, marginBottom: 10, letterSpacing: 0.6 }}>PROGRESS</Text>
+          <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 11, color: colors.sage, marginTop: 24, marginBottom: 10, letterSpacing: track(11, tracking.eyebrow) }}>PROGRESS</Text>
           <View style={{ backgroundColor: colors.surface, borderRadius: radii.lg, padding: 16, ...shadows.sm }}>
             {steps.map((s, i) => {
               const done = s.state === "done";
@@ -150,7 +150,7 @@ export default function CollabDetailScreen() {
             })}
           </View>
 
-          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.sage, marginTop: 24, marginBottom: 6, letterSpacing: 0.6 }}>DETAILS</Text>
+          <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 11, color: colors.sage, marginTop: 24, marginBottom: 6, letterSpacing: track(11, tracking.eyebrow) }}>DETAILS</Text>
           <View style={{ backgroundColor: colors.surface, borderRadius: radii.lg, paddingHorizontal: 16, paddingVertical: 6, ...shadows.sm }}>
             <Row icon={User} label="Host" value={raw.host_name} />
             <Row icon={Package} label="Deliverables" value={raw.deliverables} />
