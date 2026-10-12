@@ -20,7 +20,7 @@ export default function CollabStepper({ steps, terminated = false }) {
               <View
                 style={{
                   width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center",
-                  backgroundColor: stopped ? "#C86868" : done ? colors.slate : current ? colors.mint : colors.bone,
+                  backgroundColor: stopped ? colors.danger : done ? colors.slate : current ? colors.mint : colors.bone,
                   borderWidth: current ? 2 : 0, borderColor: colors.slate,
                 }}
               >

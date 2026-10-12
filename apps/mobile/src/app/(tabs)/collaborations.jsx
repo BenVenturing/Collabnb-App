@@ -273,16 +273,16 @@ export default function CreatorCollaborationsScreen() {
                             borderRadius: radii.md,
                             flexDirection: "row",
                             alignItems: "center",
-                            backgroundColor: isTerminated ? "rgba(200,104,104,0.12)" : colors.mint,
+                            backgroundColor: isTerminated ? colors.dangerTint : colors.mint,
                           }}
                         >
-                          <StageIcon color={isTerminated ? "#C86868" : colors.ink} size={13} />
+                          <StageIcon color={isTerminated ? colors.danger : colors.ink} size={13} />
                           <Text
                             style={{
                               fontFamily: fonts.bodySemibold,
                               fontSize: 12,
                               marginLeft: 6,
-                              color: isTerminated ? "#C86868" : colors.ink,
+                              color: isTerminated ? colors.danger : colors.ink,
                             }}
                           >
                             {isTerminated ? "Terminated" : meta.label}

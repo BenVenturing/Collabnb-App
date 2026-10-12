@@ -21,7 +21,7 @@ const eyebrow = { fontFamily: fonts.bodyMedium, fontSize: 11, color: colors.sage
 const CHIP = {
   todo: { bg: colors.bone, fg: colors.slate },
   submitted: { bg: colors.stone, fg: colors.ink },
-  changes_requested: { bg: "rgba(200,104,104,0.12)", fg: "#C86868" }, // same red as the terminated banner; no danger token yet
+  changes_requested: { bg: colors.dangerTint, fg: colors.danger },
   approved: { bg: colors.mint, fg: colors.ink },
 };
 

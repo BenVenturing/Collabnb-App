@@ -59,3 +59,14 @@ test("GlassTabBar renders visible tabs only and navigates on press", () => {
   act(() => beta.props.onPress());
   expect(navigate).toHaveBeenCalledWith("b", undefined);
 });
+
+test("ContractSection offers the signed PDF only once locked", () => {
+  const { sign } = require("@/utils/contract");
+  let c = addRound(emptyContract(), { modifiedBy: "host", fields: { nights: "3 nights" }, note: "" });
+  const open = render(<ContractSection contract={c} seed={{}} onCounter={jest.fn()} onSign={jest.fn()} onExport={jest.fn()} />);
+  expect(has(open, "Export signed PDF")).toBe(false);
+  c = sign(sign(c, "host", "Ann Host"), "creator", "Cleo Creator");
+  const locked = render(<ContractSection contract={c} seed={{}} onCounter={jest.fn()} onSign={jest.fn()} onExport={jest.fn()} />);
+  expect(has(locked, "Export signed PDF")).toBe(true);
+  expect(has(locked, "Contract locked")).toBe(true);
+});

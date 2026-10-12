@@ -4,7 +4,7 @@
 // Reads the same `collaborations.getByCreator` query as the list, so no new
 // backend call is needed.
 
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -17,6 +17,10 @@ import { api } from "@/convex/_generated/api";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import { buildTimeline } from "@/utils/collabTimeline";
 import * as haptic from "@/utils/haptics";
+import { threadKeyFor } from "@/utils/threads";
+import { latestFields } from "@/utils/contract";
+import { exportContractPdf } from "@/utils/contractPdf";
+import { useEndCollaboration } from "@/hooks/useEndCollaboration";
 import CollabStepper from "@/components/collab/CollabStepper";
 import ContractSection from "@/components/collab/ContractSection";
 import DeliverablesSection from "@/components/collab/DeliverablesSection";
@@ -77,9 +81,49 @@ export default function CollabDetailScreen() {
     raw && { id: String(raw._id), creatorId: profile?._id ? String(profile._id) : null, contractRaw: raw.contract },
   );
 
+  const ending = useEndCollaboration(raw && { id: String(raw._id), creatorId: profile?._id ? String(profile._id) : null });
+  const finished = ["closed", "archived"].includes(raw?.current_stage);
+  const withdrawing = raw?.current_stage === "pending";
+
+  const confirmEnd = () => {
+    haptic.press();
+    Alert.alert(
+      withdrawing ? "Withdraw your application?" : "End this collaboration?",
+      withdrawing
+        ? "The host will be told you've withdrawn. You can apply again later."
+        : "The host will be told, and the collaboration will be closed. This can't be undone.",
+      [
+        { text: "Keep it", style: "cancel" },
+        {
+          text: withdrawing ? "Withdraw" : "End collaboration",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await ending.end();
+              haptic.success();
+            } catch (e) {
+              haptic.warning();
+              Alert.alert("Couldn't update", e?.message || "Try again.");
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const exportPdf = () =>
+    exportContractPdf({
+      listing: raw.property_name || "Collaboration",
+      creatorName: profile?.full_name || "Creator",
+      handle: profile?.username ? `@${profile.username}` : "",
+      fields: latestFields(contractApi.contract, { deliverables: raw.deliverables }),
+      rounds: contractApi.contract.history.length,
+      signatures: contractApi.contract.signatures,
+    });
+
   const openMessages = () => {
     haptic.tap();
-    const threadKey = `thread_${raw.listing_id}_${String(profile._id)}`;
+    const threadKey = threadKeyFor(raw.listing_id, String(profile._id));
     router.push({
       pathname: `/messages/${encodeURIComponent(threadKey)}`,
       params: { listingTitle: raw.property_name || "", hostName: raw.host_name || "Host", hostAvatar: "", tag: "Collab" },
@@ -127,8 +171,8 @@ export default function CollabDetailScreen() {
           </View>
 
           {terminated && (
-            <View style={{ marginTop: 16, padding: 14, borderRadius: radii.md, backgroundColor: "rgba(200,104,104,0.12)" }}>
-              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: "#C86868" }}>This collaboration was ended</Text>
+            <View style={{ marginTop: 16, padding: 14, borderRadius: radii.md, backgroundColor: colors.dangerTint }}>
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.danger }}>This collaboration was ended</Text>
               <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, marginTop: 2 }}>
                 Message the host if you have questions.
               </Text>
@@ -144,6 +188,7 @@ export default function CollabDetailScreen() {
             seed={{ deliverables: raw.deliverables }}
             onCounter={contractApi.counter}
             onSign={contractApi.sign}
+            onExport={exportPdf}
           />
 
           <DeliverablesSection role="creator" api={deliverablesApi} enabled={dealOn || contractApi.contract.locked} />
@@ -154,6 +199,18 @@ export default function CollabDetailScreen() {
             <Row icon={Package} label="Deliverables" value={raw.deliverables} />
             <Row icon={Clock} label="Due in" value={raw.days_left && raw.is_active !== false ? `${raw.days_left} days` : null} />
           </View>
+
+          {ending.available && !terminated && !finished && (
+            <TouchableOpacity
+              onPress={confirmEnd}
+              accessibilityRole="button"
+              style={{ minHeight: 48, alignItems: "center", justifyContent: "center", marginTop: 28 }}
+            >
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.danger }}>
+                {withdrawing ? "Withdraw application" : "End collaboration"}
+              </Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       )}
 

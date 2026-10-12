@@ -47,7 +47,7 @@ function PillButton({ label, onPress, dark = true, disabled }) {
   );
 }
 
-export default function ContractSection({ contract, seed, onCounter, onSign }) {
+export default function ContractSection({ contract, seed, onCounter, onSign, onExport }) {
   const [mode, setMode] = useState(null); // "counter" | "sign"
   const [fields, setFields] = useState({});
   const [note, setNote] = useState("");
@@ -123,6 +123,12 @@ export default function ContractSection({ contract, seed, onCounter, onSign }) {
                 {who}: {s ? `${s} · ${new Date(at).toLocaleDateString()}` : "not yet signed"}
               </Text>
             ))}
+          </View>
+        )}
+
+        {contract.locked && onExport && (
+          <View style={{ flexDirection: "row", marginTop: 16 }}>
+            <PillButton dark={false} label="Export signed PDF" onPress={() => onExport().catch(() => Alert.alert("Couldn't export", "Try again in a moment."))} />
           </View>
         )}
 

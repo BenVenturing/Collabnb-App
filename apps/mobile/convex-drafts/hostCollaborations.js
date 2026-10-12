@@ -159,3 +159,24 @@ export const saveDeliverables = mutation({
     await ctx.db.patch(id, patch);
   },
 });
+
+// ── Ending a collaboration (creator withdraws / either party leaves) ──────
+// ASSUMPTION: status "terminated" (what the creator tab already renders) plus
+// ended_by / end_reason columns. Finished collabs can't be ended.
+export const endCollaboration = mutation({
+  args: {
+    id: v.id("collaborations"),
+    role: v.union(v.literal("host"), v.literal("creator")),
+    profileId: v.string(),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, { id, role, profileId, reason }) => {
+    const collab = await ctx.db.get(id);
+    if (!collab) throw new Error("Collaboration not found");
+    const owner = role === "host" ? collab.host_id : collab.creator_id; // ASSUMPTION
+    if (owner !== profileId) throw new Error("Not your collaboration");
+    if (collab.status === "terminated") return; // already ended — idempotent
+    if (["closed", "archived"].includes(collab.current_stage)) throw new Error("This collaboration is already completed");
+    await ctx.db.patch(id, { status: "terminated", ended_by: role, end_reason: (reason || "").slice(0, 500) });
+  },
+});

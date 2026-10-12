@@ -122,3 +122,51 @@ test("reminder planning", () => {
   assert.deepEqual(reminders.planReminders({ collabs: [{ ...base, daysLeft: 5 }], now }).map((r) => r.identifier),
                    reminders.planReminders({ collabs: [{ ...base, daysLeft: 5 }], now }).map((r) => r.identifier));
 });
+
+import * as threads from "@/utils/threads.js";
+import * as pfilters from "@/utils/proposalFilters.js";
+import * as chtml from "@/utils/contractHtml.js";
+
+test("thread keys match the apply flow's format", () => {
+  assert.equal(threads.threadKeyFor("l1", "c9"), "thread_l1_c9");
+  assert.equal(threads.threadKeyFor(undefined, "c9"), null);
+  assert.equal(threads.threadKeyFor("l1", null), null);
+});
+
+test("proposal search, listing filter and bulk eligibility", () => {
+  const list = [
+    { id: 1, creatorName: "Maya Chen", handle: "@mayaexplores", listing: "Cedar Cabin", tier: "UGC Pro", note: "loves hiking", stage: "applied" },
+    { id: 2, creatorName: "Leo Park", handle: "@leopark", listing: "Lake Villa", tier: "Influencer", note: "", stage: "completed" },
+    { id: 3, creatorName: "Ana Ruiz", handle: "@ana", listing: "Cedar Cabin", tier: "UGC Pro", note: "", stage: "declined" },
+  ];
+  const ids = (o) => pfilters.filterProposals(list, o).map((p) => p.id).join(",");
+  assert.equal(ids({}), "1,2,3");
+  assert.equal(ids({ query: "MAYA" }), "1");
+  assert.equal(ids({ query: "hiking" }), "1");
+  assert.equal(ids({ query: "villa" }), "2");
+  assert.equal(ids({ listing: "Cedar Cabin" }), "1,3");
+  assert.equal(ids({ tier: "UGC Pro", listing: "Cedar Cabin", query: "ana" }), "3");
+  assert.equal(ids({ query: "zzz" }), "");
+  assert.deepEqual(pfilters.listingOptions(list), ["Cedar Cabin", "Lake Villa"]); // most-used first
+  assert.deepEqual(list.map(pfilters.canDecline), [true, false, false]);
+});
+
+test("contract HTML escapes user text and shows signature state", () => {
+  const html = chtml.generateContractHtml({
+    listing: "Cedar <b>Cabin</b>",
+    creatorName: 'Maya "M" & Co',
+    handle: "@m",
+    fields: { nights: "3 nights", extra_terms: "<script>alert(1)</script>" },
+    rounds: 2,
+    signatures: { hostSignature: "Ann Host", hostSignedAt: "2026-10-01T10:00:00Z" },
+    date: new Date("2026-10-12T12:00:00Z"),
+  });
+  assert.ok(!html.includes("<script>"));
+  assert.ok(html.includes("&lt;script&gt;"));
+  assert.ok(html.includes("Cedar &lt;b&gt;Cabin&lt;/b&gt;"));
+  assert.ok(html.includes("Maya &quot;M&quot; &amp; Co"));
+  assert.ok(html.includes("Negotiated over 2 rounds"));
+  assert.ok(html.includes("Ann Host"));
+  assert.ok(html.includes("Not yet signed")); // creator hasn't signed
+  assert.ok(!html.includes("Nights</td><td style=\"padding:10px 14px;border-bottom:1px solid #eee;\"></td>")); // empty fields omitted
+});

@@ -4,6 +4,7 @@
 // ============================================================
 
 import * as haptic from "@/utils/haptics";
+import { threadKeyFor } from "@/utils/threads";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -345,7 +346,7 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
     setError("");
 
     const creatorId = String(creatorProfile._id);
-    const threadKey = `thread_${listingId}_${creatorId}`;
+    const threadKey = threadKeyFor(listingId, creatorId);
 
     try {
       const { allowed } = await checkAndIncrementCvx({ userId: creatorId });

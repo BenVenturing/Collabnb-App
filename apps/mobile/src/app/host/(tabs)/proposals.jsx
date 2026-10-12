@@ -16,12 +16,11 @@ import {
   StatusBar,
   Modal,
   TextInput,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import * as Print from "expo-print";
-import * as Sharing from "expo-sharing";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
@@ -30,6 +29,10 @@ import { useHostDeliverables } from "@/hooks/useDeliverables";
 import DeliverablesSection from "@/components/collab/DeliverablesSection";
 import { mergeProposals } from "@/utils/hostPipeline";
 import { addRound, sign as signContract, parseContract } from "@/utils/contract";
+import { exportContractPdf as exportContractPdfShared } from "@/utils/contractPdf";
+import { threadKeyFor } from "@/utils/threads";
+import { filterProposals, listingOptions, canDecline } from "@/utils/proposalFilters";
+import * as haptic from "@/utils/haptics";
 
 const STORAGE_KEY = "@collabnb_proposals_v1";
 
@@ -69,39 +72,17 @@ function getLatestContractFields(proposal) {
   return empty;
 }
 
-function generateContractHtml(proposal) {
-  const fields = getLatestContractFields(proposal);
-  const signatures = proposal.signatures || {};
-  const rows = CONTRACT_FIELDS.filter((f) => fields[f.key])
-    .map(
-      (f) =>
-        `<tr><td style="font-weight:700;width:140px;padding:10px 14px;border-bottom:1px solid #eee;">${f.label}</td><td style="padding:10px 14px;border-bottom:1px solid #eee;">${fields[f.key]}</td></tr>`,
-    )
-    .join("");
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Collabnb Contract</title>
-<style>body{font-family:Georgia,serif;max-width:680px;margin:48px auto;color:#192524;line-height:1.6}h1{font-size:22px;margin:0 0 4px}p.meta{color:#666;font-size:13px;margin:0 0 32px}table{width:100%;border-collapse:collapse;margin:24px 0}h2{font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#666;margin:28px 0 8px}.sig-row{display:flex;gap:40px;margin-top:40px}.sig-box{flex:1;border-top:1px solid #ccc;padding-top:12px}.sig-name{font-size:20px;font-style:italic;margin-bottom:4px}.sig-label{font-size:11px;color:#666}</style></head>
-<body>
-<h1>Collaboration Agreement</h1>
-<p class="meta">${proposal.listing} · ${proposal.creatorName} (${proposal.handle}) · ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>
-<h2>Terms</h2><table>${rows}</table>
-${proposal.contractHistory?.length ? `<p style="font-size:12px;color:#666;margin-top:8px;">Negotiated over ${proposal.contractHistory.length} round${proposal.contractHistory.length > 1 ? "s" : ""}.</p>` : ""}
-<h2>Signatures</h2>
-<div class="sig-row">
-  <div class="sig-box"><div class="sig-name">${signatures.hostSignature || "___________________________"}</div><div class="sig-label">Host · ${signatures.hostSignedAt ? new Date(signatures.hostSignedAt).toLocaleDateString() : "Not yet signed"}</div></div>
-  <div class="sig-box"><div class="sig-name">${signatures.creatorSignature || "___________________________"}</div><div class="sig-label">${proposal.creatorName} (Creator) · ${signatures.creatorSignedAt ? new Date(signatures.creatorSignedAt).toLocaleDateString() : "Not yet signed"}</div></div>
-</div>
-</body></html>`;
-}
-
-async function exportContractPdf(proposal) {
-  const html = generateContractHtml(proposal);
-  const { uri } = await Print.printToFileAsync({ html });
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(uri, {
-      mimeType: "application/pdf",
-      dialogTitle: "Collabnb Contract",
-    });
-  }
+// The printable contract now lives in utils/contractPdf.js (shared with the
+// creator's collab screen, and HTML-escaped).
+function exportContractPdf(proposal) {
+  return exportContractPdfShared({
+    listing: proposal.listing,
+    creatorName: proposal.creatorName,
+    handle: proposal.handle,
+    fields: getLatestContractFields(proposal),
+    rounds: proposal.contractHistory?.length ?? 0,
+    signatures: proposal.signatures || {},
+  });
 }
 
 // Stage-pipeline colors need 5 visually distinct hues (grey/teal/gold/green/
@@ -282,13 +263,19 @@ function TierBadge({ tier }) {
   );
 }
 
-function ProposalCard({ proposal, onPress }) {
+function ProposalCard({ proposal, onPress, selecting = false, picked = false }) {
   return (
     <TouchableOpacity
-      style={styles.proposalCardShadow}
+      style={[styles.proposalCardShadow, picked && styles.proposalCardPicked]}
       onPress={onPress}
       activeOpacity={0.8}
+      accessibilityState={selecting ? { selected: picked } : undefined}
     >
+      {selecting && (
+        <View style={[styles.pickDot, picked && styles.pickDotOn]}>
+          {picked && <Text style={styles.pickDotCheck}>✓</Text>}
+        </View>
+      )}
       <Glass variant="small" contentStyle={styles.proposalCardContent}>
         <View style={styles.cardTop}>
           <Avatar name={proposal.creatorName} />
@@ -615,12 +602,20 @@ function DetailModal({
   };
 
   const handleMessage = () => {
-    // Inbox and message threads are Convex-backed (see useConversations /
-    // messages/[threadId].jsx); MessagingStore is a separate local mock that
-    // never reaches them, and threads.create isn't idempotent, so we can't
-    // safely open/create a specific thread from here yet. Land on the inbox
-    // list instead of a broken or duplicate thread.
-    router.push("/host/(tabs)/inbox");
+    // Applications create a Convex thread under a known key, so open that exact
+    // conversation. Invites live in the local MessagingStore mock (see
+    // creators.jsx) and threads.create isn't idempotent, so those still land on
+    // the inbox list rather than risk a duplicate thread.
+    const key = proposal.source === "convex" ? threadKeyFor(proposal.listingId, proposal.creatorId) : null;
+    if (!key) {
+      router.push("/host/(tabs)/inbox");
+      return;
+    }
+    onClose();
+    router.push({
+      pathname: `/messages/${encodeURIComponent(key)}`,
+      params: { listingTitle: proposal.listing, hostName: proposal.creatorName, hostAvatar: "", tag: "Application" },
+    });
   };
 
   const handleDecline = async () => {
@@ -872,6 +867,10 @@ export default function ProposalsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [view, setView] = useState("pipeline");
   const [tierFilter, setTierFilter] = useState("all");
+  const [query, setQuery] = useState("");
+  const [listingFilter, setListingFilter] = useState("all");
+  const [selectMode, setSelectMode] = useState(false);
+  const [picked, setPicked] = useState([]);
   const [declinedOpen, setDeclinedOpen] = useState(false);
   const [counterTarget, setCounterTarget] = useState(null);
   const [signTarget, setSignTarget] = useState(null);
@@ -994,10 +993,35 @@ export default function ProposalsScreen() {
     }
   };
 
-  const filtered =
-    tierFilter === "all"
-      ? proposals
-      : proposals.filter((p) => p.tier === tierFilter);
+  const filtered = filterProposals(proposals, { query, tier: tierFilter, listing: listingFilter });
+  const listings = listingOptions(proposals);
+
+  const togglePick = (id) => {
+    haptic.select();
+    setPicked((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
+  };
+  const exitSelect = () => { setSelectMode(false); setPicked([]); };
+
+  const handleBulkDecline = () => {
+    const targets = proposals.filter((p) => picked.includes(p.id) && canDecline(p));
+    if (!targets.length) return exitSelect();
+    Alert.alert(
+      `Decline ${targets.length} proposal${targets.length > 1 ? "s" : ""}?`,
+      "They'll move to Declined. You can move them back from the proposal.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Decline",
+          style: "destructive",
+          onPress: async () => {
+            for (const t of targets) await handleStageChange(t.id, "declined");
+            haptic.success();
+            exitSelect();
+          },
+        },
+      ],
+    );
+  };
   const active = filtered.filter(
     (p) => p.stage !== "completed" && p.stage !== "declined",
   );
@@ -1026,12 +1050,22 @@ export default function ProposalsScreen() {
               {byStage("live").length} live
             </Text>
           </View>
-          <TouchableOpacity
-            style={styles.inviteBtn}
-            onPress={() => router.push("/host/(tabs)/creators")}
-          >
-            <Text style={styles.inviteBtnText}>+ Invite</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <TouchableOpacity
+              style={styles.inviteBtn}
+              onPress={() => (selectMode ? exitSelect() : setSelectMode(true))}
+            >
+              <Text style={styles.inviteBtnText}>{selectMode ? "Done" : "Select"}</Text>
+            </TouchableOpacity>
+            {!selectMode && (
+              <TouchableOpacity
+                style={styles.inviteBtn}
+                onPress={() => router.push("/host/(tabs)/creators")}
+              >
+                <Text style={styles.inviteBtnText}>+ Invite</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Toggle */}
@@ -1069,6 +1103,34 @@ export default function ProposalsScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Search + listing filter */}
+        <View style={styles.searchWrap}>
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search creators, listings, notes"
+            placeholderTextColor={colors.sage}
+            autoCorrect={false}
+            clearButtonMode="while-editing"
+            style={styles.searchInput}
+          />
+        </View>
+        {listings.length > 1 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterContent}>
+            {["all", ...listings].map((l) => (
+              <TouchableOpacity
+                key={l}
+                style={[styles.filterChip, listingFilter === l && styles.filterChipActive]}
+                onPress={() => { haptic.select(); setListingFilter(l); }}
+              >
+                <Text style={[styles.filterChipText, listingFilter === l && styles.filterChipTextActive]} numberOfLines={1}>
+                  {l === "all" ? "All listings" : l}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
         {/* Tier Filter */}
         <ScrollView
@@ -1133,7 +1195,10 @@ export default function ProposalsScreen() {
                         <ProposalCard
                           key={p.id}
                           proposal={p}
+                          selecting={selectMode}
+                          picked={picked.includes(p.id)}
                           onPress={() => {
+                            if (selectMode) return togglePick(p.id);
                             setSelected(p);
                             setModalVisible(true);
                           }}
@@ -1222,6 +1287,21 @@ export default function ProposalsScreen() {
           onSign={handleSign}
           onClose={() => setSignTarget(null)}
         />
+        {selectMode && (
+          <View style={styles.bulkBar}>
+            <Text style={styles.bulkText}>
+              {picked.length ? `${picked.length} selected` : "Tap cards to select"}
+            </Text>
+            <TouchableOpacity
+              style={[styles.bulkBtn, !picked.length && { opacity: 0.45 }]}
+              disabled={!picked.length}
+              onPress={handleBulkDecline}
+              accessibilityRole="button"
+            >
+              <Text style={styles.bulkBtnText}>Decline</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </SafeAreaView>
     </AtmosphericBackground>
   );
@@ -1614,12 +1694,36 @@ const styles = StyleSheet.create({
   actionPrimaryText: { fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.bone },
   actionDanger: {
     flex: 1,
-    backgroundColor: "rgba(200,104,104,0.1)",
+    backgroundColor: colors.dangerTint,
     borderWidth: 1,
-    borderColor: "rgba(200,104,104,0.25)",
+    borderColor: "rgba(127,29,29,0.25)",
     paddingVertical: 13,
     borderRadius: 14,
     alignItems: "center",
   },
-  actionDangerText: { fontFamily: fonts.bodySemibold, fontSize: 14, color: "#C86868" }, // no brand token — semantic danger red
+  searchWrap: { paddingHorizontal: 20, paddingBottom: 8 },
+  searchInput: {
+    minHeight: 44,
+    borderRadius: radii.pill,
+    paddingHorizontal: 16,
+    backgroundColor: colors.bone,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.ink,
+  },
+  proposalCardPicked: { borderWidth: 2, borderColor: colors.slate, borderRadius: 16 },
+  pickDot: {
+    position: "absolute", top: 8, right: 8, zIndex: 2, width: 22, height: 22, borderRadius: 11,
+    borderWidth: 2, borderColor: colors.slate, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center",
+  },
+  pickDotOn: { backgroundColor: colors.slate },
+  pickDotCheck: { color: colors.surface, fontSize: 12, fontFamily: fonts.bodySemibold },
+  bulkBar: {
+    position: "absolute", left: 16, right: 16, bottom: 16, flexDirection: "row", alignItems: "center", gap: 12,
+    padding: 12, borderRadius: radii.xl, backgroundColor: colors.ink,
+  },
+  bulkText: { flex: 1, fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.surface },
+  bulkBtn: { minHeight: 44, paddingHorizontal: 18, borderRadius: radii.pill, backgroundColor: colors.danger, alignItems: "center", justifyContent: "center" },
+  bulkBtnText: { fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.surface },
+  actionDangerText: { fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.danger },
 });
