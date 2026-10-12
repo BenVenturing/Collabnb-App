@@ -5,8 +5,8 @@
 // at 'pending'), so there's no separate "applications" list to reconcile
 // against this one. Stage keys/labels mirror
 // Collabnb Website/app/src/lib/mockData.js's STAGES. A per-collab detail
-// screen with the full stage stepper (CollabDetail.jsx on web) is a
-// deliberate later pass, not this one — tapping a card opens the listing.
+// screen with the stage stepper (CollabDetail.jsx on web) is
+// now /collab/[id] — tapping a card opens the stage stepper and next actions.
 
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
@@ -211,7 +211,7 @@ export default function CreatorCollaborationsScreen() {
                       overflow: "hidden",
                       ...shadows.md,
                     }}
-                    onPress={() => router.push({ pathname: "/listing-detail", params: { id: collab.listingId } })}
+                    onPress={() => router.push(`/collab/${collab.id}`)}
                     activeOpacity={0.85}
                   >
                     <View style={{ flexDirection: "row" }}>
