@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "web:auth-proxy": "node ./scripts/dev-auth-proxy.mjs",
     "postinstall": "patch-package && sh ./scripts/fetch-fonts.sh",
-    "fonts": "sh ./scripts/fetch-fonts.sh"
+    "fonts": "sh ./scripts/fetch-fonts.sh",
+    "test:logic": "node --import ./tests/register.mjs --test tests/*.test.mjs"
   },
   "dependencies": {
     "@anythingai/app": "0.1.96",
