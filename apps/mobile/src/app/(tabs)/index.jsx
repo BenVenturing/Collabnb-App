@@ -27,6 +27,7 @@ import { normalizeListing } from "@/utils/listingHelpers";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
 import ExploreMap from "@/components/ExploreMap";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
+import Glass from "@/components/Glass";
 
 const PROP_FILTERS = ["All", "Cabin", "Villa", "Treehouse", "Glamping", "Lodge", "Estate", "Cottage"];
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
@@ -244,21 +245,21 @@ export default function ExploreScreen() {
         />
       )}
 
-      {/* Floating Map pill — opens the full-screen map view */}
+      {/* Floating Map pill — frosted glass, opens the full-screen map view */}
       {!mapOpen && mapPoints.length > 0 && (
         <TouchableOpacity
           onPress={() => { setMapBounds(null); setMapAreaLabel(""); setMapOpen(true); }}
-          activeOpacity={0.9}
-          style={{
-            position: "absolute", bottom: insets.bottom + 20, alignSelf: "center",
-            flexDirection: "row", alignItems: "center", gap: 8,
-            backgroundColor: colors.ink, borderRadius: radii.pill,
-            paddingHorizontal: 20, paddingVertical: 13,
-            ...shadows.lg,
-          }}
+          activeOpacity={0.85}
+          style={{ position: "absolute", bottom: insets.bottom + 20, alignSelf: "center", borderRadius: radii.pill, ...shadows.lg }}
         >
-          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.surface }}>Map</Text>
-          <MapIcon color={colors.surface} size={16} />
+          <Glass
+            variant="regular"
+            style={{ borderRadius: radii.pill }}
+            contentStyle={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 20, paddingVertical: 13 }}
+          >
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.ink }}>Map</Text>
+            <MapIcon color={colors.ink} size={16} />
+          </Glass>
         </TouchableOpacity>
       )}
 
@@ -279,81 +280,82 @@ export default function ExploreScreen() {
             <TouchableOpacity
               onPress={() => { setMapOpen(false); setActivePinId(null); }}
               activeOpacity={0.85}
-              style={{
-                position: "absolute", top: insets.top + 12, left: 16,
-                flexDirection: "row", alignItems: "center", gap: 6,
-                backgroundColor: colors.surface, borderRadius: radii.pill,
-                paddingHorizontal: 14, paddingVertical: 9,
-                ...shadows.md,
-              }}
+              style={{ position: "absolute", top: insets.top + 12, left: 16, borderRadius: radii.pill, ...shadows.md }}
             >
-              <List color={colors.ink} size={15} />
-              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink }}>Show list</Text>
+              <Glass
+                variant="regular"
+                style={{ borderRadius: radii.pill }}
+                contentStyle={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9 }}
+              >
+                <List color={colors.ink} size={15} />
+                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink }}>Show list</Text>
+              </Glass>
             </TouchableOpacity>
           </View>
 
+          {/* Floating glass dock — the map stays visible and blurs through it */}
           <View
-            style={{
-              height: "28%",
-              borderTopWidth: 1, borderTopColor: colors.hairline,
-              borderTopLeftRadius: radii.lg, borderTopRightRadius: radii.lg,
-              backgroundColor: colors.bone, paddingTop: 10,
-              ...shadows.lg,
-            }}
+            pointerEvents="box-none"
+            style={{ position: "absolute", left: 10, right: 10, bottom: insets.bottom + 8, ...shadows.lg }}
           >
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.stone, alignSelf: "center", marginBottom: 8 }} />
-            <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 13, color: colors.ink, paddingHorizontal: 16, marginBottom: 8, letterSpacing: track(13, tracking.display) }}>
-              {mapListInBounds.length} collab{mapListInBounds.length === 1 ? "" : "s"} {mapAreaLabel ? `near ${mapAreaLabel}` : "here"}
-            </Text>
-            {mapListInBounds.length === 0 ? (
-              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage, paddingHorizontal: 16 }}>
-                No collaborations in this area.
+            <Glass variant="regular" contentStyle={{ paddingTop: 10, paddingBottom: 12 }}>
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "rgba(25,37,36,0.18)", alignSelf: "center", marginBottom: 8 }} />
+              <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 13, color: colors.ink, paddingHorizontal: 18, marginBottom: 8, letterSpacing: track(13, tracking.display) }}>
+                {mapListInBounds.length} collab{mapListInBounds.length === 1 ? "" : "s"} {mapAreaLabel ? `near ${mapAreaLabel}` : "here"}
               </Text>
-            ) : (
-              <FlatList
-                ref={dockListRef}
-                data={mapListInBounds}
-                horizontal
-                keyExtractor={(item) => item.id}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 16, gap: 10, paddingBottom: insets.bottom + 10 }}
-                onScrollToIndexFailed={(info) => {
-                  dockListRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true });
-                }}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    onPress={() =>
-                      router.push({
-                        pathname: "/listing-detail",
-                        params: { id: item.id, title: item.title, location: item.location, photoUri: item.image },
-                      })
-                    }
-                    activeOpacity={0.85}
-                    style={{
-                      width: 220, flexDirection: "row", alignItems: "center", gap: 10,
-                      backgroundColor: colors.surface, borderRadius: radii.md,
-                      borderWidth: activePinId === item.id ? 1.5 : 1,
-                      borderColor: activePinId === item.id ? colors.ink : colors.hairline,
-                      padding: 8,
-                    }}
-                  >
-                    <View style={{ width: 48, height: 48, borderRadius: radii.sm, overflow: "hidden" }}>
-                      <Image source={{ uri: item.image }} style={{ width: 48, height: 48 }} contentFit="cover" blurRadius={item._redacted ? 12 : 0} />
-                      {item._redacted && (
-                        <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(25,37,36,0.3)", alignItems: "center", justifyContent: "center" }}>
-                          <Lock color={colors.surface} size={14} />
+              {mapListInBounds.length === 0 ? (
+                <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, paddingHorizontal: 18 }}>
+                  No collaborations in this area.
+                </Text>
+              ) : (
+                <FlatList
+                  ref={dockListRef}
+                  data={mapListInBounds}
+                  horizontal
+                  keyExtractor={(item) => item.id}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 12, gap: 10 }}
+                  onScrollToIndexFailed={(info) => {
+                    dockListRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true });
+                  }}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      onPress={() =>
+                        router.push({
+                          pathname: "/listing-detail",
+                          params: { id: item.id, title: item.title, location: item.location, photoUri: item.image },
+                        })
+                      }
+                      activeOpacity={0.85}
+                    >
+                      <Glass
+                        variant="small"
+                        style={{
+                          width: 224,
+                          borderColor: activePinId === item.id ? colors.ink : "rgba(255,255,255,0.7)",
+                          borderWidth: activePinId === item.id ? 1.5 : 1,
+                        }}
+                        contentStyle={{ flexDirection: "row", alignItems: "center", gap: 10, padding: 8 }}
+                      >
+                        <View style={{ width: 48, height: 48, borderRadius: radii.sm, overflow: "hidden" }}>
+                          <Image source={{ uri: item.image }} style={{ width: 48, height: 48 }} contentFit="cover" blurRadius={item._redacted ? 12 : 0} />
+                          {item._redacted && (
+                            <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(25,37,36,0.3)", alignItems: "center", justifyContent: "center" }}>
+                              <Lock color={colors.surface} size={14} />
+                            </View>
+                          )}
                         </View>
-                      )}
-                    </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text numberOfLines={1} style={{ fontFamily: fonts.displaySemibold, fontSize: 13, color: colors.ink, opacity: item._redacted ? 0.35 : 1, letterSpacing: track(13, tracking.display) }}>{item.title}</Text>
-                      <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 11, color: colors.sage, marginTop: 1, opacity: item._redacted ? 0.35 : 1 }}>{item.location}</Text>
-                      <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink, marginTop: 2 }}>{item.compensation}</Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
-              />
-            )}
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text numberOfLines={1} style={{ fontFamily: fonts.displaySemibold, fontSize: 13, color: colors.ink, opacity: item._redacted ? 0.35 : 1, letterSpacing: track(13, tracking.display) }}>{item.title}</Text>
+                          <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 11, color: colors.slate, marginTop: 1, opacity: item._redacted ? 0.35 : 1 }}>{item.location}</Text>
+                          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink, marginTop: 2 }}>{item.compensation}</Text>
+                        </View>
+                      </Glass>
+                    </TouchableOpacity>
+                  )}
+                />
+              )}
+            </Glass>
           </View>
         </View>
       )}
