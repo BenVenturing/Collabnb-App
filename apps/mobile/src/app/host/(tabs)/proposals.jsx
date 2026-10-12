@@ -5,7 +5,7 @@
 // File: /host/(tabs)/proposals.jsx
 // ============================================================
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -25,6 +25,8 @@ import * as Sharing from "expo-sharing";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
+import { useHostPipeline } from "@/hooks/useHostPipeline";
+import { mergeProposals } from "@/utils/hostPipeline";
 
 const STORAGE_KEY = "@collabnb_proposals_v1";
 
@@ -831,7 +833,14 @@ function DetailModal({
 // ─── MAIN SCREEN ─────────────────────────────────────────────
 export default function ProposalsScreen() {
   const router = useRouter();
-  const [proposals, setProposals] = useState(SAMPLE_PROPOSALS);
+  const [localProposals, setProposals] = useState(SAMPLE_PROPOSALS);
+  // Server proposals (empty until the Convex backend flag is on) merged over
+  // the local pipeline — see hooks/useHostPipeline.js.
+  const pipeline = useHostPipeline();
+  const proposals = useMemo(
+    () => mergeProposals(localProposals, pipeline.remote),
+    [localProposals, pipeline.remote],
+  );
   const [selected, setSelected] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [view, setView] = useState("pipeline");
@@ -858,6 +867,15 @@ export default function ProposalsScreen() {
   };
 
   const handleStageChange = async (id, newStage) => {
+    const target = proposals.find((p) => p.id === id);
+    if (target?.source === "convex") {
+      try {
+        await pipeline.setStage(target, newStage);
+      } catch (e) {
+        console.error("Failed to sync stage:", e);
+        return; // leave the card where the server has it
+      }
+    }
     const updated = proposals.map((p) =>
       p.id === id ? { ...p, stage: newStage, lastUpdate: "just now" } : p,
     );
@@ -866,6 +884,14 @@ export default function ProposalsScreen() {
   };
 
   const handleSave = async (id, fields) => {
+    const target = proposals.find((p) => p.id === id);
+    if (target?.source === "convex") {
+      try {
+        await pipeline.saveDetails(target, fields);
+      } catch (e) {
+        console.error("Failed to sync details:", e);
+      }
+    }
     const updated = proposals.map((p) =>
       p.id === id ? { ...p, ...fields } : p,
     );
