@@ -14,6 +14,7 @@ export function collabToProposal(c) {
     ...(contract && { contractHistory: contract.history, signatures: contract.signatures, locked: contract.locked }),
     id: `cvx_${String(c._id)}`,
     convexId: String(c._id),
+    submissionsRaw: c.deliverable_submissions,
     source: "convex",
     creatorId: c.creator_id,
     creatorName: c.creator_name || "Creator",

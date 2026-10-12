@@ -11,7 +11,14 @@ import { ScrollView, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowRight, Map as MapIcon, Star } from "lucide-react-native";
+import { ArrowRight, Map as MapIcon, Star, Search as SearchIcon, Briefcase, Heart, MessageCircle, User } from "lucide-react-native";
+import GlassTabBar from "@/components/GlassTabBar";
+import CollabStepper from "@/components/collab/CollabStepper";
+import ContractSection from "@/components/collab/ContractSection";
+import DeliverablesSection from "@/components/collab/DeliverablesSection";
+import { buildTimeline } from "@/utils/collabTimeline";
+import { addRound, emptyContract, sign as signContract } from "@/utils/contract";
+import { approve, emptySubmissions, parseDeliverables, progress, requestChanges, submit } from "@/utils/deliverables";
 import { colors } from "@/config/theme";
 import {
   AtmosphericBackground,
@@ -43,6 +50,62 @@ function Section({ name, children }) {
       <EyebrowLabel style={{ marginBottom: 12 }}>{name}</EyebrowLabel>
       {children}
     </View>
+  );
+}
+
+// ── Static fixtures for the collab-flow components (no Convex, no storage) ──
+const TAB_ROUTES = [
+  { key: "explore", name: "index", title: "Explore", Icon: SearchIcon },
+  { key: "collabs", name: "collaborations", title: "Collabs", Icon: Briefcase },
+  { key: "saved", name: "saved", title: "Saved", Icon: Heart },
+  { key: "inbox", name: "inbox", title: "Inbox", Icon: MessageCircle },
+  { key: "profile", name: "profile", title: "Profile", Icon: User },
+];
+
+function TabBarDemo() {
+  const [index, setIndex] = useState(0);
+  const state = { index, routes: TAB_ROUTES.map(({ key, name }) => ({ key, name })) };
+  const descriptors = Object.fromEntries(
+    TAB_ROUTES.map(({ key, title, Icon }) => [key, { options: { title, tabBarIcon: ({ color }) => <Icon color={color} size={22} /> } }]),
+  );
+  const navigation = {
+    emit: () => ({ defaultPrevented: false }),
+    navigate: (name) => setIndex(TAB_ROUTES.findIndex((r) => r.name === name)),
+  };
+  return <GlassTabBar state={state} descriptors={descriptors} navigation={navigation} />;
+}
+
+function ContractDemo() {
+  const [contract, setContract] = useState(() =>
+    addRound(emptyContract(), {
+      modifiedBy: "host",
+      fields: { nights: "3 nights", compensation: "$500 + 2 nights free", deliverables: "2 Reels, 4 Stories", turnaround: "14 days after checkout" },
+      note: "Excited to host you!",
+    }),
+  );
+  return (
+    <ContractSection
+      contract={contract}
+      seed={{ deliverables: "2 Reels, 4 Stories" }}
+      onCounter={async (fields, note) => setContract((c) => addRound(c, { modifiedBy: "creator", fields, note }))}
+      onSign={async (name) => setContract((c) => signContract(c, "creator", name))}
+    />
+  );
+}
+
+function DeliverablesDemo({ role }) {
+  const [subs, setSubs] = useState(() => {
+    let s = emptySubmissions(parseDeliverables("2 Reels, 1 Photo set"));
+    s = submit(s, "reel-1", "https://instagram.com/reel/abc123");
+    return role === "creator" ? requestChanges(s, "reel-1", "Please tag the property") : s;
+  });
+  const wrap = (fn) => async (...a) => setSubs((s) => fn(s, ...a));
+  return (
+    <DeliverablesSection
+      role={role}
+      enabled
+      api={{ submissions: subs, progress: progress(subs), submit: wrap(submit), approve: wrap(approve), requestChanges: wrap(requestChanges) }}
+    />
   );
 }
 
@@ -237,6 +300,27 @@ export default function GalleryScreen() {
               actionLabel="Apply Now"
             />
           </View>
+        </Section>
+        <Section name="Glass tab bar (hold, then slide)">
+          <View style={{ marginHorizontal: -16 }}>
+            <TabBarDemo />
+          </View>
+        </Section>
+
+        <Section name="Collab stepper">
+          <CollabStepper steps={buildTimeline({ currentStage: "accepted", stageDates: { pending: "Oct 1", accepted: "Oct 3" } })} />
+        </Section>
+
+        <Section name="Contract (creator view)">
+          <ContractDemo />
+        </Section>
+
+        <Section name="Deliverables · creator (changes requested)">
+          <DeliverablesDemo role="creator" />
+        </Section>
+
+        <Section name="Deliverables · host (review)">
+          <DeliverablesDemo role="host" />
         </Section>
       </ScrollView>
     </AtmosphericBackground>

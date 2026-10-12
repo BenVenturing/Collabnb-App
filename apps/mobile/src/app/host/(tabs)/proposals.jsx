@@ -25,7 +25,9 @@ import * as Sharing from "expo-sharing";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
-import { useHostPipeline } from "@/hooks/useHostPipeline";
+import { useHostPipeline, HOST_BACKEND_IS_CONVEX } from "@/hooks/useHostPipeline";
+import { useHostDeliverables } from "@/hooks/useDeliverables";
+import DeliverablesSection from "@/components/collab/DeliverablesSection";
 import { mergeProposals } from "@/utils/hostPipeline";
 import { addRound, sign as signContract, parseContract } from "@/utils/contract";
 
@@ -561,6 +563,22 @@ function SignContractModal({ proposal, visible, onSign, onClose }) {
 }
 
 // ─── DETAIL MODAL ────────────────────────────────────────────
+// Host-side deliverable review. Its own component so the hook runs on every
+// render of the open proposal, independent of DetailModal's early return.
+function HostDeliverables({ proposal, hostId, onComplete }) {
+  const terms = getLatestContractFields(proposal).deliverables || proposal.deliverables;
+  const api = useHostDeliverables({
+    id: proposal.convexId || proposal.id,
+    hostId,
+    deliverablesText: terms,
+    submissionsRaw: proposal.submissionsRaw,
+  });
+  // Opens once the contract is locked (or the stage says the deal is on).
+  const open = ["confirmed", "live", "completed"].includes(proposal.stage) || proposal.locked;
+  const usable = open && (!HOST_BACKEND_IS_CONVEX || !!proposal.convexId);
+  return <DeliverablesSection role="host" api={api} enabled={usable} onComplete={onComplete} />;
+}
+
 function DetailModal({
   proposal,
   visible,
@@ -570,6 +588,7 @@ function DetailModal({
   onOpenCounter,
   onOpenSign,
   onExportPdf,
+  hostId,
 }) {
   const router = useRouter();
   const [note, setNote] = useState("");
@@ -775,6 +794,13 @@ function DetailModal({
               </Glass>
             </View>
           </View>
+
+          {/* Deliverable review */}
+          <HostDeliverables
+            proposal={proposal}
+            hostId={hostId}
+            onComplete={() => onStageChange(proposal.id, "completed")}
+          />
 
           {/* Notes */}
           <View style={styles.modalSection}>
@@ -1180,6 +1206,7 @@ export default function ProposalsScreen() {
           onOpenCounter={setCounterTarget}
           onOpenSign={setSignTarget}
           onExportPdf={handleExportPdf}
+          hostId={pipeline.hostId}
         />
 
         <CounterOfferModal

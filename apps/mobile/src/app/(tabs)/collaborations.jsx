@@ -30,6 +30,9 @@ import { useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { useCollabReminders } from "@/hooks/useCollabReminders";
+import { parseContract, waitingOn } from "@/utils/contract";
+import { loadSubmissions, progress as deliverableProgress } from "@/utils/deliverables";
 import { colors, fonts, radii, shadows, tracking, track, lineHeights } from "@/config/theme";
 
 const IMG_FALLBACK = "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=400";
@@ -61,6 +64,9 @@ function normalizeCollab(c) {
     daysLeft: c.days_left,
     isActive: c.is_active !== false,
     appliedDate: stages?.pending?.date,
+    // Inputs for reminder planning (utils/reminders.js).
+    contractTurn: c.contract ? waitingOn(parseContract(c.contract)) : null,
+    changesRequested: c.deliverable_submissions ? deliverableProgress(loadSubmissions(c.deliverable_submissions, c.deliverables)).changes : 0,
   };
 }
 
@@ -80,6 +86,7 @@ export default function CreatorCollaborationsScreen() {
 
   const isLoading = collabsRaw === undefined;
   const collabs = useMemo(() => (collabsRaw || []).map(normalizeCollab), [collabsRaw]);
+  useCollabReminders(collabs);
   const filteredCollabs = collabs.filter((c) =>
     activeFilter === "active" ? c.isActive : !c.isActive,
   );

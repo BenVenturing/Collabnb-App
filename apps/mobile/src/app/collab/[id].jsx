@@ -9,7 +9,7 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
-import { ArrowLeft, Check, MapPin, User, MessageCircle, Home, Package, Clock } from "lucide-react-native";
+import { ArrowLeft, MapPin, User, MessageCircle, Home, Package, Clock } from "lucide-react-native";
 import { useMemo } from "react";
 import { useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
@@ -17,7 +17,10 @@ import { api } from "@/convex/_generated/api";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import { buildTimeline } from "@/utils/collabTimeline";
 import * as haptic from "@/utils/haptics";
+import CollabStepper from "@/components/collab/CollabStepper";
 import ContractSection from "@/components/collab/ContractSection";
+import DeliverablesSection from "@/components/collab/DeliverablesSection";
+import { useCreatorDeliverables } from "@/hooks/useDeliverables";
 import { useCollabContract } from "@/hooks/useCollabContract";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
 
@@ -59,6 +62,16 @@ export default function CollabDetailScreen() {
   };
   const steps = useMemo(() => (collab ? buildTimeline(collab) : []), [raw]); // eslint-disable-line react-hooks/exhaustive-deps
   const terminated = raw?.status === "terminated";
+
+  const deliverablesApi = useCreatorDeliverables(
+    raw && {
+      id: String(raw._id),
+      creatorId: profile?._id ? String(profile._id) : null,
+      deliverablesText: raw.deliverables,
+      submissionsRaw: raw.deliverable_submissions,
+    },
+  );
+  const dealOn = ["accepted", "updated", "uploaded_tagged", "closed", "archived"].includes(raw?.current_stage) && !terminated;
 
   const contractApi = useCollabContract(
     raw && { id: String(raw._id), creatorId: profile?._id ? String(profile._id) : null, contractRaw: raw.contract },
@@ -124,39 +137,7 @@ export default function CollabDetailScreen() {
 
           {/* Stage stepper — vertical on a phone (the web page lays it out horizontally) */}
           <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 11, color: colors.sage, marginTop: 24, marginBottom: 10, letterSpacing: track(11, tracking.eyebrow) }}>PROGRESS</Text>
-          <View style={{ backgroundColor: colors.surface, borderRadius: radii.lg, padding: 16, ...shadows.sm }}>
-            {steps.map((s, i) => {
-              const done = s.state === "done";
-              const current = s.state === "current";
-              const stopped = s.state === "stopped";
-              const last = i === steps.length - 1;
-              return (
-                <View key={s.key} style={{ flexDirection: "row" }}>
-                  <View style={{ alignItems: "center", width: 28 }}>
-                    <View
-                      style={{
-                        width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center",
-                        backgroundColor: stopped ? "#C86868" : done ? colors.slate : current ? colors.mint : colors.bone,
-                        borderWidth: current ? 2 : 0, borderColor: colors.slate,
-                      }}
-                    >
-                      {done && <Check color="#fff" size={14} strokeWidth={3} />}
-                    </View>
-                    {!last && <View style={{ width: 2, flex: 1, minHeight: 22, backgroundColor: done ? colors.slate : colors.stone }} />}
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 12, paddingBottom: last ? 0 : 16 }}>
-                    <Text style={{ fontFamily: current || stopped ? fonts.bodySemibold : fonts.bodyMedium, fontSize: 15, color: s.state === "upcoming" ? colors.sage : colors.ink }}>
-                      {s.label}
-                      {s.date ? <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.sage }}>{`  ·  ${s.date}`}</Text> : null}
-                    </Text>
-                    {(current || stopped) && !terminated && (
-                      <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, marginTop: 2 }}>{s.hint}</Text>
-                    )}
-                  </View>
-                </View>
-              );
-            })}
-          </View>
+          <CollabStepper steps={steps} terminated={terminated} />
 
           <ContractSection
             contract={contractApi.contract}
@@ -164,6 +145,8 @@ export default function CollabDetailScreen() {
             onCounter={contractApi.counter}
             onSign={contractApi.sign}
           />
+
+          <DeliverablesSection role="creator" api={deliverablesApi} enabled={dealOn || contractApi.contract.locked} />
 
           <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 11, color: colors.sage, marginTop: 24, marginBottom: 6, letterSpacing: track(11, tracking.eyebrow) }}>DETAILS</Text>
           <View style={{ backgroundColor: colors.surface, borderRadius: radii.lg, paddingHorizontal: 16, paddingVertical: 6, ...shadows.sm }}>

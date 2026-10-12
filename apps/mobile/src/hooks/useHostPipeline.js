@@ -14,7 +14,7 @@ import { api } from "@/convex/_generated/api";
 import { collabToProposal } from "@/utils/hostPipeline";
 import { creatorPatchFor } from "@/utils/collabStages";
 
-const noRemote = { remote: [], loading: false, setStage: async () => false, saveDetails: async () => false, saveContract: async () => false };
+const noRemote = { hostId: null, remote: [], loading: false, setStage: async () => false, saveDetails: async () => false, saveContract: async () => false };
 function useLocalOnly() { return noRemote; }
 
 function useConvexPipeline() {
@@ -31,6 +31,7 @@ function useConvexPipeline() {
   const remote = useMemo(() => (rows || []).map(collabToProposal), [rows]);
 
   return {
+    hostId,
     remote,
     loading: hostId != null && rows === undefined,
     // Resolve true if the server took the change, false if it was local-only.
@@ -62,3 +63,5 @@ function useConvexPipeline() {
 
 export const useHostPipeline =
   process.env.EXPO_PUBLIC_HOST_PIPELINE_BACKEND === "convex" ? useConvexPipeline : useLocalOnly;
+
+export const HOST_BACKEND_IS_CONVEX = process.env.EXPO_PUBLIC_HOST_PIPELINE_BACKEND === "convex";

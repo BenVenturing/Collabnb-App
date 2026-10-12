@@ -104,3 +104,58 @@ export const saveContract = mutation({
     await ctx.db.patch(id, patch);
   },
 });
+
+// ── Deliverables (creator submits links, host reviews) ────────────────────
+// ASSUMPTION: a `deliverable_submissions` string column (JSON) on
+// collaborations — shape in src/utils/deliverables.js. The whole next state is
+// sent; the server accepts only the transitions each role may make, so neither
+// side can approve their own work or rewrite the other's review.
+const ALLOWED = {
+  creator: { from: ["todo", "changes_requested", "submitted"], to: ["submitted"] },
+  host: { from: ["submitted"], to: ["approved", "changes_requested"] },
+};
+
+export const saveDeliverables = mutation({
+  args: {
+    id: v.id("collaborations"),
+    role: v.union(v.literal("host"), v.literal("creator")),
+    profileId: v.string(),
+    submissions: v.string(),
+  },
+  handler: async (ctx, { id, role, profileId, submissions }) => {
+    const collab = await ctx.db.get(id);
+    if (!collab) throw new Error("Collaboration not found");
+    const owner = role === "host" ? collab.host_id : collab.creator_id; // ASSUMPTION
+    if (owner !== profileId) throw new Error("Not your collaboration");
+    if (collab.status === "terminated") throw new Error("This collaboration was ended");
+    if (!["accepted", "updated", "uploaded_tagged"].includes(collab.current_stage)) {
+      throw new Error("Deliverables open once the contract is signed");
+    }
+
+    let prev = { items: {} };
+    try { if (collab.deliverable_submissions) prev = JSON.parse(collab.deliverable_submissions); } catch { /* empty */ }
+    let next;
+    try { next = JSON.parse(submissions); } catch { throw new Error("Invalid submissions"); }
+    if (!next || !Array.isArray(next.order) || !next.items) throw new Error("Invalid submissions");
+
+    for (const itemId of next.order) {
+      const was = prev.items?.[itemId]?.status ?? "todo";
+      const now = next.items[itemId]?.status;
+      if (!now) throw new Error(`Missing item ${itemId}`);
+      if (now === was) continue; // untouched
+      const rule = ALLOWED[role];
+      if (!rule.from.includes(was) || !rule.to.includes(now)) {
+        throw new Error(`${role} can't move ${itemId} from ${was} to ${now}`);
+      }
+    }
+
+    const patch = { deliverable_submissions: JSON.stringify(next) };
+    const allApproved = next.order.length > 0 && next.order.every((k) => next.items[k].status === "approved");
+    if (allApproved) {
+      patch.current_stage = "closed"; // Completed
+    } else if (role === "creator" && collab.current_stage !== "uploaded_tagged") {
+      patch.current_stage = "uploaded_tagged"; // Live
+    }
+    await ctx.db.patch(id, patch);
+  },
+});

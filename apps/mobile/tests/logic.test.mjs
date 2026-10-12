@@ -54,3 +54,71 @@ test("host pipeline merge: applications replace invites, server contract wins", 
   assert.deepEqual(merged.signatures, {});
   assert.equal(pipeline.mergeProposals([stale], []).length, 0); // removed server row drops its overlay
 });
+
+import * as deliv from "@/utils/deliverables.js";
+import * as reminders from "@/utils/reminders.js";
+
+test("deliverables are parsed from contract text", () => {
+  const ids = (t) => deliv.parseDeliverables(t).map((i) => i.id).join(",");
+  assert.equal(ids("2 Reels, 4 Stories"), "reel-1,reel-2,story-1,story-2,story-3,story-4");
+  assert.equal(deliv.parseDeliverables("2 Reels")[1].label, "Reel 2");
+  assert.equal(deliv.parseDeliverables("1 Photo set")[0].label, "Photo set");
+  assert.equal(ids("3 Reels and 1 TikTok + 2 Reels"), "reel-1,reel-2,reel-3,tiktok-1,reel-4,reel-5");
+  assert.equal(ids(""), "content-1");
+  assert.equal(ids(undefined), "content-1");
+  assert.equal(deliv.parseDeliverables("500 Posts").length, 20); // capped
+});
+
+test("deliverable review flow", () => {
+  let s = deliv.emptySubmissions(deliv.parseDeliverables("2 Reels"));
+  assert.equal(deliv.progress(s).started, false);
+  assert.throws(() => deliv.submit(s, "reel-1", "not a link"), /full link/);
+  assert.throws(() => deliv.approve(s, "reel-1"), /Nothing to approve/);
+  s = deliv.submit(s, "reel-1", " https://instagram.com/reel/abc ");
+  assert.equal(s.items["reel-1"].url, "https://instagram.com/reel/abc");
+  assert.throws(() => deliv.requestChanges(s, "reel-1", "  "), /what to change/);
+  s = deliv.requestChanges(s, "reel-1", "Tag the host");
+  assert.equal(s.items["reel-1"].status, "changes_requested");
+  s = deliv.submit(s, "reel-1", "https://instagram.com/reel/abc2"); // resubmit clears the note
+  assert.equal(s.items["reel-1"].note, "");
+  s = deliv.approve(s, "reel-1");
+  assert.throws(() => deliv.submit(s, "reel-1", "https://x.co"), /Already approved/);
+  assert.equal(deliv.progress(s).complete, false);
+  s = deliv.approve(deliv.submit(s, "reel-2", "https://x.co/2"), "reel-2");
+  const p = deliv.progress(s);
+  assert.equal(p.complete, true); assert.equal(p.approved, 2);
+});
+
+test("submissions survive edits to the deliverables text", () => {
+  let s = deliv.submit(deliv.emptySubmissions(deliv.parseDeliverables("1 Reel")), "reel-1", "https://x.co/a");
+  const loaded = deliv.loadSubmissions(JSON.stringify(s), "2 Reels");
+  assert.equal(loaded.order.length, 2);
+  assert.equal(loaded.items["reel-1"].status, "submitted");
+  assert.equal(loaded.items["reel-2"].status, "todo");
+  assert.equal(deliv.loadSubmissions("garbage", "1 Reel").order.length, 1);
+});
+
+test("reminder planning", () => {
+  const now = new Date("2026-10-12T15:30:00");
+  const base = { id: "c1", isActive: true, status: "active", currentStage: "accepted", propertyName: "Cedar Cabin" };
+  const ids = (cs) => reminders.planReminders({ collabs: cs, now }).map((r) => r.identifier.split(":").slice(2).join(":")).join(",");
+
+  assert.equal(ids([{ ...base, daysLeft: 10 }]), "due-3,due-1,due-0");
+  const plan = reminders.planReminders({ collabs: [{ ...base, daysLeft: 10 }], now });
+  assert.equal(plan[0].date.getHours(), 10);
+  assert.equal(Math.round((plan[0].date - now) / 86400000), 7); // 3 days before day 10
+  assert.equal(ids([{ ...base, daysLeft: 2 }]), "due-1,due-0"); // 3-day mark already passed
+  assert.equal(ids([{ ...base, daysLeft: 0 }]), "");
+  assert.equal(ids([{ ...base, daysLeft: undefined }]), "");
+  // pending, terminated, inactive and finished collabs are quiet
+  assert.equal(ids([{ ...base, currentStage: "pending", daysLeft: 9 }]), "");
+  assert.equal(ids([{ ...base, status: "terminated", daysLeft: 9 }]), "");
+  assert.equal(ids([{ ...base, isActive: false, daysLeft: 9 }]), "");
+  assert.equal(ids([{ ...base, currentStage: "closed", daysLeft: 9 }]), "");
+  // your-turn nudges
+  assert.equal(ids([{ ...base, contractTurn: "creator", changesRequested: 2 }]), "turn,changes");
+  assert.equal(ids([{ ...base, contractTurn: "host" }]), "");
+  // deterministic identifiers -> re-planning replaces rather than duplicates
+  assert.deepEqual(reminders.planReminders({ collabs: [{ ...base, daysLeft: 5 }], now }).map((r) => r.identifier),
+                   reminders.planReminders({ collabs: [{ ...base, daysLeft: 5 }], now }).map((r) => r.identifier));
+});
