@@ -16,12 +16,14 @@ import {
   StatusBar,
   Modal,
   TextInput,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import useHostProposals from "@/hooks/useHostProposals";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
@@ -831,7 +833,24 @@ function DetailModal({
 // ─── MAIN SCREEN ─────────────────────────────────────────────
 export default function ProposalsScreen() {
   const router = useRouter();
-  const [proposals, setProposals] = useState(SAMPLE_PROPOSALS);
+  const {
+    proposals: convexProposals,
+    isLoading,
+    hostId,
+    approve,
+    decline,
+    review,
+    saveNote,
+    advanceCollab,
+    sendCounter,
+    signContract,
+  } = useHostProposals();
+
+  // Samples stand in only while there's no host profile to query against or no
+  // real pitch yet, so a new host still sees what the board will look like.
+  const proposals =
+    hostId && convexProposals.length > 0 ? convexProposals : SAMPLE_PROPOSALS;
+  const onSamples = proposals === SAMPLE_PROPOSALS;
   const [selected, setSelected] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [view, setView] = useState("pipeline");
@@ -858,14 +877,68 @@ export default function ProposalsScreen() {
   };
 
   const handleStageChange = async (id, newStage) => {
-    const updated = proposals.map((p) =>
-      p.id === id ? { ...p, stage: newStage, lastUpdate: "just now" } : p,
-    );
-    await persist(updated);
-    setSelected((prev) => (prev ? { ...prev, stage: newStage } : prev));
+    if (onSamples) {
+      const updated = proposals.map((p) =>
+        p.id === id ? { ...p, stage: newStage, lastUpdate: "just now" } : p,
+      );
+      await persist(updated);
+      setSelected((prev) => (prev ? { ...prev, stage: newStage } : prev));
+      return;
+    }
+
+    const proposal = proposals.find((p) => p.id === id);
+    if (!proposal) return;
+
+    try {
+      if (newStage === "declined") {
+        await decline(id);
+      } else if (newStage === "negotiating") {
+        await review(id);
+      } else if (newStage === "confirmed") {
+        await approve(id);
+      } else if (proposal.collaborationId) {
+        // live / completed are collaboration stages, not pitch statuses.
+        await advanceCollab(
+          proposal.collaborationId,
+          newStage === "completed" ? "closed" : "uploaded_tagged",
+        );
+      } else {
+        Alert.alert(
+          "Not yet",
+          "This proposal has no collaboration attached, so it can't move past Confirmed.",
+        );
+        return;
+      }
+      setSelected((prev) => (prev ? { ...prev, stage: newStage } : prev));
+    } catch (error) {
+      Alert.alert("Couldn't update", error?.message || "Please try again.");
+    }
   };
 
   const handleSave = async (id, fields) => {
+    if (!onSamples) {
+      const proposal = proposals.find((p) => p.id === id);
+      try {
+        // updateStatus is the only way to write host_note, and it notifies the
+        // creator whenever it is handed "approved" or "declined" — so the note
+        // is re-sent with the status it already has, never a changed one.
+        if (fields.note !== undefined && proposal) {
+          if (proposal.status === "approved" || proposal.status === "declined") {
+            Alert.alert(
+              "Note not saved",
+              "Notes can't be edited once a proposal is approved or declined — it would re-notify the creator.",
+            );
+          } else {
+            await saveNote(id, proposal.status, fields.note);
+          }
+        }
+        setSelected((prev) => (prev ? { ...prev, ...fields } : prev));
+      } catch (error) {
+        Alert.alert("Couldn't save", error?.message || "Please try again.");
+      }
+      return;
+    }
+
     const updated = proposals.map((p) =>
       p.id === id ? { ...p, ...fields } : p,
     );
@@ -876,6 +949,16 @@ export default function ProposalsScreen() {
   const STAGE_ORDER = ["invited", "applied", "negotiating", "confirmed", "live"];
 
   const handleCounterSend = async (id, fields, note) => {
+    if (!onSamples) {
+      try {
+        await sendCounter(id, fields, note);
+      } catch (error) {
+        Alert.alert("Couldn't send", error?.message || "Please try again.");
+      }
+      setCounterTarget(null);
+      return;
+    }
+
     const updated = proposals.map((p) => {
       if (p.id !== id) return p;
       const history = p.contractHistory || [];
@@ -902,6 +985,16 @@ export default function ProposalsScreen() {
   };
 
   const handleSign = async (id, name) => {
+    if (!onSamples) {
+      try {
+        await signContract(id, name);
+      } catch (error) {
+        Alert.alert("Couldn't sign", error?.message || "Please try again.");
+      }
+      setSignTarget(null);
+      return;
+    }
+
     const updated = proposals.map((p) => {
       if (p.id !== id) return p;
       const signatures = {
