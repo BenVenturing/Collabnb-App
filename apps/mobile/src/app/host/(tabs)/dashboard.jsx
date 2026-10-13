@@ -20,6 +20,7 @@ import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import useHostDashboard from "@/hooks/useHostDashboard";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path, Rect, Defs, LinearGradient as SvgGradient, Stop } from "react-native-svg";
@@ -676,12 +677,22 @@ const chartModalStyles = StyleSheet.create({
 export default function DashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const {
+    listings: convexListings,
+    hasRealListings,
+    setListingStatus,
+  } = useHostDashboard();
   const [listings, setListings] = useState(SAMPLE_LISTINGS);
   const [listingFilter, setListingFilter] = useState("all");
   const [pricingToolOpen, setPricingToolOpen] = useState(false);
   const [expandedStat, setExpandedStat] = useState(null);
 
   useEffect(() => {
+    if (hasRealListings) {
+      setListings(convexListings);
+      return;
+    }
+
     const loadListings = async () => {
       try {
         const stored = await AsyncStorage.getItem(LISTINGS_KEY);
@@ -710,7 +721,7 @@ export default function DashboardScreen() {
       }
     };
     loadListings();
-  }, []);
+  }, [hasRealListings, convexListings]);
 
   const persistListings = async (next) => {
     setListings(next);
@@ -722,6 +733,18 @@ export default function DashboardScreen() {
   };
 
   const toggleListingStatus = (id) => {
+    if (hasRealListings) {
+      const listing = listings.find((l) => l.id === id);
+      if (!listing) return;
+      const next = listing.status === "published" ? "unpublished" : "published";
+      // The query re-runs and the effect above re-seeds state, so no local
+      // write is needed here.
+      setListingStatus(id, next).catch((error) => {
+        console.error("Failed to update listing status:", error);
+      });
+      return;
+    }
+
     persistListings(
       listings.map((l) => {
         if (l.id !== id) return l;

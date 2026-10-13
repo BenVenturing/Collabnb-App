@@ -15,6 +15,10 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQuery, useMutation } from "convex/react";
+import { useUser } from "@clerk/clerk-expo";
+import { api } from "@/convex/_generated/api";
+import { useUpload } from "@/utils/useUpload";
 import * as ImagePicker from "expo-image-picker";
 
 const PROFILE_KEY = "@collabnb_host_profile_v1";
@@ -57,6 +61,19 @@ const PROPERTY_FIELDS = [
   },
 ];
 
+// Which Convex column each row writes. Email is deliberately absent: it is the
+// Clerk identity this profile is looked up by, so editing it here would
+// silently orphan the account.
+const CONVEX_FIELD = {
+  name: "full_name",
+  propertyName: "business_name",
+  bio: "bio",
+  website: "portfolio",
+  instagram: "instagram_handle",
+  tiktok: "tiktok_handle",
+  youtube: "youtube_handle",
+};
+
 const ACCOUNT_FIELDS = [
   { key: "instagram", label: "Instagram", multiline: false },
   { key: "tiktok", label: "TikTok", multiline: false },
@@ -66,6 +83,12 @@ const ACCOUNT_FIELDS = [
 export default function HostProfileEditScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const convexProfile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  const updateProfile = useMutation(api.profiles.updateProfile);
+  const [upload, { loading: uploading }] = useUpload();
 
   const [profile, setProfile] = useState(DEFAULT_PROFILE);
   const [editingField, setEditingField] = useState(null);
@@ -78,6 +101,44 @@ export default function HostProfileEditScreen() {
     });
   }, []);
 
+  // Convex is the source of truth — the host profile tab reads it, and so does
+  // the web app. Edits used to land in AsyncStorage only, so they showed up
+  // nowhere but this screen.
+  useEffect(() => {
+    if (!convexProfile) return;
+    setProfile((prev) => ({
+      ...prev,
+      name: convexProfile.full_name || prev.name,
+      propertyName: convexProfile.business_name || prev.propertyName,
+      email: convexProfile.email || prev.email,
+      location:
+        [convexProfile.city, convexProfile.region || convexProfile.country]
+          .filter(Boolean)
+          .join(", ") || prev.location,
+      bio: convexProfile.bio || prev.bio,
+      website: convexProfile.portfolio || prev.website,
+      instagram: convexProfile.instagram_handle || prev.instagram,
+      tiktok: convexProfile.tiktok_handle || prev.tiktok,
+      youtube: convexProfile.youtube_handle || prev.youtube,
+      avatarUri: convexProfile.avatar_url || prev.avatarUri,
+    }));
+  }, [convexProfile]);
+
+  const persist = async (updated, convexUpdates) => {
+    setProfile(updated);
+    await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(updated));
+    if (convexProfile?._id && convexUpdates) {
+      try {
+        await updateProfile({
+          profileId: String(convexProfile._id),
+          updates: convexUpdates,
+        });
+      } catch (error) {
+        Alert.alert("Couldn't save", error?.message || "Please try again.");
+      }
+    }
+  };
+
   const openEdit = (field) => {
     setEditingField(field);
     setEditValue(profile[field] || "");
@@ -85,9 +146,9 @@ export default function HostProfileEditScreen() {
 
   const saveEdit = async () => {
     const updated = { ...profile, [editingField]: editValue };
-    setProfile(updated);
+    const column = CONVEX_FIELD[editingField];
     setEditingField(null);
-    await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(updated));
+    await persist(updated, column ? { [column]: editValue } : null);
     triggerConfetti();
   };
 
@@ -112,9 +173,25 @@ export default function HostProfileEditScreen() {
       quality: 0.8,
     });
     if (!result.canceled && result.assets?.[0]?.uri) {
-      const updated = { ...profile, avatarUri: result.assets[0].uri };
-      setProfile(updated);
-      await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(updated));
+      const asset = result.assets[0];
+
+      // The picker hands back a file:// path that only exists on this device.
+      // Storing that as avatar_url would show a broken image on the web and on
+      // any other device, so it is uploaded first and the remote URL saved.
+      const uploaded = await upload({
+        reactNativeAsset: {
+          uri: asset.uri,
+          name: asset.fileName || "host-photo.jpg",
+          mimeType: asset.mimeType || "image/jpeg",
+        },
+      });
+
+      if (uploaded?.error || !uploaded?.url) {
+        Alert.alert("Upload failed", uploaded?.error || "Please try again.");
+        return;
+      }
+
+      await persist({ ...profile, avatarUri: uploaded.url }, { avatar_url: uploaded.url });
       triggerConfetti();
     }
   };

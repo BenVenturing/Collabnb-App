@@ -24,6 +24,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import useHostProposals from "@/hooks/useHostProposals";
+import CollabCrmOverview from "@/components/collabs/CollabCrmOverview";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
@@ -1031,6 +1032,37 @@ export default function ProposalsScreen() {
   const declined = filtered.filter((p) => p.stage === "declined");
   const byStage = (id) => active.filter((p) => p.stage === id);
 
+  const crmStats = [
+    {
+      key: "awaiting",
+      label: "Awaiting you",
+      value: String(byStage("applied").length + byStage("invited").length),
+      sub: "Undecided applications",
+      onPress: () => setTierFilter("all"),
+    },
+    {
+      key: "negotiating",
+      label: "Negotiating",
+      value: String(byStage("negotiating").length),
+      sub: "Counter in flight",
+      onPress: () => setTierFilter("all"),
+    },
+    {
+      key: "confirmed",
+      label: "Confirmed",
+      value: String(byStage("confirmed").length + byStage("live").length),
+      sub: "Booked creators",
+      onPress: () => setTierFilter("all"),
+    },
+    {
+      key: "completed",
+      label: "Completed",
+      value: String(archived.length),
+      sub: `${declined.length} declined`,
+      onPress: () => setTierFilter("all"),
+    },
+  ];
+
   const TIERS = [
     "all",
     "UGC Beginner",
@@ -1123,6 +1155,10 @@ export default function ProposalsScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        <View style={{ paddingHorizontal: 16, marginBottom: 18 }}>
+          <CollabCrmOverview stats={crmStats} />
+        </View>
 
         {/* Pipeline */}
         {view === "pipeline" && (
