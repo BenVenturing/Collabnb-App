@@ -9,6 +9,7 @@ import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeabl
 import { Search, Settings, MessageCircle, X, Pin, PinOff, BellOff, Bell, Archive, ArchiveRestore, ChevronLeft, Check } from "lucide-react-native";
 import { useConversations } from "@/hooks/useConversations";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
+import { ThreadRowSkeleton } from "@/components/ui/Skeleton";
 import * as haptic from "@/utils/haptics";
 import { colors, fonts, tracking, track, lineHeights } from "@/config/theme";
 
@@ -409,7 +410,11 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
         </TouchableOpacity>
       )}
 
-      {visible.length === 0 && !(archivedCount > 0 && !showArchived) ? (
+      {isLoading && threads.length === 0 ? (
+        <View accessibilityLabel="Loading messages">
+          {[0, 1, 2, 3, 4, 5].map((i) => <ThreadRowSkeleton key={i} />)}
+        </View>
+      ) : visible.length === 0 && !(archivedCount > 0 && !showArchived) ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40 }}>
           <MessageCircle color={colors.stone} size={64} />
           <Text style={{ fontSize: 20, fontFamily: fonts.bodySemibold, color: colors.ink, marginTop: 20 }}>

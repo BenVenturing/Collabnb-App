@@ -9,8 +9,10 @@ import {
 } from "lucide-react-native";
 import ThemedBackground from "@/components/ThemedBackground";
 import GlassTabBar from "@/components/GlassTabBar";
+import { useConversations } from "@/hooks/useConversations";
 
 export default function HostTabLayout() {
+  const { unreadCount } = useConversations(); // drives the Inbox tab badge
   return (
     <ThemedBackground style={{ flex: 1 }}>
       <Tabs
@@ -39,6 +41,7 @@ export default function HostTabLayout() {
           name="inbox"
           options={{
             title: "Inbox",
+            tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
             tabBarIcon: ({ color, size }) => (
               <MessageCircle color={color} size={22} />
             ),

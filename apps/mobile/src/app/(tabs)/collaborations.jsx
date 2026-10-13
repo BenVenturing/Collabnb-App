@@ -8,7 +8,7 @@
 // screen with the stage stepper (CollabDetail.jsx on web) is
 // now /collab/[id] — tapping a card opens the stage stepper and next actions.
 
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -31,6 +31,8 @@ import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import { useCollabReminders } from "@/hooks/useCollabReminders";
+import { CollabCardSkeleton } from "@/components/ui/Skeleton";
+import { Reveal } from "@/components/ui/Reveal";
 import { parseContract, waitingOn } from "@/utils/contract";
 import { loadSubmissions, progress as deliverableProgress } from "@/utils/deliverables";
 import { colors, fonts, radii, shadows, tracking, track, lineHeights } from "@/config/theme";
@@ -149,8 +151,9 @@ export default function CreatorCollaborationsScreen() {
         </View>
 
         {isLoading ? (
-          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-            <ActivityIndicator color={colors.slate} />
+          <View style={{ flex: 1, paddingTop: 16 }} accessibilityLabel="Loading collaborations">
+            <CollabCardSkeleton />
+            <CollabCardSkeleton />
           </View>
         ) : (
           <ScrollView
@@ -203,13 +206,13 @@ export default function CreatorCollaborationsScreen() {
                 )}
               </View>
             ) : (
-              filteredCollabs.map((collab) => {
+              filteredCollabs.map((collab, index) => {
                 const isTerminated = collab.status === "terminated";
                 const meta = STAGE_META[collab.currentStage] || STAGE_META.pending;
                 const StageIcon = meta.icon;
                 return (
+                  <Reveal key={collab.id} index={index}>
                   <TouchableOpacity
-                    key={collab.id}
                     style={{
                       backgroundColor: colors.surface,
                       marginHorizontal: 20,
@@ -317,6 +320,7 @@ export default function CreatorCollaborationsScreen() {
                       </View>
                     </View>
                   </TouchableOpacity>
+                  </Reveal>
                 );
               })
             )}

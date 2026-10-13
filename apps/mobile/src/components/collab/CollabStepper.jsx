@@ -2,9 +2,28 @@
 // horizontally; a column reads better on a phone). `steps` comes from
 // utils/collabTimeline.js buildTimeline().
 
+import { useEffect } from "react";
 import { View, Text } from "react-native";
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 import { Check } from "lucide-react-native";
 import { colors, fonts, radii, shadows } from "@/config/theme";
+
+// A soft ring that breathes out from the current step. Still under reduced motion.
+function PulseRing() {
+  const reduced = useReducedMotion();
+  const t = useSharedValue(0);
+  useEffect(() => {
+    if (reduced) return;
+    t.value = withRepeat(withTiming(1, { duration: 1600, easing: Easing.out(Easing.quad) }), -1, false);
+  }, [reduced]); // eslint-disable-line react-hooks/exhaustive-deps
+  const style = useAnimatedStyle(() => ({ opacity: reduced ? 0 : 0.35 * (1 - t.value), transform: [{ scale: 1 + 0.7 * t.value }] }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[{ position: "absolute", width: 24, height: 24, borderRadius: 12, backgroundColor: colors.slate }, style]}
+    />
+  );
+}
 
 export default function CollabStepper({ steps, terminated = false }) {
   return (
@@ -17,6 +36,8 @@ export default function CollabStepper({ steps, terminated = false }) {
         return (
           <View key={s.key} style={{ flexDirection: "row" }}>
             <View style={{ alignItems: "center", width: 28 }}>
+              <View style={{ width: 24, height: 24, alignItems: "center", justifyContent: "center" }}>
+                {current && !terminated && <PulseRing />}
               <View
                 style={{
                   width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center",
@@ -24,7 +45,8 @@ export default function CollabStepper({ steps, terminated = false }) {
                   borderWidth: current ? 2 : 0, borderColor: colors.slate,
                 }}
               >
-                {done && <Check color="#fff" size={14} strokeWidth={3} />}
+                {done && <Check color={colors.surface} size={14} strokeWidth={3} />}
+              </View>
               </View>
               {!last && <View style={{ width: 2, flex: 1, minHeight: 22, backgroundColor: done ? colors.slate : colors.stone }} />}
             </View>

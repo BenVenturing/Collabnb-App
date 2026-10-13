@@ -10,7 +10,6 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,6 +27,8 @@ import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
 import ExploreMap from "@/components/ExploreMap";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
+import { ListingCardSkeleton } from "@/components/ui/Skeleton";
+import { Reveal } from "@/components/ui/Reveal";
 import * as haptic from "@/utils/haptics";
 
 const PROP_FILTERS = ["All", "Cabin", "Villa", "Treehouse", "Glamping", "Lodge", "Estate", "Cottage"];
@@ -214,8 +215,9 @@ export default function ExploreScreen() {
 
       {/* Listings */}
       {isLoading ? (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator color={colors.slate} />
+        <View style={{ flex: 1, padding: 20, gap: 16 }} accessibilityLabel="Loading collaborations">
+          <ListingCardSkeleton />
+          <ListingCardSkeleton />
         </View>
       ) : listings.length === 0 ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40 }}>
@@ -232,7 +234,8 @@ export default function ExploreScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: insets.bottom + 20 }}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
+            <Reveal index={index}>
             <ListingCard
               listing={item}
               saved={savedIds.has(item.id)}
@@ -244,6 +247,7 @@ export default function ExploreScreen() {
                 })
               }
             />
+            </Reveal>
           )}
         />
       )}

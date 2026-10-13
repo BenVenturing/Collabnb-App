@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowRight, Map as MapIcon, Star, Search as SearchIcon, Briefcase, Heart, MessageCircle, User } from "lucide-react-native";
 import GlassTabBar from "@/components/GlassTabBar";
+import { ListingCardSkeleton, CollabCardSkeleton, ThreadRowSkeleton, Reveal } from "@/components/ui";
 import CollabStepper from "@/components/collab/CollabStepper";
 import ContractSection from "@/components/collab/ContractSection";
 import DeliverablesSection from "@/components/collab/DeliverablesSection";
@@ -66,7 +67,7 @@ function TabBarDemo() {
   const [index, setIndex] = useState(0);
   const state = { index, routes: TAB_ROUTES.map(({ key, name }) => ({ key, name })) };
   const descriptors = Object.fromEntries(
-    TAB_ROUTES.map(({ key, title, Icon }) => [key, { options: { title, tabBarIcon: ({ color }) => <Icon color={color} size={22} /> } }]),
+    TAB_ROUTES.map(({ key, title, Icon }) => [key, { options: { title, tabBarBadge: key === "inbox" ? 3 : undefined, tabBarIcon: ({ color }) => <Icon color={color} size={22} /> } }]),
   );
   const navigation = {
     emit: () => ({ defaultPrevented: false }),
@@ -301,6 +302,26 @@ export default function GalleryScreen() {
             />
           </View>
         </Section>
+        <Section name="Loading states (skeletons)">
+          <View style={{ gap: 16 }}>
+            <ListingCardSkeleton />
+            <CollabCardSkeleton />
+            <ThreadRowSkeleton />
+          </View>
+        </Section>
+
+        <Section name="Staggered reveal">
+          <View style={{ gap: 10 }}>
+            {["One", "Two", "Three", "Four"].map((n, i) => (
+              <Reveal key={n} index={i}>
+                <Glass variant="small" contentStyle={{ padding: 16 }}>
+                  <Body>Card {n} rises in after the one before it.</Body>
+                </Glass>
+              </Reveal>
+            ))}
+          </View>
+        </Section>
+
         <Section name="Glass tab bar (hold, then slide)">
           <View style={{ marginHorizontal: -16 }}>
             <TabBarDemo />

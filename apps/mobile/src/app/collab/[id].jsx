@@ -4,7 +4,7 @@
 // Reads the same `collaborations.getByCreator` query as the list, so no new
 // backend call is needed.
 
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -21,6 +21,7 @@ import { threadKeyFor } from "@/utils/threads";
 import { latestFields } from "@/utils/contract";
 import { exportContractPdf } from "@/utils/contractPdf";
 import { useEndCollaboration } from "@/hooks/useEndCollaboration";
+import { Skeleton } from "@/components/ui/Skeleton";
 import CollabStepper from "@/components/collab/CollabStepper";
 import ContractSection from "@/components/collab/ContractSection";
 import DeliverablesSection from "@/components/collab/DeliverablesSection";
@@ -143,8 +144,10 @@ export default function CollabDetailScreen() {
       </View>
 
       {rows === undefined ? (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator color={colors.slate} />
+        <View style={{ paddingHorizontal: 20, gap: 14 }} accessibilityLabel="Loading collaboration">
+          <Skeleton height={230} radius={radii.lg} />
+          <Skeleton height={190} radius={radii.lg} />
+          <Skeleton height={120} radius={radii.lg} />
         </View>
       ) : !raw ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40 }}>

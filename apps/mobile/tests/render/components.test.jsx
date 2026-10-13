@@ -109,3 +109,29 @@ test("InboxScreen renders threads, unread badge, filters and search", () => {
   act(() => t.root.findByType(TextInput).props.onChangeText("zzz"));
   expect(has(t, "No matches found")).toBe(true);
 });
+
+// ── Polish: skeletons, reveal, tab badge ─────────────────────────────────
+test("skeleton presets and Reveal render without data", () => {
+  const { ListingCardSkeleton, CollabCardSkeleton, ThreadRowSkeleton } = require("@/components/ui/Skeleton");
+  const { Reveal } = require("@/components/ui/Reveal");
+  [ListingCardSkeleton, CollabCardSkeleton, ThreadRowSkeleton].forEach((S) => expect(() => render(<S />)).not.toThrow());
+  const t = render(<><Reveal index={0}><Text>first</Text></Reveal><Reveal index={20}><Text>late</Text></Reveal></>);
+  expect(has(t, "first")).toBe(true);
+  expect(has(t, "late")).toBe(true); // items past the stagger cap still render
+});
+
+test("GlassTabBar shows an unread badge (capped at 9+) and labels it for screen readers", () => {
+  const routes = [{ key: "a", name: "a" }, { key: "inbox", name: "inbox" }];
+  const mk = (badge) => ({
+    a: { options: { title: "Alpha", tabBarIcon: () => null } },
+    inbox: { options: { title: "Inbox", tabBarIcon: () => null, tabBarBadge: badge } },
+  });
+  const nav = { emit: () => ({ defaultPrevented: false }), navigate: jest.fn() };
+  const bar = (badge) => render(<GlassTabBar state={{ index: 0, routes }} descriptors={mk(badge)} navigation={nav} />);
+  expect(has(bar(3), "3")).toBe(true);
+  expect(has(bar(42), "9+")).toBe(true);
+  const none = bar(0);
+  expect(none.root.findAll((n) => n.props.accessibilityLabel === "Inbox, 0 unread").length).toBe(0);
+  const withBadge = bar(3);
+  expect(withBadge.root.findAll((n) => n.props.accessibilityLabel === "Inbox, 3 unread").length).toBeGreaterThan(0);
+});

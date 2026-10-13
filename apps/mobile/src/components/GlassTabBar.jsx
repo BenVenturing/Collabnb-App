@@ -35,13 +35,16 @@ const PAD = 6;
 const BAR_H = 64;
 const FAST = { damping: 17, stiffness: 300, mass: 0.7 };
 const SLOW = { damping: 20, stiffness: 110, mass: 1 };
+// 0 / undefined hides the badge; large counts read "9+".
+const formatBadge = (n) => (n == null || n === 0 || n === "" ? null : typeof n === "number" ? (n > 9 ? "9+" : String(n)) : String(n));
+
 const AnimatedGlass = Animated.createAnimatedComponent(GlassView);
 const clamp = (v, lo, hi) => {
   "worklet";
   return Math.min(Math.max(v, lo), hi);
 };
 
-function TabItem({ index, label, icon, active, tabW, center, lens, onPress }) {
+function TabItem({ index, label, icon, active, badge, tabW, center, lens, onPress }) {
   // Icons swell as the lens centre passes over them.
   const style = useAnimatedStyle(() => {
     const dist = Math.abs(center.value - (index + 0.5) * tabW.value);
@@ -52,12 +55,24 @@ function TabItem({ index, label, icon, active, tabW, center, lens, onPress }) {
     <Pressable
       onPress={onPress}
       accessibilityRole="tab"
-      accessibilityLabel={label}
+      accessibilityLabel={badge ? `${label}, ${badge} unread` : label}
       accessibilityState={{ selected: active }}
       style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
     >
       <Animated.View style={[{ alignItems: "center", gap: 3 }, style]}>
-        {icon(active ? colors.ink : colors.sage)}
+        <View>
+          {icon(active ? colors.ink : colors.sage)}
+          {!!badge && (
+            <View
+              style={{
+                position: "absolute", top: -6, right: -10, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5,
+                backgroundColor: colors.slate, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: colors.surface,
+              }}
+            >
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 10.5, color: colors.surface }}>{badge}</Text>
+            </View>
+          )}
+        </View>
         <Text style={{ fontFamily: active ? fonts.bodySemibold : fonts.bodyMedium, fontSize: 10.5, color: active ? colors.ink : colors.sage }}>
           {label}
         </Text>
@@ -220,6 +235,7 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
                   index={i}
                   label={label}
                   active={i === activeIdx}
+                  badge={formatBadge(options.tabBarBadge)}
                   icon={(color) => options.tabBarIcon?.({ color, size: 22, focused: i === activeIdx })}
                   tabW={tabW}
                   center={center}
