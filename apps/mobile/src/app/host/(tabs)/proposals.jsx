@@ -21,10 +21,13 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
+import { Search, X } from "lucide-react-native";
+import { threadKeyFor } from "@/utils/threads";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import useHostProposals from "@/hooks/useHostProposals";
 import CollabCrmOverview from "@/components/collabs/CollabCrmOverview";
+import { filterProposals, listingOptions } from "@/utils/proposalFilters";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
@@ -596,12 +599,26 @@ function DetailModal({
   };
 
   const handleMessage = () => {
-    // Inbox and message threads are Convex-backed (see useConversations /
-    // messages/[threadId].jsx) and keyed by a real creator profile id
-    // (thread_<listingId>_<creatorId>). This screen's proposals are still
-    // local sample/AsyncStorage data with no creatorId field, so there's no
-    // way to build that key here. Land on the inbox list instead of guessing.
-    router.push("/host/(tabs)/inbox");
+    // The creator's apply flow creates the thread under thread_<listingId>_<creatorId>
+    // (listing-detail.jsx), so a Convex-backed proposal can open that exact
+    // conversation. Sample rows have no creator profile id to key on, and
+    // threads.create isn't idempotent, so those land on the inbox list rather
+    // than risk creating a duplicate thread.
+    const key = proposal.threadKey || threadKeyFor(proposal.listingId, proposal.creatorId);
+    if (proposal.isSample || !key) {
+      router.push("/host/(tabs)/inbox");
+      return;
+    }
+    onClose();
+    router.push({
+      pathname: `/messages/${encodeURIComponent(key)}`,
+      params: {
+        listingTitle: proposal.listing,
+        hostName: proposal.creatorName,
+        hostAvatar: proposal.avatar || "",
+        tag: "Application",
+      },
+    });
   };
 
   const handleDecline = async () => {
@@ -856,6 +873,8 @@ export default function ProposalsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [view, setView] = useState("pipeline");
   const [tierFilter, setTierFilter] = useState("all");
+  const [query, setQuery] = useState("");
+  const [listingFilter, setListingFilter] = useState("all");
   const [declinedOpen, setDeclinedOpen] = useState(false);
   const [counterTarget, setCounterTarget] = useState(null);
   const [signTarget, setSignTarget] = useState(null);
@@ -1021,10 +1040,12 @@ export default function ProposalsScreen() {
     }
   };
 
-  const filtered =
-    tierFilter === "all"
-      ? proposals
-      : proposals.filter((p) => p.tier === tierFilter);
+  const filtered = filterProposals(proposals, {
+    query,
+    tier: tierFilter,
+    listing: listingFilter,
+  });
+  const listings = listingOptions(proposals);
   const active = filtered.filter(
     (p) => p.stage !== "completed" && p.stage !== "declined",
   );
@@ -1128,6 +1149,39 @@ export default function ProposalsScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Search — matches creator name, handle, listing or the host's note */}
+        <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: "rgba(255,255,255,0.6)",
+              borderWidth: 1,
+              borderColor: "rgba(60,87,89,0.15)",
+              borderRadius: radii.pill,
+              paddingHorizontal: 14,
+              paddingVertical: 9,
+            }}
+          >
+            <Search color={colors.sage} size={15} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search creators, listings, notes"
+              placeholderTextColor={colors.sage}
+              style={{ flex: 1, fontFamily: fonts.body, fontSize: 13, color: colors.ink, padding: 0 }}
+              autoCorrect={false}
+              returnKeyType="search"
+            />
+            {query.length > 0 && (
+              <TouchableOpacity onPress={() => setQuery("")} hitSlop={8}>
+                <X color={colors.sage} size={15} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
         {/* Tier Filter */}
         <ScrollView
           horizontal
@@ -1155,6 +1209,30 @@ export default function ProposalsScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        {listings.length > 1 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterRow}
+            contentContainerStyle={styles.filterContent}
+          >
+            {["all", ...listings].map((l) => (
+              <TouchableOpacity
+                key={l}
+                style={[styles.filterChip, listingFilter === l && styles.filterChipActive]}
+                onPress={() => setListingFilter(l)}
+              >
+                <Text
+                  style={[styles.filterChipText, listingFilter === l && styles.filterChipTextActive]}
+                  numberOfLines={1}
+                >
+                  {l === "all" ? "All Listings" : l}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
         <View style={{ paddingHorizontal: 16, marginBottom: 18 }}>
           <CollabCrmOverview stats={crmStats} />

@@ -15,7 +15,7 @@ import { TAG_COLORS, TAG_TEXT_COLORS } from "@/lib/threadTags";
 import { threadTheme } from "@/lib/threadColors";
 import { colors } from "@/config/theme";
 
-const FILTERS = ["All", "Applications", "Collabs", "Pitches"];
+const FILTERS = ["All", "Unread", "Applications", "Collabs", "Pitches"];
 
 function ListingRow({ listing, onPress }) {
   return (
@@ -136,6 +136,9 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
 
   const tagFiltered = useMemo(() => {
     if (activeFilter === "All") return activeThreads;
+    if (activeFilter === "Unread") return activeThreads.filter((t) => (t.unread || 0) > 0);
+    // "Applications" -> tag "Application". Unread is a count, not a tag, so it
+    // has to be handled before this.
     const singular = activeFilter.slice(0, -1);
     return activeThreads.filter((t) => t.tag === singular || t.tag === activeFilter);
   }, [activeThreads, activeFilter]);

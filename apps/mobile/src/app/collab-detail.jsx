@@ -29,6 +29,13 @@ import {
 } from "lucide-react-native";
 import { api } from "@/convex/_generated/api";
 import { useCollabStageData } from "@/hooks/useCollabStageData";
+import { useUser } from "@clerk/clerk-expo";
+import { useCollabContract } from "@/hooks/useCollabContract";
+import { useCreatorDeliverables } from "@/hooks/useDeliverables";
+import ContractSection from "@/components/collab/ContractSection";
+import DeliverablesSection from "@/components/collab/DeliverablesSection";
+import { latestFields } from "@/utils/contract";
+import { exportContractPdf } from "@/utils/contractPdf";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
 
@@ -517,6 +524,27 @@ export default function CollabDetailScreen() {
   const removeMutation = useMutation(api.collaborations.remove);
   const { data: stageData, update: updateStageData } = useCollabStageData(collabId);
 
+  // Contract review/counter/sign and deliverable submissions came from the
+  // glass-inbox-collabs branch. Both hooks default to this device's storage;
+  // they only become two-sided once convex-drafts/hostCollaborations.js is
+  // deployed and EXPO_PUBLIC_HOST_PIPELINE_BACKEND=convex.
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  const creatorId = profile?._id ? String(profile._id) : null;
+
+  const contractApi = useCollabContract(collabId ? { id: collabId, creatorId, contractRaw: collab?.contract } : null);
+  const deliverablesApi = useCreatorDeliverables(
+    collabId
+      ? {
+          id: collabId,
+          creatorId,
+          deliverablesText: collab?.deliverables,
+          submissionsRaw: collab?.deliverable_submissions,
+        }
+      : null,
+  );
+
   const [working, setWorking] = useState(false);
 
   if (collab === undefined) {
@@ -680,6 +708,28 @@ export default function CollabDetailScreen() {
               This collaboration is complete.
             </Text>
           </PanelCard>
+        )}
+
+        {currentStage !== "pending" && currentStage !== "archived" && (
+          <View style={{ gap: 16, marginTop: 16 }}>
+            <ContractSection
+              contract={contractApi.contract}
+              seed={{ deliverables: collab.deliverables, stayDates: collab.dates }}
+              onCounter={contractApi.counter}
+              onSign={contractApi.sign}
+              onExport={() =>
+                exportContractPdf({
+                  listing: collab.property_name || "Collaboration",
+                  creatorName: profile?.full_name || "Creator",
+                  handle: profile?.username ? `@${profile.username}` : "",
+                  fields: latestFields(contractApi.contract, { deliverables: collab.deliverables }),
+                  rounds: contractApi.contract.history.length,
+                  signatures: contractApi.contract.signatures,
+                })
+              }
+            />
+            <DeliverablesSection role="creator" api={deliverablesApi} />
+          </View>
         )}
 
         <TouchableOpacity
