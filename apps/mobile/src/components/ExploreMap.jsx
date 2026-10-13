@@ -4,9 +4,10 @@
 // Mapbox zoom when sizing cluster cells.
 
 import { forwardRef, useMemo, useState, useCallback } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, Platform } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { colors, fonts, radii, shadows } from "@/config/theme";
+import * as haptic from "@/utils/haptics";
 
 const DEFAULT_REGION = { latitude: 39.5, longitude: -98.5, latitudeDelta: 40, longitudeDelta: 40 };
 
@@ -54,10 +55,10 @@ function Pill({ label, active, minted }) {
         paddingHorizontal: active ? 11 : 10,
         paddingVertical: 6,
         borderRadius: radii.pill,
-        borderWidth: active ? 1.5 : 1,
-        borderColor: active ? colors.ink : colors.hairline,
-        backgroundColor: active ? colors.ink : minted ? colors.mint : colors.surface,
-        ...shadows.sm,
+        borderWidth: 1,
+        borderColor: active ? colors.ink : "rgba(255,255,255,0.85)",
+        backgroundColor: active ? colors.ink : minted ? "rgba(209,235,219,0.85)" : "rgba(255,255,255,0.78)",
+        ...shadows.md,
       }}
     >
       <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: active ? "#fff" : colors.ink }}>
@@ -73,9 +74,9 @@ function ClusterPill({ count }) {
       style={{
         width: 34, height: 34, borderRadius: 17,
         alignItems: "center", justifyContent: "center",
-        borderWidth: 1.5, borderColor: colors.hairline,
-        backgroundColor: colors.surface,
-        ...shadows.sm,
+        borderWidth: 1, borderColor: "rgba(255,255,255,0.85)",
+        backgroundColor: "rgba(255,255,255,0.78)",
+        ...shadows.md,
       }}
     >
       <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink }}>{count}</Text>
@@ -107,6 +108,7 @@ const ExploreMap = forwardRef(function ExploreMap(
   }, [onRegionChange]);
 
   const handleClusterPress = (cluster) => {
+    haptic.tap();
     ref?.current?.fitToCoordinates(
       cluster.points.map((p) => ({ latitude: p.lat, longitude: p.lng })),
       { edgePadding: { top: 80, right: 80, bottom: 80, left: 80 }, animated: true }
@@ -130,6 +132,9 @@ const ExploreMap = forwardRef(function ExploreMap(
       showsUserLocation={false}
       showsCompass={false}
       toolbarEnabled={false}
+      userInterfaceStyle="light"
+      mapType={Platform.OS === "ios" ? "mutedStandard" : "standard"}
+      showsPointsOfInterest={false}
     >
       {clusters.map((c) =>
         c.type === "cluster" ? (

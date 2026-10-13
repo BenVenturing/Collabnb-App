@@ -9,7 +9,9 @@
     "web": "expo start --web",
     "web:auth-proxy": "node ./scripts/dev-auth-proxy.mjs",
     "postinstall": "patch-package && sh ./scripts/fetch-fonts.sh",
-    "fonts": "sh ./scripts/fetch-fonts.sh"
+    "fonts": "sh ./scripts/fetch-fonts.sh",
+    "test:logic": "node --import ./tests/register.mjs --test tests/*.test.mjs",
+    "test:render": "jest -c jest.render.config.js"
   },
   "dependencies": {
     "@anythingai/app": "0.1.96",
@@ -80,7 +82,6 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.4",
-    "react-native-calendars": "https://codeload.github.com/craftworkco/react-native-calendars/tar.gz/ae19e2af74ecdb29d6117ca41fbf41977a10cc23",
     "react-native-gesture-handler": "2.28.0",
     "react-native-graph": "1.1.0",
     "react-native-maps": "1.20.1",

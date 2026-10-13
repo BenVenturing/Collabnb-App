@@ -22,6 +22,8 @@ Notifications.setNotificationHandler({
 // built yet.
 function routeForLink(link) {
   if (!link) return { pathname: "/(tabs)/inbox" };
+  // Local collab reminders (hooks/useCollabReminders.js) link straight to the collab screen.
+  if (link.startsWith("/collab/")) return link;
   const threadMatch = link.match(/thread=([^&]+)/);
   if (threadMatch) {
     return { pathname: "/messages/[threadId]", params: { threadId: decodeURIComponent(threadMatch[1]) } };
@@ -90,13 +92,14 @@ export function usePushNotifications(profile) {
   useEffect(() => {
     // App opened directly from a killed state via a notification tap.
     Notifications.getLastNotificationResponseAsync().then((response) => {
-      const link = response?.notification?.request?.content?.data?.link;
+      const data = response?.notification?.request?.content?.data;
+      const link = data?.link || data?.route;
       if (link) router.push(routeForLink(link));
     });
 
     const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const link = response.notification.request.content.data?.link;
-      router.push(routeForLink(link));
+      const data = response.notification.request.content.data;
+      router.push(routeForLink(data?.link || data?.route));
     });
 
     return () => {

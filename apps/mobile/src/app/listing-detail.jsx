@@ -3,6 +3,8 @@
 // File: /apps/mobile/src/app/listing-detail.jsx
 // ============================================================
 
+import * as haptic from "@/utils/haptics";
+import { threadKeyFor } from "@/utils/threads";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -353,7 +355,7 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
     setError("");
 
     const creatorId = String(creatorProfile._id);
-    const threadKey = `thread_${listingId}_${creatorId}`;
+    const threadKey = threadKeyFor(listingId, creatorId);
 
     try {
       const { allowed } = await checkAndIncrementCvx({ userId: creatorId });
@@ -413,6 +415,7 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
 
       setSubmitting(false);
       setSubmitted(true);
+      haptic.success();
     } catch (err) {
       setSubmitting(false);
       setError(err?.data || err?.message || "Could not submit your application — try again.");

@@ -13,6 +13,7 @@ import {
 import ThemedBackground from "@/components/ThemedBackground";
 import BulgeTabBarBackground, { BULGE_RISE, BULGE_RADIUS } from "@/components/BulgeTabBarBackground";
 import useMapViewStore from "@/utils/MapViewStore";
+import { useConversations } from "@/hooks/useConversations";
 
 const ROW_HEIGHT = 49;
 
@@ -22,6 +23,7 @@ const ROW_HEIGHT = 49;
 // on screen, so it doubles as the pull-tab that brings the bar back up.
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { unreadCount } = useConversations(); // drives the Inbox tab badge
   const segments = useSegments();
   const { mapOpen, hasMapPoints, setMapOpen } = useMapViewStore();
 
@@ -88,6 +90,7 @@ export default function TabLayout() {
           name="inbox"
           options={{
             title: "Inbox",
+            tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
             tabBarIcon: ({ color, size }) => (
               <MessageCircle color={color} size={22} />
             ),

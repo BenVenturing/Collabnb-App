@@ -5,10 +5,10 @@
 // at 'pending'), so there's no separate "applications" list to reconcile
 // against this one. Stage keys/labels mirror
 // Collabnb Website/app/src/lib/mockData.js's STAGES. A per-collab detail
-// screen with the full stage stepper (CollabDetail.jsx on web) is a
-// deliberate later pass, not this one — tapping a card opens the listing.
+// screen with the stage stepper (CollabDetail.jsx on web) is
+// now /collab/[id] — tapping a card opens the stage stepper and next actions.
 
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -31,6 +31,11 @@ import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import CollabCrmOverview, { useCrmChart } from "@/components/collabs/CollabCrmOverview";
+import { useCollabReminders } from "@/hooks/useCollabReminders";
+import { CollabCardSkeleton } from "@/components/ui/Skeleton";
+import { Reveal } from "@/components/ui/Reveal";
+import { parseContract, waitingOn } from "@/utils/contract";
+import { loadSubmissions, progress as deliverableProgress } from "@/utils/deliverables";
 import { colors, fonts, radii, shadows, tracking, track, lineHeights } from "@/config/theme";
 
 const IMG_FALLBACK = "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=400";
@@ -64,6 +69,9 @@ function normalizeCollab(c) {
     isDemo: c.is_demo === true,
     isSample: c.is_sample === true,
     appliedDate: stages?.pending?.date,
+    // Inputs for reminder planning (utils/reminders.js).
+    contractTurn: c.contract ? waitingOn(parseContract(c.contract)) : null,
+    changesRequested: c.deliverable_submissions ? deliverableProgress(loadSubmissions(c.deliverable_submissions, c.deliverables)).changes : 0,
   };
 }
 
@@ -94,6 +102,7 @@ export default function CreatorCollaborationsScreen() {
   const [dueFilter, setDueFilter] = useState("all");
 
   const collabs = useMemo(() => (collabsRaw || []).map(normalizeCollab), [collabsRaw]);
+  useCollabReminders(collabs);
 
   // Demo and sample rows are there to show an empty state what it will look
   // like; counting them would overstate every number on the dashboard.
@@ -297,8 +306,9 @@ export default function CreatorCollaborationsScreen() {
         </View>
 
         {isLoading ? (
-          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-            <ActivityIndicator color={colors.slate} />
+          <View style={{ flex: 1, paddingTop: 16 }} accessibilityLabel="Loading collaborations">
+            <CollabCardSkeleton />
+            <CollabCardSkeleton />
           </View>
         ) : (
           <ScrollView
@@ -395,13 +405,13 @@ export default function CreatorCollaborationsScreen() {
                 )}
               </View>
             ) : (
-              filteredCollabs.map((collab) => {
+              filteredCollabs.map((collab, index) => {
                 const isTerminated = collab.status === "terminated";
                 const meta = STAGE_META[collab.currentStage] || STAGE_META.pending;
                 const StageIcon = meta.icon;
                 return (
+                  <Reveal key={collab.id} index={index}>
                   <TouchableOpacity
-                    key={collab.id}
                     style={{
                       backgroundColor: colors.surface,
                       marginHorizontal: 20,
@@ -465,16 +475,16 @@ export default function CreatorCollaborationsScreen() {
                             borderRadius: radii.md,
                             flexDirection: "row",
                             alignItems: "center",
-                            backgroundColor: isTerminated ? "rgba(200,104,104,0.12)" : colors.mint,
+                            backgroundColor: isTerminated ? colors.dangerTint : colors.mint,
                           }}
                         >
-                          <StageIcon color={isTerminated ? "#C86868" : colors.ink} size={13} />
+                          <StageIcon color={isTerminated ? colors.danger : colors.ink} size={13} />
                           <Text
                             style={{
                               fontFamily: fonts.bodySemibold,
                               fontSize: 12,
                               marginLeft: 6,
-                              color: isTerminated ? "#C86868" : colors.ink,
+                              color: isTerminated ? colors.danger : colors.ink,
                             }}
                           >
                             {isTerminated ? "Terminated" : meta.label}
@@ -509,6 +519,7 @@ export default function CreatorCollaborationsScreen() {
                       </View>
                     </View>
                   </TouchableOpacity>
+                  </Reveal>
                 );
               })
             )}

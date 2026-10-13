@@ -1,6 +1,9 @@
 // The web app's glass system, ported from .glass / .glass-sm / .glass-card in
 // Collabnb Website/app/src/index.css.
 //
+// On iOS 26+ it renders the system's native Liquid Glass (expo-glass-effect);
+// everywhere else it falls back to the BlurView stack below.
+//
 // This component exists because two things in that CSS have no React Native
 // equivalent, and hand-rolling a BlurView gets both wrong:
 //
@@ -13,6 +16,7 @@
 
 import { View } from "react-native";
 import { BlurView } from "expo-blur";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { colors, glass } from "@/config/theme";
 
 export default function Glass({
@@ -22,6 +26,21 @@ export default function Glass({
   children,
 }) {
   const v = glass[variant] ?? glass.regular;
+
+  // iOS 26+: hand the surface to the system's real Liquid Glass (refraction,
+  // specular edge, adaptive contrast) instead of imitating it. `card` stays on
+  // the opaque-ish blur path — it's the near-solid web .glass-card.
+  if (isLiquidGlassAvailable() && variant !== "card") {
+    return (
+      <GlassView
+        glassEffectStyle="regular"
+        tintColor="rgba(209,235,219,0.18)"
+        style={[{ borderRadius: v.radius, overflow: "hidden" }, style]}
+      >
+        <View style={contentStyle}>{children}</View>
+      </GlassView>
+    );
+  }
 
   return (
     <View

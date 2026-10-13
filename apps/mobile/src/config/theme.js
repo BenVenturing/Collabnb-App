@@ -19,6 +19,11 @@ export const colors = {
   surface: "#FFFFFF",
   surfaceTint: "rgba(255,255,255,0.55)",
   hairline: "rgba(25,37,36,0.08)",
+  // COMPONENT-SPEC #3: web's danger anchor (deadlines, ended/declined states).
+  // `warning` (amber) is still missing — its exact web value hasn't been pulled
+  // yet and must not be invented.
+  danger: "#7F1D1D",
+  dangerTint: "rgba(127,29,29,0.10)",
 };
 
 /* ── WEB PARITY: type ───────────────────────────────────────────────────── */
