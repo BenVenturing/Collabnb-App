@@ -31,7 +31,7 @@ import { mergeProposals } from "@/utils/hostPipeline";
 import { addRound, sign as signContract, parseContract } from "@/utils/contract";
 import { exportContractPdf as exportContractPdfShared } from "@/utils/contractPdf";
 import { threadKeyFor } from "@/utils/threads";
-import { filterProposals, listingOptions, canDecline } from "@/utils/proposalFilters";
+import { filterProposals, listingOptions, canDecline, withStage } from "@/utils/proposalFilters";
 import * as haptic from "@/utils/haptics";
 
 const STORAGE_KEY = "@collabnb_proposals_v1";
@@ -892,22 +892,30 @@ export default function ProposalsScreen() {
     } catch (e) {}
   };
 
-  const handleStageChange = async (id, newStage) => {
-    const target = proposals.find((p) => p.id === id);
-    if (target?.source === "convex") {
-      try {
-        await pipeline.setStage(target, newStage);
-      } catch (e) {
-        console.error("Failed to sync stage:", e);
-        return; // leave the card where the server has it
+  // Moves one or many proposals to `newStage` with a single persist. Server
+  // proposals are synced first; any that fail stay where they are. Returns the
+  // ids that actually moved.
+  const handleStageChangeMany = async (ids, newStage) => {
+    const moved = [];
+    for (const id of ids) {
+      const target = proposals.find((p) => p.id === id);
+      if (target?.source === "convex") {
+        try {
+          await pipeline.setStage(target, newStage);
+        } catch (e) {
+          console.error("Failed to sync stage:", e);
+          continue; // leave the card where the server has it
+        }
       }
+      moved.push(id);
     }
-    const updated = proposals.map((p) =>
-      p.id === id ? { ...p, stage: newStage, lastUpdate: "just now" } : p,
-    );
-    await persist(updated);
-    setSelected((prev) => (prev ? { ...prev, stage: newStage } : prev));
+    if (!moved.length) return moved;
+    await persist(withStage(proposals, moved, newStage));
+    setSelected((prev) => (prev && moved.includes(prev.id) ? { ...prev, stage: newStage } : prev));
+    return moved;
   };
+
+  const handleStageChange = (id, newStage) => handleStageChangeMany([id], newStage);
 
   const handleSave = async (id, fields) => {
     const target = proposals.find((p) => p.id === id);
@@ -1014,8 +1022,9 @@ export default function ProposalsScreen() {
           text: "Decline",
           style: "destructive",
           onPress: async () => {
-            for (const t of targets) await handleStageChange(t.id, "declined");
-            haptic.success();
+            const moved = await handleStageChangeMany(targets.map((t) => t.id), "declined");
+            if (moved.length) haptic.success();
+            else haptic.warning();
             exitSelect();
           },
         },

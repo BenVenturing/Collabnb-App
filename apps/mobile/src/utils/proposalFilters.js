@@ -23,3 +23,12 @@ export function listingOptions(list) {
 // Stages a bulk decline may touch: anything still in play. Completed work and
 // already-declined proposals are left alone.
 export const canDecline = (p) => p.stage !== "completed" && p.stage !== "declined";
+
+// Returns a new list with `stage` applied to every proposal in `ids` in ONE
+// pass. Bulk actions must use this rather than calling a single-proposal
+// updater in a loop: each call there starts from the same render-time list, so
+// the last write silently undoes the earlier ones.
+export function withStage(list, ids, stage, lastUpdate = "just now") {
+  const set = new Set(ids);
+  return list.map((p) => (set.has(p.id) ? { ...p, stage, lastUpdate } : p));
+}

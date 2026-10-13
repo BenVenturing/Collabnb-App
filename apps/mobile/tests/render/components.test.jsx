@@ -70,3 +70,42 @@ test("ContractSection offers the signed PDF only once locked", () => {
   expect(has(locked, "Export signed PDF")).toBe(true);
   expect(has(locked, "Contract locked")).toBe(true);
 });
+
+// ── Inbox ────────────────────────────────────────────────────────────────
+// Skia (the atmospheric canvas) can't load under Jest; the background is cosmetic here.
+jest.mock("@/components/AtmosphericBackground", () => { const { View } = require("react-native"); return { __esModule: true, default: ({ children, style }) => <View style={style}>{children}</View> }; });
+jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn() }) }));
+jest.mock("expo-status-bar", () => ({ StatusBar: () => null }));
+jest.mock("expo-image", () => { const { View } = require("react-native"); return { Image: View }; });
+jest.mock("react-native-gesture-handler/ReanimatedSwipeable", () => {
+  const React = require("react"); const { View } = require("react-native");
+  return { __esModule: true, default: React.forwardRef(({ children }, ref) => React.createElement(View, { ref }, children)) };
+});
+jest.mock("@/hooks/useConversations", () => ({
+  useConversations: () => ({
+    isLoading: false,
+    threads: [
+      { id: "t1", thread_key: "thread_l1_c1", listing_title: "Cedar Cabin", host_name: "Ann Host", last_message: "See you Friday", tag: "Collab", unread: 2, timestamp: "9:41" },
+      { id: "t2", thread_key: "thread_l2_c1", listing_title: "Lake Villa", host_name: "Leo", last_message: "Thanks!", tag: "Application", unread: 0, timestamp: "Mon" },
+    ],
+  }),
+}));
+
+test("InboxScreen renders threads, unread badge, filters and search", () => {
+  const InboxScreen = require("@/components/inbox/InboxScreen").default;
+  const t = render(<InboxScreen viewAs="creator" />);
+  expect(has(t, "Cedar Cabin")).toBe(true);
+  expect(has(t, "Lake Villa")).toBe(true);
+  expect(has(t, "Ann Host: See you Friday")).toBe(true); // WhatsApp-style sender prefix
+  expect(has(t, "2")).toBe(true); // unread badge
+  ["All", "Unread", "Applications", "Collabs", "Pitches"].forEach((f) => expect(has(t, f)).toBe(true));
+  // Unread filter hides the read thread
+  const unreadChip = t.root.findAll((n) => typeof n.props.onPress === "function" && n.findAllByType(Text).some((x) => [].concat(x.props.children).join("") === "Unread"))[0];
+  act(() => unreadChip.props.onPress());
+  expect(has(t, "Cedar Cabin")).toBe(true);
+  expect(has(t, "Lake Villa")).toBe(false);
+  // Search narrows too
+  const { TextInput } = require("react-native");
+  act(() => t.root.findByType(TextInput).props.onChangeText("zzz"));
+  expect(has(t, "No matches found")).toBe(true);
+});
