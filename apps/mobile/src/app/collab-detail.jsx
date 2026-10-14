@@ -533,7 +533,7 @@ export default function CollabDetailScreen() {
   const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
   const creatorId = profile?._id ? String(profile._id) : null;
 
-  const contractApi = useCollabContract(collabId ? { id: collabId, creatorId, contractRaw: collab?.contract } : null);
+  const contractApi = useCollabContract(collabId ? { id: collabId, creatorId, contractRaw: collab?.contract_draft } : null);
   const deliverablesApi = useCreatorDeliverables(
     collabId
       ? {

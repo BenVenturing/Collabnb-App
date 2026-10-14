@@ -9,7 +9,7 @@ import { parseContract } from "@/utils/contract";
 // may not exist on the row yet; sensible fallbacks keep the card renderable.
 export function collabToProposal(c) {
   // Server-held contract (shared with the creator) wins over any local copy.
-  const contract = c.contract ? parseContract(c.contract) : null;
+  const contract = c.contract_draft ? parseContract(c.contract_draft) : null;
   return {
     ...(contract && { contractHistory: contract.history, signatures: contract.signatures, locked: contract.locked }),
     id: `cvx_${String(c._id)}`,

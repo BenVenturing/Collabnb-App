@@ -70,7 +70,7 @@ function normalizeCollab(c) {
     isSample: c.is_sample === true,
     appliedDate: stages?.pending?.date,
     // Inputs for reminder planning (utils/reminders.js).
-    contractTurn: c.contract ? waitingOn(parseContract(c.contract)) : null,
+    contractTurn: c.contract_draft ? waitingOn(parseContract(c.contract_draft)) : null,
     changesRequested: c.deliverable_submissions ? deliverableProgress(loadSubmissions(c.deliverable_submissions, c.deliverables)).changes : 0,
   };
 }
