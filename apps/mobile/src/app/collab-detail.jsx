@@ -26,6 +26,7 @@ import {
   Camera,
   PenLine,
   Star,
+  FileText,
 } from "lucide-react-native";
 import { api } from "@/convex/_generated/api";
 import { useCollabStageData } from "@/hooks/useCollabStageData";
@@ -533,7 +534,9 @@ export default function CollabDetailScreen() {
   const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
   const creatorId = profile?._id ? String(profile._id) : null;
 
-  const contractApi = useCollabContract(collabId ? { id: collabId, creatorId, contractRaw: collab?.contract_draft } : null);
+  const contractApi = useCollabContract(
+    collabId ? { id: collabId, creatorId, contractId: collab?.contract_id } : null,
+  );
   const deliverablesApi = useCreatorDeliverables(
     collabId
       ? {
@@ -712,6 +715,15 @@ export default function CollabDetailScreen() {
 
         {currentStage !== "pending" && currentStage !== "archived" && (
           <View style={{ gap: 16, marginTop: 16 }}>
+            {contractApi.isReal && !contractApi.exists ? (
+              <PanelCard>
+                <PanelHeading icon={FileText}>Contract</PanelHeading>
+                <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate, lineHeight: 20 }}>
+                  The host hasn't sent the contract for this collab yet. It'll show up here to
+                  review and sign once they do.
+                </Text>
+              </PanelCard>
+            ) : (
             <ContractSection
               contract={contractApi.contract}
               seed={{ deliverables: collab.deliverables, stayDates: collab.dates }}
@@ -728,6 +740,7 @@ export default function CollabDetailScreen() {
                 })
               }
             />
+            )}
             <DeliverablesSection role="creator" api={deliverablesApi} />
           </View>
         )}
