@@ -11,6 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "expo-router";
+import { useIsFocused } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery, useAction, useConvex } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
@@ -101,7 +102,7 @@ const MIN_SPIN_MS = 900;
 
 // Re-syncs every linked social account. Live linking is still dark on prod,
 // so most taps end in a toast explaining why nothing changed.
-function RefreshStats({ updatedAt, onMessage }) {
+function RefreshStats({ sources = [], updatedAt, onMessage }) {
   const convex = useConvex();
   const syncMine = useAction(api.creatorSocial.syncMine);
   const spin = useRef(new Animated.Value(0)).current;
@@ -153,7 +154,11 @@ function RefreshStats({ updatedAt, onMessage }) {
         <RefreshCw size={12} color={colors.sage} />
       </Animated.View>
       <Body size={12} color={colors.sage}>
-        {busy ? "Updating…" : updatedLabel(updatedAt)}
+        {busy
+          ? "Updating…"
+          : sources.length
+            ? `Stats from ${sources.join(", ")} · ${updatedLabel(updatedAt).toLowerCase()}`
+            : updatedLabel(updatedAt)}
       </Body>
     </Pressable>
   );
@@ -250,6 +255,7 @@ export default function CreatorProfileScreen() {
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
   const darkRef = useRef(false);
+  const isFocused = useIsFocused();
   const [showShare, setShowShare] = useState(false);
   const router = useRouter();
   const { loadDraft: loadHostDraft } = useHostOnboardingStore();
@@ -372,16 +378,10 @@ export default function CreatorProfileScreen() {
     .filter(Boolean)
     .join(" ");
 
-  const platformMetrics = [
-    profile?.metrics_instagram_followers
-      ? `IG ${formatFollowers(profile.metrics_instagram_followers)}`
-      : null,
-    profile?.metrics_tiktok_followers
-      ? `TT ${formatFollowers(profile.metrics_tiktok_followers)}`
-      : null,
-    profile?.metrics_youtube_subscribers
-      ? `YT ${formatFollowers(profile.metrics_youtube_subscribers)}`
-      : null,
+  const statSources = [
+    profile?.metrics_instagram_followers ? "Instagram" : null,
+    profile?.metrics_tiktok_followers ? "TikTok" : null,
+    profile?.metrics_youtube_subscribers ? "YouTube" : null,
   ].filter(Boolean);
 
   // Counted from the collabs themselves: profile.collab_count is only written
@@ -398,7 +398,9 @@ export default function CreatorProfileScreen() {
 
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
-      <StatusBar style={darkStatus ? "dark" : "light"} />
+      {/* Only while focused: tabs stay mounted, and a lingering "light" bar
+          would leave white status text on the other tabs' pale backgrounds. */}
+      {isFocused ? <StatusBar style={darkStatus ? "dark" : "light"} /> : null}
 
       <Animated.ScrollView
         style={{ flex: 1 }}
@@ -459,23 +461,11 @@ export default function CreatorProfileScreen() {
             columns={2}
             items={stats}
             footer={
-              <View style={{ alignItems: "center", gap: 6, alignSelf: "stretch" }}>
-                {platformMetrics.length > 0 ? (
-                  <Body
-                    size={11}
-                    color={colors.sage}
-                    style={{
-                      alignSelf: "stretch",
-                      textAlign: "center",
-                      paddingTop: 10,
-                      borderTopWidth: 1,
-                      borderTopColor: colors.hairline,
-                    }}
-                  >
-                    {platformMetrics.join("   ")}
-                  </Body>
-                ) : null}
+              <View
+                style={{ alignSelf: "stretch", alignItems: "center", paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.hairline }}
+              >
                 <RefreshStats
+                  sources={statSources}
                   updatedAt={profile?.metrics_synced_at ?? profile?.metrics_updated_at}
                   onMessage={toast.show}
                 />
