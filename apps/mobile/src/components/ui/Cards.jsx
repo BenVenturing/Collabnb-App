@@ -2,7 +2,6 @@
 
 import { View, Pressable, StyleSheet } from "react-native";
 import { Image } from "expo-image";
-import { BlurView } from "expo-blur";
 import { Heart, Lock } from "lucide-react-native";
 import { colors, radii, shadows } from "@/config/theme";
 import { Body, Display, EyebrowLabel } from "./Text";
@@ -15,7 +14,7 @@ import Glass from "../Glass";
 //
 // Web renders an em-dash for an empty cell, never "0" and never blank —
 // `value` of null is deliberately distinct from a real zero.
-// `comingSoon` frosts a placeholder figure for stats we can't source yet.
+// `comingSoon` blurs a placeholder figure for stats we can't source yet.
 export function StatGrid({ items, columns = 2, footer, eyebrowLabels = false, style }) {
   const rows = [];
   for (let i = 0; i < items.length; i += columns) rows.push(items.slice(i, i + columns));
@@ -61,23 +60,21 @@ export function StatGrid({ items, columns = 2, footer, eyebrowLabels = false, st
                 ) : (
                   <>
                     {item.comingSoon ? (
-                      <View style={{ borderRadius: 8, overflow: "hidden" }}>
-                        <Display size={26} color={colors.slate} style={{ paddingHorizontal: 6 }}>
-                          {item.placeholder ?? "4.8%"}
-                        </Display>
-                        <BlurView intensity={18} tint="light" style={StyleSheet.absoluteFill} />
-                      </View>
+                      // Text-shadow blur: a soft smudge of a figure with no
+                      // frosted box around it.
+                      <Display
+                        size={26}
+                        color="transparent"
+                        style={{ textShadowColor: "rgba(60,87,89,0.55)", textShadowRadius: 9, textShadowOffset: { width: 0, height: 0 } }}
+                      >
+                        {item.placeholder ?? "4.8%"}
+                      </Display>
                     ) : (
                       <Display size={26}>{item.value ?? "—"}</Display>
                     )}
                     <Body size={13} color={colors.sage} style={{ marginTop: 4 }}>
                       {item.label}
                     </Body>
-                    {item.comingSoon ? (
-                      <EyebrowLabel size={9} color={colors.sage} style={{ marginTop: 4 }}>
-                        Coming soon
-                      </EyebrowLabel>
-                    ) : null}
                   </>
                 )}
               </View>
