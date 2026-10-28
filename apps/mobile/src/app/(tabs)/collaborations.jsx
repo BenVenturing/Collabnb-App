@@ -369,51 +369,7 @@ export default function CreatorCollaborationsScreen() {
               />
             </View>
 
-            {filteredCollabs.length === 0 && activeFilter === "archived" ? null : filteredCollabs.length === 0 ? (
-              <View style={{ alignItems: "center", paddingTop: 40, paddingHorizontal: 40 }}>
-                <Text style={{ fontSize: 32, marginBottom: 12 }}>✦</Text>
-                <Text
-                  style={{
-                    fontFamily: fonts.displaySemibold,
-                    fontSize: 18,
-                    color: colors.ink,
-                    marginBottom: 6,
-                    letterSpacing: track(18, tracking.display),
-                    lineHeight: 18 * lineHeights.display,
-                  }}
-                >
-                  No collabs yet
-                </Text>
-                {activeFilter === "active" && (
-                  <>
-                    <Text
-                      style={{
-                        fontFamily: fonts.body,
-                        fontSize: 14,
-                        color: colors.sage,
-                        marginBottom: 20,
-                        textAlign: "center",
-                      }}
-                    >
-                      Apply to a stay to get started
-                    </Text>
-                    <TouchableOpacity
-                      style={{
-                        backgroundColor: colors.slate,
-                        paddingVertical: 12,
-                        paddingHorizontal: 24,
-                        borderRadius: radii.pill,
-                      }}
-                      onPress={() => router.push("/explore")}
-                    >
-                      <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.surface }}>
-                        Discover Stays
-                      </Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            ) : (
+            {filteredCollabs.length === 0 ? null : (
               filteredCollabs.map((collab, index) => {
                 const isTerminated = collab.status === "terminated";
                 const meta = STAGE_META[collab.currentStage] || STAGE_META.pending;

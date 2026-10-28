@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -82,6 +82,14 @@ export default function WishlistDetailScreen() {
       ],
     );
   };
+
+  // A deleted or stale list: flash the message, then bounce back.
+  const missing = !isLoading && !list;
+  useEffect(() => {
+    if (!missing) return undefined;
+    const t = setTimeout(() => (router.canGoBack() ? router.back() : router.replace("/(tabs)/saved")), 1200);
+    return () => clearTimeout(t);
+  }, [missing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (isLoading) {
     return (
