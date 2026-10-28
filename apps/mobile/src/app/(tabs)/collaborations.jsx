@@ -24,7 +24,7 @@ import {
   CheckCircle2,
   Archive as ArchiveIcon,
 } from "lucide-react-native";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
@@ -34,6 +34,8 @@ import CollabCrmOverview, { useCrmChart } from "@/components/collabs/CollabCrmOv
 import { useCollabReminders } from "@/hooks/useCollabReminders";
 import { CollabCardSkeleton } from "@/components/ui/Skeleton";
 import { Reveal } from "@/components/ui/Reveal";
+import StatusBarBlur from "@/components/StatusBarBlur";
+import { useBottomPull, usePullToast, PullToast } from "@/components/PullReveal";
 import { parseContract, waitingOn } from "@/utils/contract";
 import { loadSubmissions, progress as deliverableProgress } from "@/utils/deliverables";
 import { colors, fonts, radii, shadows, tracking, track, lineHeights } from "@/config/theme";
@@ -96,6 +98,7 @@ export default function CreatorCollaborationsScreen() {
   );
 
   const [activeFilter, setActiveFilter] = useState("active");
+  const toast = usePullToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [listingFilter, setListingFilter] = useState("all");
@@ -212,6 +215,11 @@ export default function CreatorCollaborationsScreen() {
       });
   }, [collabs, activeFilter, statusFilter, listingFilter, dueFilter, search]);
 
+  const handlePull = useCallback(() => {
+    if (activeFilter === "archived" && filteredCollabs.length === 0) toast.show("No archived collaborations");
+  }, [activeFilter, filteredCollabs.length, toast.show]);
+  const bottomPull = useBottomPull(handlePull);
+
   if (!isSignedIn) {
     return (
       <AtmosphericBackground>
@@ -315,6 +323,7 @@ export default function CreatorCollaborationsScreen() {
             style={{ flex: 1 }}
             contentContainerStyle={{ paddingBottom: insets.bottom + 80, paddingTop: 16 }}
             showsVerticalScrollIndicator={false}
+            {...bottomPull}
           >
             <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
               <CollabCrmOverview
@@ -360,7 +369,7 @@ export default function CreatorCollaborationsScreen() {
               />
             </View>
 
-            {filteredCollabs.length === 0 ? (
+            {filteredCollabs.length === 0 && activeFilter === "archived" ? null : filteredCollabs.length === 0 ? (
               <View style={{ alignItems: "center", paddingTop: 40, paddingHorizontal: 40 }}>
                 <Text style={{ fontSize: 32, marginBottom: 12 }}>✦</Text>
                 <Text
@@ -373,7 +382,7 @@ export default function CreatorCollaborationsScreen() {
                     lineHeight: 18 * lineHeights.display,
                   }}
                 >
-                  {activeFilter === "active" ? "No collabs yet" : "No archived collaborations"}
+                  No collabs yet
                 </Text>
                 {activeFilter === "active" && (
                   <>
@@ -526,6 +535,8 @@ export default function CreatorCollaborationsScreen() {
           </ScrollView>
         )}
       </View>
+      <StatusBarBlur />
+      <PullToast text={toast.text} />
     </AtmosphericBackground>
   );
 }
