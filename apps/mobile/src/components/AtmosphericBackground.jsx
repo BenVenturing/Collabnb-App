@@ -8,25 +8,50 @@
 //
 // Use this at the root of every full screen. A flat backgroundColor is not a
 // substitute — that flatness is the main reason mobile read cheaper than web.
+//
+// The clouds drift slowly sideways. They live outside the Skia canvas on
+// purpose: animating them inside it would redraw the glow and grain every
+// frame on every mounted screen. As a plain image moved by a native-driver
+// transform, the drift is a compositor shift with no redraw and no JS per frame.
+// That costs web's multiply blend — normal blend at the same low opacity reads
+// the same on bone. Reduce Motion keeps them still.
 
-import { StyleSheet, View, useWindowDimensions } from "react-native";
+import { useEffect, useRef } from "react";
+import { StyleSheet, View, Animated, Easing, AccessibilityInfo, useWindowDimensions } from "react-native";
 import {
   Canvas,
   Rect,
   Group,
   RadialGradient,
   FractalNoise,
-  Image as SkiaImage,
-  useImage,
   vec,
 } from "@shopify/react-native-skia";
 import { backdrop } from "@/config/theme";
 
 const CLOUDS = require("../../assets/images/bg-clouds-hazy.png");
+// Image is this much wider than the screen; the drift pans across the overhang.
+const OVERHANG = 0.3;
+const DRIFT_MS = 90000;
 
 export default function AtmosphericBackground({ children, style }) {
   const { width, height } = useWindowDimensions();
-  const clouds = useImage(CLOUDS);
+  const drift = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    let loop;
+    let cancelled = false;
+    AccessibilityInfo.isReduceMotionEnabled().then((reduced) => {
+      if (reduced || cancelled) return;
+      const leg = (to) =>
+        Animated.timing(drift, { toValue: to, duration: DRIFT_MS, easing: Easing.inOut(Easing.sin), useNativeDriver: true });
+      loop = Animated.loop(Animated.sequence([leg(1), leg(0)]));
+      loop.start();
+    });
+    return () => {
+      cancelled = true;
+      loop?.stop();
+    };
+  }, [drift]);
 
   const { glow, grain, clouds: cloudCfg } = backdrop;
   const cx = width * glow.centerX;
@@ -54,19 +79,6 @@ export default function AtmosphericBackground({ children, style }) {
           </Rect>
         </Group>
 
-        {clouds && (
-          <Group opacity={cloudCfg.opacity} blendMode="multiply">
-            <SkiaImage
-              image={clouds}
-              x={0}
-              y={0}
-              width={width}
-              height={height}
-              fit="cover"
-            />
-          </Group>
-        )}
-
         <Group opacity={grain.opacity}>
           <Rect x={0} y={0} width={width} height={height}>
             <FractalNoise
@@ -77,6 +89,21 @@ export default function AtmosphericBackground({ children, style }) {
           </Rect>
         </Group>
       </Canvas>
+
+      <Animated.Image
+        source={CLOUDS}
+        pointerEvents="none"
+        resizeMode="cover"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: width * (1 + OVERHANG),
+          height,
+          opacity: cloudCfg.opacity,
+          transform: [{ translateX: drift.interpolate({ inputRange: [0, 1], outputRange: [0, -width * OVERHANG] }) }],
+        }}
+      />
 
       {children}
     </View>
