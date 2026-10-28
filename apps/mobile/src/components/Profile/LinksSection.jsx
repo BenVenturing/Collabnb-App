@@ -74,8 +74,8 @@ export default function LinksSection({ personalLink, socialLinks }) {
     <View style={{ paddingHorizontal: 20, marginBottom: 28 }}>
       <SectionHeading size={18} title="Links & Socials" />
       <View style={{ gap: 10 }}>
-        {rows.map((row) => (
-          <SocialRow key={row.key} {...row} />
+        {rows.map(({ key, ...row }) => (
+          <SocialRow key={key} {...row} />
         ))}
       </View>
     </View>
