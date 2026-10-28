@@ -17,10 +17,14 @@ Notifications.setNotificationHandler({
 
 // Maps a notification's `link` (the same value the web bell dropdown and
 // wallet pushes use — see app/convex/notifications.ts) onto a mobile route.
-// Only message threads have a direct mobile equivalent today; everything
-// else falls back to Inbox rather than 404ing into a screen that isn't
-// built yet.
-function routeForLink(link) {
+// Anything without a mobile equivalent falls back to Inbox rather than 404ing
+// into a screen that isn't built yet.
+//
+// `#/collabs?open=` carries a LISTING id and `#/host/proposals?pitch=` a pitch
+// id, but neither screen takes a param to open one record, so both land on the
+// list. That still matches where the Live Activity sends a tap, which is the
+// point — the same event shouldn't open two different screens.
+export function routeForLink(link) {
   if (!link) return { pathname: "/(tabs)/inbox" };
   // Local collab reminders (hooks/useCollabReminders.js) link straight to the collab screen.
   if (link.startsWith("/collab/")) return link;
@@ -28,6 +32,8 @@ function routeForLink(link) {
   if (threadMatch) {
     return { pathname: "/messages/[threadId]", params: { threadId: decodeURIComponent(threadMatch[1]) } };
   }
+  if (link.includes("/host/proposals")) return { pathname: "/host/(tabs)/proposals" };
+  if (link.includes("/collabs")) return { pathname: "/(tabs)/collaborations" };
   return { pathname: "/(tabs)/inbox" };
 }
 

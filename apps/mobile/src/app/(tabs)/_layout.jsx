@@ -1,26 +1,31 @@
 import { Tabs, useSegments } from "expo-router";
-import { View, Platform, TouchableOpacity } from "react-native";
+import { View, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, { useAnimatedStyle, withSpring } from "react-native-reanimated";
 import {
   Search,
   Briefcase,
   MessageCircle,
-  User,
   Heart,
   Map as MapIcon,
-  ChevronUp,
+  List,
 } from "lucide-react-native";
 import ThemedBackground from "@/components/ThemedBackground";
-import BulgeTabBarBackground, { BULGE_RISE, BULGE_RADIUS } from "@/components/BulgeTabBarBackground";
+import GlassTabBar from "@/components/GlassTabBar";
+import TabAvatar from "@/components/TabAvatar";
+import Glass from "@/components/Glass";
+import { Body } from "@/components/ui";
+import { colors, shadows } from "@/config/theme";
 import useMapViewStore from "@/utils/MapViewStore";
 import { useConversations } from "@/hooks/useConversations";
 
-const ROW_HEIGHT = 49;
+// GlassTabBar's own height: 64pt pill + 6pt top pad + bottom inset.
+const BAR_H = 70;
+const SPRING = { damping: 18, stiffness: 180 };
 
-// "Liquid glass" tab bar whose top edge arcs up into a semicircle on Explore.
-// The map toggle lives inside that arc rather than floating above the bar.
-// While the map is open the whole bar slides down until only the arc is left
-// on screen, so it doubles as the pull-tab that brings the bar back up.
+// Floating Liquid Glass tab bar (same as host mode). On Explore a glass
+// Map/List pill floats above it; opening the map tucks the bar away so the
+// pill is the only chrome left on screen.
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { unreadCount } = useConversations(); // drives the Inbox tab badge
@@ -29,39 +34,29 @@ export default function TabLayout() {
 
   // segments is ["(tabs)", "explore"] on Explore, ["(tabs)", "saved"] elsewhere.
   const onExplore = segments[segments.length - 1] === "explore";
-  const showBulge = onExplore && hasMapPoints;
+  const showMapToggle = onExplore && hasMapPoints;
+  const barH = BAR_H + Math.max(insets.bottom, 8);
+  const hidden = showMapToggle && mapOpen;
 
-  const barHeight = ROW_HEIGHT + BULGE_RISE + insets.bottom;
-  // Slid down far enough that only the arc band still shows.
-  const slide = showBulge && mapOpen ? barHeight - BULGE_RISE : 0;
-  // Distance from the screen's bottom edge to the middle of the arc.
-  const arcCenterFromBottom = barHeight - slide - BULGE_RISE / 2;
+  const barStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: withSpring(hidden ? barH + 20 : 0, SPRING) }],
+  }));
+  const pillStyle = useAnimatedStyle(() => ({
+    bottom: withSpring(hidden ? Math.max(insets.bottom, 8) + 12 : barH + 12, SPRING),
+  }));
 
   return (
     <ThemedBackground style={{ flex: 1 }}>
       <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: {
-            position: "absolute",
-            backgroundColor: "transparent",
-            borderTopWidth: 0,
-            height: barHeight,
-            paddingTop: BULGE_RISE,
-            paddingBottom: insets.bottom,
-            elevation: 0,
-            transform: [{ translateY: slide }],
-          },
-          tabBarBackground: () => (
-            <BulgeTabBarBackground height={barHeight} withBulge={showBulge} />
-          ),
-          tabBarActiveTintColor: "#192524",
-          tabBarInactiveTintColor: "#959D90",
-          tabBarLabelStyle: {
-            fontSize: 11,
-            fontWeight: "500",
-          },
-        }}
+        tabBar={(props) => (
+          <Animated.View
+            pointerEvents="box-none"
+            style={[{ position: "absolute", left: 0, right: 0, bottom: 0 }, barStyle]}
+          >
+            <GlassTabBar {...props} />
+          </Animated.View>
+        )}
+        screenOptions={{ headerShown: false }}
       >
         <Tabs.Screen
           name="explore"
@@ -100,7 +95,7 @@ export default function TabLayout() {
           name="profile"
           options={{
             title: "Profile",
-            tabBarIcon: ({ color, size }) => <User color={color} size={22} />,
+            tabBarIcon: ({ color, focused }) => <TabAvatar color={color} focused={focused} />,
           }}
         />
         <Tabs.Screen
@@ -123,30 +118,22 @@ export default function TabLayout() {
         />
       </Tabs>
 
-      {/* Touch target for the arc. The arc itself is drawn as part of the
-          bar's silhouette (BulgeTabBarBackground); tabBarBackground isn't
-          interactive, so the press handling lives here. */}
-      {showBulge && (
-        <TouchableOpacity
-          onPress={() => setMapOpen(!mapOpen)}
-          hitSlop={10}
-          activeOpacity={0.7}
-          style={{
-            position: "absolute",
-            alignSelf: "center",
-            bottom: arcCenterFromBottom - BULGE_RISE / 2,
-            width: BULGE_RADIUS * 2,
-            height: BULGE_RISE,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {mapOpen ? (
-            <ChevronUp color="#192524" size={20} />
-          ) : (
-            <MapIcon color="#192524" size={19} />
-          )}
-        </TouchableOpacity>
+      {/* While the map is open its results sheet carries its own Map pill. */}
+      {showMapToggle && !mapOpen && (
+        <Animated.View style={[{ position: "absolute", alignSelf: "center", ...shadows.md }, pillStyle]}>
+          <Pressable
+            onPress={() => setMapOpen(!mapOpen)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={mapOpen ? "Show list" : "Show map"}
+            style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.96 : 1 }] })}
+          >
+            <Glass variant="small" style={{ borderRadius: 999 }} contentStyle={{ flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 18, paddingVertical: 11 }}>
+              {mapOpen ? <List color={colors.ink} size={17} /> : <MapIcon color={colors.ink} size={17} />}
+              <Body size={14} weight="semibold">{mapOpen ? "List" : "Map"}</Body>
+            </Glass>
+          </Pressable>
+        </Animated.View>
       )}
     </ThemedBackground>
   );

@@ -2,18 +2,17 @@ import {
   View,
   ScrollView,
   Pressable,
-  ActivityIndicator,
-  Dimensions,
   Animated,
+  Easing,
 } from "react-native";
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useQuery } from "convex/react";
+import { useQuery, useAction, useConvex } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import useHostOnboardingStore from "@/utils/HostOnboardingStore";
@@ -30,6 +29,7 @@ import {
   Settings,
   Share2,
   UserRound,
+  RefreshCw,
 } from "lucide-react-native";
 import { colors, radii, shadows } from "@/config/theme";
 import {
@@ -50,6 +50,8 @@ import SpecialtiesSection from "@/components/Profile/SpecialtiesSection";
 import SettingsModal from "@/components/Profile/SettingsModal";
 import RoleSwitchModal from "@/components/Profile/RoleSwitchModal";
 import ShareProfileSheet from "@/components/Profile/ShareProfileSheet";
+import StatusBarBlur from "@/components/StatusBarBlur";
+import { useBottomPull, PulledSection, usePullToast, PullToast } from "@/components/PullReveal";
 
 const LOCATION_PREF_KEY = "@collabnb_creator_location_prefs_v1";
 const DEFAULT_PHOTO = {
@@ -57,6 +59,8 @@ const DEFAULT_PHOTO = {
 };
 const BIO_LIMIT = 155;
 const COLLAB_CARD_WIDTH = 220;
+// Scroll depth at which the banner has gone and the status bar sits on bone.
+const STATUS_FLIP_Y = 190;
 
 function buildSocialLinks(profile) {
   const links = [];
@@ -88,9 +92,71 @@ function buildSocialLinks(profile) {
 }
 
 function updatedLabel(ts) {
-  if (!ts) return "↻ Updated just now";
+  if (!ts) return "Tap to refresh";
   const days = Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
-  return days === 0 ? "↻ Updated today" : `↻ Updated ${days}d ago`;
+  return days === 0 ? "Updated today" : `Updated ${days}d ago`;
+}
+
+const MIN_SPIN_MS = 900;
+
+// Re-syncs every linked social account. Live linking is still dark on prod,
+// so most taps end in a toast explaining why nothing changed.
+function RefreshStats({ updatedAt, onMessage }) {
+  const convex = useConvex();
+  const syncMine = useAction(api.creatorSocial.syncMine);
+  const spin = useRef(new Animated.Value(0)).current;
+  const [busy, setBusy] = useState(false);
+
+  const refresh = useCallback(async () => {
+    if (busy) return;
+    setBusy(true);
+    spin.setValue(0);
+    const loop = Animated.loop(
+      Animated.timing(spin, { toValue: 1, duration: 800, easing: Easing.linear, useNativeDriver: true }),
+    );
+    loop.start();
+    const started = Date.now();
+    let msg = null;
+    try {
+      const status = await convex.query(api.creatorSocial.getStatus, {});
+      const conns = status?.enabled ? await convex.query(api.creatorSocial.getMyConnections, {}) : [];
+      const linked = (conns ?? []).filter((c) => !c.needs_reconnect);
+      if (!status?.enabled) msg = "Live stats are coming soon";
+      else if (linked.length === 0) msg = "Link Instagram, TikTok or YouTube in Settings";
+      else {
+        const results = await Promise.allSettled(linked.map((c) => syncMine({ platform: c.platform })));
+        const cooled = results.some((r) => r.status === "rejected" && String(r.reason?.data ?? r.reason).includes("cooldown"));
+        const ok = results.some((r) => r.status === "fulfilled");
+        msg = ok ? "Stats updated" : cooled ? "Already fresh, try again in an hour" : "Couldn't refresh right now";
+      }
+    } catch {
+      msg = "Live stats are coming soon";
+    }
+    const wait = MIN_SPIN_MS - (Date.now() - started);
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    loop.stop();
+    Animated.timing(spin, { toValue: 1, duration: 250, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
+    setBusy(false);
+    onMessage?.(msg);
+  }, [busy, convex, syncMine, spin, onMessage]);
+
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
+  return (
+    <Pressable
+      onPress={refresh}
+      hitSlop={10}
+      accessibilityRole="button"
+      accessibilityLabel="Refresh stats"
+      style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 6, opacity: pressed ? 0.6 : 1 })}
+    >
+      <Animated.View style={{ transform: [{ rotate }] }}>
+        <RefreshCw size={12} color={colors.sage} />
+      </Animated.View>
+      <Body size={12} color={colors.sage}>
+        {busy ? "Updating…" : updatedLabel(updatedAt)}
+      </Body>
+    </Pressable>
+  );
 }
 
 // Web's own past-collab card, not the marketplace ListingCard: shorter image
@@ -183,6 +249,7 @@ function PastCollabCard({ collab, sample = false, onPress }) {
 export default function CreatorProfileScreen() {
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
+  const darkRef = useRef(false);
   const [showShare, setShowShare] = useState(false);
   const router = useRouter();
   const { loadDraft: loadHostDraft } = useHostOnboardingStore();
@@ -199,6 +266,9 @@ export default function CreatorProfileScreen() {
   const [showSettings, setShowSettings] = useState(false);
   const [bioExpanded, setBioExpanded] = useState(false);
   const [collabPrefs, setCollabPrefs] = useState(null);
+  const [pastRevealed, setPastRevealed] = useState(false);
+  const [darkStatus, setDarkStatus] = useState(false);
+  const toast = usePullToast();
 
   const {
     showRoleSwitchModal,
@@ -250,10 +320,12 @@ export default function CreatorProfileScreen() {
       ),
     [collabs],
   );
-  const sampleCollabs = useMemo(
-    () => (collabs ?? []).filter((c) => c.is_sample),
-    [collabs],
-  );
+  const handlePull = useCallback(() => {
+    if (collabs === undefined) return;
+    if (realCollabs.length > 0) setPastRevealed(true);
+    else toast.show("No past collabs yet. Finish one to show it here");
+  }, [collabs, realCollabs.length, toast.show]);
+  const bottomPull = useBottomPull(handlePull);
 
   // Signed out, the Convex query is skipped and never resolves, so the loading
   // screen below would spin forever with no way off it. Same shape as the
@@ -312,57 +384,49 @@ export default function CreatorProfileScreen() {
       : null,
   ].filter(Boolean);
 
+  // Counted from the collabs themselves: profile.collab_count is only written
+  // by the admin backfill, so it lags real completions.
   const stats = [
-    { label: "Collabs", value: profile?.collab_count ?? 0 },
+    { label: "Collabs", value: collabs === undefined ? null : realCollabs.length },
     { label: "Followers", value: followers ? formatFollowers(followers) : null },
-    {
-      label: "Profile ER",
-      value: profile?.engagement_rate ? `${profile.engagement_rate}%` : null,
-    },
-    // No collab carries a content ER yet, so this cell is web's em-dash.
-    { label: "Content ER", value: null },
+    profile?.engagement_rate
+      ? { label: "Profile ER", value: `${profile.engagement_rate}%` }
+      : { label: "Profile ER", comingSoon: true, placeholder: "4.2%" },
+    // No collab carries a content ER yet.
+    { label: "Content ER", comingSoon: true, placeholder: "6.8%" },
   ];
-
-  const emptyCollabsOverlay = (
-    <View
-      style={{
-        position: "absolute",
-        inset: 0,
-        alignItems: "center",
-        justifyContent: "center",
-        paddingHorizontal: 32,
-        gap: 6,
-      }}
-    >
-      <Body size={14} weight="semibold" style={{ textAlign: "center" }}>
-        Your completed collabs will appear here
-      </Body>
-      <Body size={12} color={colors.slate} style={{ textAlign: "center" }}>
-        Complete your first collab to unlock this section
-      </Body>
-    </View>
-  );
 
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
-      <StatusBar style="light" />
+      <StatusBar style={darkStatus ? "dark" : "light"} />
 
       <Animated.ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
+        {...bottomPull}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true },
+          {
+            useNativeDriver: true,
+            listener: (e) => {
+              bottomPull.onScroll(e);
+              const dark = e.nativeEvent.contentOffset.y > STATUS_FLIP_Y;
+              if (dark !== darkRef.current) {
+                darkRef.current = dark;
+                setDarkStatus(dark);
+              }
+            },
+          },
         )}
-        scrollEventThrottle={16}
       >
         <ProfileHeader
           scrollY={scrollY}
           hero={profile?.banner_url ? { uri: profile.banner_url } : null}
           avatar={profile?.avatar_url ? { uri: profile.avatar_url } : DEFAULT_PHOTO}
           name={profile?.full_name || "Your profile"}
+          badgeTone={profile?.is_founder ? "gold" : undefined}
           badgeLabel={
             profile?.is_founder
               ? "★ Founding Member"
@@ -411,9 +475,10 @@ export default function CreatorProfileScreen() {
                     {platformMetrics.join("   ")}
                   </Body>
                 ) : null}
-                <Body size={12} color={colors.sage}>
-                  {updatedLabel(profile?.metrics_updated_at)}
-                </Body>
+                <RefreshStats
+                  updatedAt={profile?.metrics_synced_at ?? profile?.metrics_updated_at}
+                  onMessage={toast.show}
+                />
               </View>
             }
             style={{ marginBottom: 20 }}
@@ -475,19 +540,16 @@ export default function CreatorProfileScreen() {
           </View>
         ) : null}
 
-        <View style={{ marginBottom: 28 }}>
-          <View style={{ paddingHorizontal: 20 }}>
-            <SectionHeading
-              size={18}
-              title="Past Collabs"
-              actionLabel={realCollabs.length > 0 ? "View all →" : null}
-              onAction={() => router.push("/(tabs)/collaborations")}
-            />
-          </View>
-
-          {collabs === undefined ? (
-            <ActivityIndicator color={colors.slate} style={{ marginTop: 8 }} />
-          ) : realCollabs.length > 0 ? (
+        {pastRevealed && realCollabs.length > 0 ? (
+          <PulledSection style={{ marginBottom: 28 }}>
+            <View style={{ paddingHorizontal: 20 }}>
+              <SectionHeading
+                size={18}
+                title="Past Collabs"
+                actionLabel="View all →"
+                onAction={() => router.push("/(tabs)/collaborations")}
+              />
+            </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -503,35 +565,12 @@ export default function CreatorProfileScreen() {
                 />
               ))}
             </ScrollView>
-          ) : (
-            <View style={{ position: "relative" }}>
-              <ScrollView
-                horizontal
-                scrollEnabled={false}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 20, gap: 14 }}
-                style={{ opacity: 0.5 }}
-              >
-                {sampleCollabs.length > 0 ? (
-                  sampleCollabs.map((c) => (
-                    <PastCollabCard key={String(c._id)} collab={c} sample />
-                  ))
-                ) : (
-                  <View
-                    style={{
-                      width: Dimensions.get("window").width - 40,
-                      height: 200,
-                      borderRadius: radii.lg,
-                      backgroundColor: colors.stone,
-                    }}
-                  />
-                )}
-              </ScrollView>
-              {emptyCollabsOverlay}
-            </View>
-          )}
-        </View>
+          </PulledSection>
+        ) : null}
       </Animated.ScrollView>
+
+      <StatusBarBlur scrollY={scrollY} fadeStart={STATUS_FLIP_Y - 30} />
+      <PullToast text={toast.text} />
 
       <SettingsModal
         visible={showSettings}

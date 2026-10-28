@@ -5,10 +5,10 @@ import {
   FileText,
   MessageCircle,
   Users,
-  User,
 } from "lucide-react-native";
 import ThemedBackground from "@/components/ThemedBackground";
 import GlassTabBar from "@/components/GlassTabBar";
+import TabAvatar from "@/components/TabAvatar";
 import { useConversations } from "@/hooks/useConversations";
 
 export default function HostTabLayout() {
@@ -58,7 +58,7 @@ export default function HostTabLayout() {
           name="profile"
           options={{
             title: "Profile",
-            tabBarIcon: ({ color, size }) => <User color={color} size={22} />,
+            tabBarIcon: ({ color, focused }) => <TabAvatar color={color} focused={focused} />,
           }}
         />
       </Tabs>

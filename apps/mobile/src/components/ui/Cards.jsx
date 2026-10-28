@@ -1,7 +1,8 @@
 // Cards and grids. See COMPONENT-SPEC.md §5, §7, §8.
 
-import { View, Pressable } from "react-native";
+import { View, Pressable, StyleSheet } from "react-native";
 import { Image } from "expo-image";
+import { BlurView } from "expo-blur";
 import { Heart, Lock } from "lucide-react-native";
 import { colors, radii, shadows } from "@/config/theme";
 import { Body, Display, EyebrowLabel } from "./Text";
@@ -14,6 +15,7 @@ import Glass from "../Glass";
 //
 // Web renders an em-dash for an empty cell, never "0" and never blank —
 // `value` of null is deliberately distinct from a real zero.
+// `comingSoon` frosts a placeholder figure for stats we can't source yet.
 export function StatGrid({ items, columns = 2, footer, eyebrowLabels = false, style }) {
   const rows = [];
   for (let i = 0; i < items.length; i += columns) rows.push(items.slice(i, i + columns));
@@ -58,10 +60,24 @@ export function StatGrid({ items, columns = 2, footer, eyebrowLabels = false, st
                   </>
                 ) : (
                   <>
-                    <Display size={26}>{item.value ?? "—"}</Display>
+                    {item.comingSoon ? (
+                      <View style={{ borderRadius: 8, overflow: "hidden" }}>
+                        <Display size={26} color={colors.slate} style={{ paddingHorizontal: 6 }}>
+                          {item.placeholder ?? "4.8%"}
+                        </Display>
+                        <BlurView intensity={18} tint="light" style={StyleSheet.absoluteFill} />
+                      </View>
+                    ) : (
+                      <Display size={26}>{item.value ?? "—"}</Display>
+                    )}
                     <Body size={13} color={colors.sage} style={{ marginTop: 4 }}>
                       {item.label}
                     </Body>
+                    {item.comingSoon ? (
+                      <EyebrowLabel size={9} color={colors.sage} style={{ marginTop: 4 }}>
+                        Coming soon
+                      </EyebrowLabel>
+                    ) : null}
                   </>
                 )}
               </View>
@@ -87,6 +103,97 @@ export function StatGrid({ items, columns = 2, footer, eyebrowLabels = false, st
         ) : null}
       </View>
     </Glass>
+  );
+}
+
+// Airbnb-style tile: one rounded cover photo, a few lines of small text
+// underneath, no card chrome and no host. Used on Explore.
+export function ListingTile({
+  image,
+  title,
+  location,
+  price,
+  deliverables,
+  featured = false,
+  badge,
+  saved = false,
+  redacted = false,
+  onPress,
+  onToggleSave,
+  width,
+  style,
+}) {
+  const pill = badge || (featured ? "Featured" : null);
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [{ width, transform: [{ scale: pressed ? 0.98 : 1 }] }, style]}
+    >
+      <View style={{ aspectRatio: 1, borderRadius: radii.lg, overflow: "hidden", backgroundColor: colors.stone }}>
+        <Image
+          source={image ? { uri: image } : null}
+          style={{ width: "100%", height: "100%" }}
+          contentFit="cover"
+          blurRadius={redacted ? 25 : 0}
+          transition={150}
+        />
+        {redacted ? (
+          <View style={{ ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" }}>
+            <Lock color={colors.surface} size={22} />
+          </View>
+        ) : null}
+        {pill ? (
+          <View
+            style={{
+              position: "absolute",
+              top: 10,
+              left: 10,
+              backgroundColor: "rgba(255,255,255,0.92)",
+              borderRadius: radii.pill,
+              paddingHorizontal: 9,
+              paddingVertical: 4,
+            }}
+          >
+            <Body size={11} weight="semibold">
+              {pill}
+            </Body>
+          </View>
+        ) : null}
+        {onToggleSave ? (
+          <Pressable onPress={onToggleSave} hitSlop={10} style={{ position: "absolute", top: 10, right: 10 }}>
+            <Heart
+              size={22}
+              color={colors.surface}
+              fill={saved ? colors.ink : "rgba(25,37,36,0.35)"}
+              strokeWidth={2}
+            />
+          </Pressable>
+        ) : null}
+      </View>
+      <View style={{ paddingTop: 8, gap: 1 }}>
+        <Body size={14} weight="semibold" numberOfLines={1}>
+          {redacted ? "Members-only stay" : title}
+        </Body>
+        {location ? (
+          <Body size={13} color={colors.sage} numberOfLines={1}>
+            {location}
+          </Body>
+        ) : null}
+        {deliverables ? (
+          <Body size={13} color={colors.sage} numberOfLines={1}>
+            {deliverables}
+          </Body>
+        ) : null}
+        {price ? (
+          <Body size={13} weight="semibold" style={{ marginTop: 2 }}>
+            {price}{" "}
+            <Body size={13} color={colors.sage}>
+              collab
+            </Body>
+          </Body>
+        ) : null}
+      </View>
+    </Pressable>
   );
 }
 

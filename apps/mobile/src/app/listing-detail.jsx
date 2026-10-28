@@ -18,6 +18,7 @@ import {
   TextInput,
   Image,
   Share,
+  Animated as RNAnimated,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,7 +26,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import MapView, { Marker } from "react-native-maps";
-import { Share2, Heart, Quote, Star, Check, Plus, ArrowRight } from "lucide-react-native";
+import { Share2, Heart, Quote, Star, Check, Plus, ArrowRight, ChevronLeft, Pencil } from "lucide-react-native";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
@@ -95,6 +96,7 @@ function normalizeRealListing(l) {
     status: l.status,
     coverImage: images[0],
     image: images[0],
+    images,
     collab_type: l.collab_type,
     due_days: l.due_days,
     isSample: l.is_sample === true,
@@ -730,49 +732,33 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
 }
 
 // ─── PHOTO GALLERY ───────────────────────────────────────────
-function PhotoGallery({ onBack, onEdit, isHost, listingId, coverImage }) {
-  const insets = useSafeAreaInsets();
-  const [currentIndex, setCurrentIndex] = useState(0);
+// Airbnb layout: full-bleed swipeable photos with a "1 / N" counter. Lives
+// inside the page scroll so the white sheet slides up over it; pulling down
+// stretches the photo instead of exposing a gap.
+const HERO_H = Math.round(SCREEN_WIDTH * 0.92);
 
-  // Get photos for this listing, fallback to l1 if not found
-  const photos = coverImage
-    ? [{ type: "image", uri: coverImage }]
-    : LISTING_PHOTOS[listingId] || LISTING_PHOTOS.l1;
-  const totalImages = photos.length;
+function PhotoGallery({ listingId, images, coverImage, scrollY }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const photos = images?.length
+    ? images.map((uri) => ({ type: "image", uri }))
+    : coverImage
+      ? [{ type: "image", uri: coverImage }]
+      : LISTING_PHOTOS[listingId] || LISTING_PHOTOS.l1;
 
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
-    if (viewableItems.length > 0) {
-      setCurrentIndex(viewableItems[0].index || 0);
-    }
+    if (viewableItems.length > 0) setCurrentIndex(viewableItems[0].index || 0);
   });
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 });
 
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 50,
-  });
-
-  const renderItem = ({ item }) => (
-    <View style={{ width: SCREEN_WIDTH, height: 320, position: "relative" }}>
-      {item.type === "image" && item.uri ? (
-        <Image
-          source={{ uri: item.uri }}
-          style={{ width: SCREEN_WIDTH, height: 320 }}
-          resizeMode="cover"
-          onError={() => console.log("Image failed to load for listing photo")}
-        />
-      ) : (
-        <LinearGradient
-          colors={item.colors || [colors.mint, colors.slate]}
-          start={{ x: 0.15, y: 0 }}
-          end={{ x: 0.85, y: 1 }}
-          style={{ width: SCREEN_WIDTH, height: 320 }}
-        />
-      )}
-    </View>
-  );
+  const stretch = {
+    transform: [
+      { translateY: scrollY.interpolate({ inputRange: [-HERO_H, 0, HERO_H], outputRange: [-HERO_H / 2, 0, HERO_H * 0.4], extrapolate: "clamp" }) },
+      { scale: scrollY.interpolate({ inputRange: [-HERO_H, 0], outputRange: [2, 1], extrapolate: "clamp" }) },
+    ],
+  };
 
   return (
-    <View style={{ height: 320, width: "100%", position: "relative" }}>
-      {/* Swipeable Photo FlatList */}
+    <RNAnimated.View style={[{ height: HERO_H, width: "100%" }, stretch]}>
       <FlatList
         data={photos}
         horizontal
@@ -780,111 +766,94 @@ function PhotoGallery({ onBack, onEdit, isHost, listingId, coverImage }) {
         showsHorizontalScrollIndicator={false}
         onViewableItemsChanged={onViewableItemsChanged.current}
         viewabilityConfig={viewabilityConfig.current}
-        keyExtractor={(item, index) => `photo-${index}`}
-        renderItem={renderItem}
+        keyExtractor={(_, index) => `photo-${index}`}
+        renderItem={({ item }) =>
+          item.type === "image" && item.uri ? (
+            <Image source={{ uri: item.uri }} style={{ width: SCREEN_WIDTH, height: HERO_H }} resizeMode="cover" />
+          ) : (
+            <LinearGradient
+              colors={item.colors || [colors.mint, colors.slate]}
+              start={{ x: 0.15, y: 0 }}
+              end={{ x: 0.85, y: 1 }}
+              style={{ width: SCREEN_WIDTH, height: HERO_H }}
+            />
+          )
+        }
       />
-
-      {/* Back Button */}
-      <TouchableOpacity
-        style={{
-          position: "absolute",
-          left: 16,
-          top: insets.top + 8,
-          width: 38,
-          height: 38,
-          borderRadius: 19,
-          backgroundColor: colors.surface,
-          alignItems: "center",
-          justifyContent: "center",
-          shadowColor: colors.ink,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.15,
-          shadowRadius: 8,
-          elevation: 4,
-        }}
-        onPress={onBack}
-      >
-        <Text
-          style={{
-            fontSize: 28,
-            fontWeight: "300",
-            color: colors.ink,
-            marginTop: -2,
-          }}
-        >
-          ‹
-        </Text>
-      </TouchableOpacity>
-
-      {/* Edit Button (hosts only) */}
-      {isHost && (
-        <TouchableOpacity
+      {photos.length > 1 && (
+        <View
           style={{
             position: "absolute",
+            bottom: 40,
             right: 16,
-            top: insets.top + 8,
-            paddingHorizontal: 16,
-            height: 38,
-            borderRadius: 19,
-            backgroundColor: colors.surface,
-            alignItems: "center",
-            justifyContent: "center",
-            shadowColor: colors.ink,
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.15,
-            shadowRadius: 8,
-            elevation: 4,
+            backgroundColor: "rgba(25,37,36,0.6)",
+            borderRadius: 6,
+            paddingHorizontal: 9,
+            paddingVertical: 4,
           }}
-          onPress={onEdit}
         >
-          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.slate }}>
-            Edit
+          <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface, fontSize: 12 }}>
+            {currentIndex + 1} / {photos.length}
           </Text>
-        </TouchableOpacity>
+        </View>
       )}
+    </RNAnimated.View>
+  );
+}
 
-      {/* Dot indicators */}
-      <View
+// Fixed over the page: frosted round back / share / heart on the photo, then
+// a white bar with the title fades in once the photo has scrolled away.
+function DetailTopBar({ scrollY, title, onBack, onShare, onSave, saved, isHost, onEdit }) {
+  const insets = useSafeAreaInsets();
+  const solid = scrollY.interpolate({ inputRange: [HERO_H - insets.top - 90, HERO_H - insets.top - 40], outputRange: [0, 1], extrapolate: "clamp" });
+  const Round = ({ onPress, children, label }) => (
+    <TouchableOpacity
+      onPress={onPress}
+      accessibilityLabel={label}
+      style={{ width: 38, height: 38, borderRadius: 19, overflow: "hidden", alignItems: "center", justifyContent: "center" }}
+    >
+      <BlurView intensity={40} tint="light" style={{ position: "absolute", inset: 0 }} />
+      <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(255,255,255,0.55)" }} />
+      {children}
+    </TouchableOpacity>
+  );
+  return (
+    <View pointerEvents="box-none" style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 20 }}>
+      <RNAnimated.View
+        pointerEvents="none"
         style={{
           position: "absolute",
-          bottom: 16,
+          top: 0,
           left: 0,
           right: 0,
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 6,
+          height: insets.top + 56,
+          backgroundColor: colors.surface,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.hairline,
+          opacity: solid,
         }}
-      >
-        {photos.map((_, index) => (
-          <View
-            key={index}
-            style={{
-              width: currentIndex === index ? 20 : 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor:
-                currentIndex === index ? colors.surface : "rgba(255,255,255,0.5)",
-            }}
-          />
-        ))}
-      </View>
-
-      {/* Photo Counter Badge */}
-      <View
-        style={{
-          position: "absolute",
-          bottom: 12,
-          right: 12,
-          backgroundColor: "rgba(25,37,36,0.55)",
-          borderRadius: 12,
-          paddingHorizontal: 10,
-          paddingVertical: 4,
-        }}
-      >
-        <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface, fontSize: 12 }}>
-          {currentIndex + 1} / {totalImages}
-        </Text>
+      />
+      <View style={{ paddingTop: insets.top + 6, paddingHorizontal: 16, height: insets.top + 56, flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <Round onPress={onBack} label="Back">
+          <ChevronLeft color={colors.ink} size={22} />
+        </Round>
+        <RNAnimated.Text numberOfLines={1} style={{ flex: 1, textAlign: "center", fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink, opacity: solid }}>
+          {title}
+        </RNAnimated.Text>
+        {isHost ? (
+          <Round onPress={onEdit} label="Edit listing">
+            <Pencil color={colors.ink} size={16} />
+          </Round>
+        ) : (
+          <>
+            <Round onPress={onShare} label="Share">
+              <Share2 color={colors.ink} size={17} />
+            </Round>
+            <Round onPress={onSave} label={saved ? "Saved" : "Save"}>
+              <Heart color={colors.ink} fill={saved ? colors.ink : "none"} size={17} />
+            </Round>
+          </>
+        )}
       </View>
     </View>
   );
@@ -1238,6 +1207,7 @@ export default function ListingDetailScreen() {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [applyVisible, setApplyVisible] = useState(false);
   const [saveModalVisible, setSaveModalVisible] = useState(false);
+  const detailScrollY = useRef(new RNAnimated.Value(0)).current;
 
   useEffect(() => {
     if (convexListing === undefined) return; // still loading
@@ -1377,38 +1347,42 @@ export default function ListingDetailScreen() {
       <StatusBar style="dark" />
 
       {/* Photo Gallery */}
-      <PhotoGallery
-        onBack={handleBack}
-        onEdit={handleEdit}
-        isHost={isHost}
-        listingId={listingId}
-        coverImage={listing.coverImage}
-      />
-
-      {/* White Content Card */}
-      <ScrollView
-        style={{
-          flex: 1,
-          marginTop: -40,
-          backgroundColor: colors.surface,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
-        }}
+      <RNAnimated.ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="never"
+        scrollEventThrottle={16}
+        onScroll={RNAnimated.event([{ nativeEvent: { contentOffset: { y: detailScrollY } } }], { useNativeDriver: true })}
       >
+        <PhotoGallery
+          listingId={listingId}
+          images={listing.images}
+          coverImage={listing.coverImage}
+          scrollY={detailScrollY}
+        />
+
+        {/* White sheet that slides up over the photos */}
+        <View
+          style={{
+            marginTop: -24,
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+          }}
+        >
         {/* SECTION 1 — Title Block */}
         <View style={{ padding: 20, paddingBottom: 16 }}>
-          <Display size={26} style={{ marginBottom: 8 }}>
+          <Display size={26} style={{ marginBottom: 6, textAlign: "center" }}>
             {listing.title}
           </Display>
-          <Body size={14} color={colors.sage} style={{ marginBottom: 12 }}>
-            ✦ Boutique Stay · {listing.location}
+          <Body size={14} color={colors.sage} style={{ marginBottom: 14, textAlign: "center" }}>
+            {listing.type} in {listing.location}
           </Body>
 
           {/* Status + required tier. Both are stat pills, so eyebrow tracking
               (COMPONENT-SPEC.md §2) rather than sentence case. */}
-          <View style={{ flexDirection: "row", gap: 8 }}>
+          <View style={{ flexDirection: "row", gap: 8, justifyContent: "center" }}>
             <Chip
               eyebrow
               label={
@@ -1422,43 +1396,6 @@ export default function ListingDetailScreen() {
             {listing.tierRequired ? <Chip eyebrow label={listing.tierRequired} /> : null}
           </View>
 
-          {/* Secondary actions — glass pills per §11. Saved inverts to the ink
-              fill of an active chip rather than introducing an off-palette red. */}
-          {!isHost && (
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
-              <PillButton
-                variant="glass"
-                label="Share"
-                icon={<Share2 size={14} color={colors.ink} strokeWidth={2} />}
-                onPress={handleShare}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 9,
-                  backgroundColor: colors.bone,
-                  borderColor: colors.hairline,
-                }}
-              />
-              <PillButton
-                variant={isSaved ? "dark" : "glass"}
-                label={isSaved ? "Saved" : "Save"}
-                icon={
-                  <Heart
-                    size={14}
-                    color={isSaved ? colors.surface : colors.ink}
-                    fill={isSaved ? colors.surface : "none"}
-                    strokeWidth={2}
-                  />
-                }
-                onPress={() => setSaveModalVisible(true)}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 9,
-                  backgroundColor: isSaved ? colors.ink : colors.bone,
-                  borderColor: isSaved ? colors.ink : colors.hairline,
-                }}
-              />
-            </View>
-          )}
         </View>
 
         <View style={{ height: 1, backgroundColor: colors.hairline, marginBottom: 20 }} />
@@ -1848,7 +1785,19 @@ export default function ListingDetailScreen() {
             <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage }}>No reviews yet.</Text>
           )}
         </View>
-      </ScrollView>
+        </View>
+      </RNAnimated.ScrollView>
+
+      <DetailTopBar
+        scrollY={detailScrollY}
+        title={listing.title}
+        onBack={handleBack}
+        onShare={handleShare}
+        onSave={() => setSaveModalVisible(true)}
+        saved={isSaved}
+        isHost={isHost}
+        onEdit={handleEdit}
+      />
 
       {/* BOTTOM ACTION BAR — COMPONENT-SPEC.md §12. Price over a sage
           deliverables sub-line, wide dark pill CTA. Collapses to a single
