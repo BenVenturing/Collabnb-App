@@ -9,7 +9,7 @@
 // Map view mirrors CollabMap.jsx's phone-width behavior specifically (map on
 // top, in-view listings docked below) rather than its desktop split.
 
-import { View, FlatList, Dimensions, ActivityIndicator, Pressable, Animated } from "react-native";
+import { View, FlatList, Dimensions, Pressable, Animated } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -36,6 +36,7 @@ import {
   ListingTile,
   PillButton,
   SectionHeading,
+  Skeleton,
 } from "@/components/ui";
 
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
@@ -46,6 +47,47 @@ const GRID_GAP = 12;
 // next tile peeks in as the scroll affordance.
 const GRID_TILE_W = (SCREEN_W - 40 - GRID_GAP) / 2;
 const TRENDING_TILE_W = (SCREEN_W - 40 - GRID_GAP) / 2.25;
+
+// Same shapes as the loaded screen — pill, category strip, then rows of
+// tiles — so nothing jumps when the listings arrive.
+function SkeletonTile({ width }) {
+  return (
+    <View style={{ width, gap: 8 }}>
+      <Skeleton width={width} height={width} radius={radii.lg} />
+      <Skeleton width={width * 0.7} height={12} />
+      <Skeleton width={width * 0.45} height={12} />
+    </View>
+  );
+}
+
+function ExploreSkeleton({ topInset }) {
+  return (
+    <View style={{ paddingTop: topInset + 10, gap: 18 }}>
+      <View style={{ paddingHorizontal: 20 }}>
+        <Skeleton height={52} radius={radii.pill} />
+      </View>
+      <View style={{ flexDirection: "row", gap: 22, paddingHorizontal: 20 }}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <View key={i} style={{ alignItems: "center", gap: 8 }}>
+            <Skeleton width={26} height={26} radius={13} />
+            <Skeleton width={44} height={10} />
+          </View>
+        ))}
+      </View>
+      {[0, 1].map((row) => (
+        <View key={row} style={{ gap: 12 }}>
+          <View style={{ paddingHorizontal: 20 }}>
+            <Skeleton width="55%" height={18} />
+          </View>
+          <View style={{ flexDirection: "row", gap: GRID_GAP, paddingHorizontal: 20 }}>
+            <SkeletonTile width={GRID_TILE_W} />
+            <SkeletonTile width={GRID_TILE_W} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
 
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
@@ -335,9 +377,7 @@ export default function ExploreScreen() {
       )}
 
       {isLoading ? (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator color={colors.slate} />
-        </View>
+        <ExploreSkeleton topInset={insets.top} />
       ) : (
         <Animated.FlatList
           data={listings}
