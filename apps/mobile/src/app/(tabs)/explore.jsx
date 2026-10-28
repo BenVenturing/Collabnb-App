@@ -11,10 +11,11 @@
 
 import { View, FlatList, Dimensions, Pressable, Animated } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { List, Search } from "lucide-react-native";
+import { List, Search, SlidersHorizontal } from "lucide-react-native";
+import ReAnimated, { ZoomIn, ZoomOut } from "react-native-reanimated";
+import Glass from "@/components/Glass";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
@@ -28,6 +29,7 @@ import ExploreMap from "@/components/ExploreMap";
 import CategoryBar from "@/components/explore/CategoryBar";
 import SearchOverlay from "@/components/explore/SearchOverlay";
 import MapResultsSheet from "@/components/explore/MapResultsSheet";
+import StatusBarBlur from "@/components/StatusBarBlur";
 import {
   AtmosphericBackground,
   Body,
@@ -188,11 +190,7 @@ export default function ExploreScreen() {
   // as soon as anything scrolls under it, and stays invisible at rest so the
   // background reads clean. Opacity only, so it can run on the native driver.
   const scrollY = useRef(new Animated.Value(0)).current;
-  const topBlurOpacity = scrollY.interpolate({
-    inputRange: [0, 28],
-    outputRange: [0, 1],
-    extrapolate: "clamp",
-  });
+
 
   // Opening from the tab bar's arc can't reset these itself, so clear the
   // previous session's viewport whenever the map comes back up.
@@ -260,40 +258,63 @@ export default function ExploreScreen() {
     />
   );
 
-  const searchSummary = [whereQuery || "Anywhere", whenLabel || "Any time", collabTypeFilter || "Any type"].join(" · ");
-  const hasSearch = Boolean(whereQuery || whenLabel || collabTypeFilter);
+  const filterCount = [whereQuery, whenLabel, collabTypeFilter].filter(Boolean).length;
 
+  // Liquid-glass search pill. Active filters don't spell themselves out in the
+  // pill; a round glass filter button with a count pops in beside it instead.
   const header = (
     <View style={{ paddingTop: insets.top + 10, gap: 14 }}>
-      <View style={{ paddingHorizontal: 20 }}>
+      <View style={{ paddingHorizontal: 20, flexDirection: "row", alignItems: "center", gap: 10 }}>
         <Pressable
           onPress={() => setSearchOpen(true)}
           accessibilityRole="search"
-          style={({ pressed }) => ({
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 10,
-            backgroundColor: colors.surface,
-            borderRadius: radii.pill,
-            paddingVertical: hasSearch ? 10 : 15,
-            paddingHorizontal: 20,
-            transform: [{ scale: pressed ? 0.98 : 1 }],
-            ...shadows.md,
-          })}
+          style={({ pressed }) => ({ flex: 1, transform: [{ scale: pressed ? 0.98 : 1 }], ...shadows.md })}
         >
-          <Search color={colors.ink} size={18} strokeWidth={2.4} />
-          <View style={{ alignItems: hasSearch ? "flex-start" : "center" }}>
-            <Body size={15} weight="semibold">
-              {hasSearch ? whereQuery || "Anywhere" : "Start your search"}
+          <Glass
+            variant="regular"
+            style={{ borderRadius: radii.pill }}
+            contentStyle={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 15, paddingHorizontal: 20 }}
+          >
+            <Search color={colors.ink} size={18} strokeWidth={2.4} />
+            <Body size={15} weight="semibold" numberOfLines={1}>
+              {whereQuery || "Start your search"}
             </Body>
-            {hasSearch ? (
-              <Body size={12} color={colors.sage} numberOfLines={1}>
-                {searchSummary}
-              </Body>
-            ) : null}
-          </View>
+          </Glass>
         </Pressable>
+
+        {filterCount > 0 ? (
+          <ReAnimated.View entering={ZoomIn.springify().damping(14)} exiting={ZoomOut.duration(150)} style={shadows.md}>
+            <Pressable
+              onPress={() => setSearchOpen(true)}
+              accessibilityLabel={`${filterCount} filter${filterCount === 1 ? "" : "s"} on`}
+              style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.94 : 1 }] })}
+            >
+              <Glass variant="regular" style={{ borderRadius: 26 }} contentStyle={{ width: 52, height: 52, alignItems: "center", justifyContent: "center" }}>
+                <SlidersHorizontal color={colors.ink} size={19} />
+              </Glass>
+              <View
+                style={{
+                  position: "absolute",
+                  top: -3,
+                  right: -3,
+                  minWidth: 19,
+                  height: 19,
+                  borderRadius: 10,
+                  paddingHorizontal: 5,
+                  backgroundColor: colors.ink,
+                  borderWidth: 2,
+                  borderColor: colors.surface,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Body size={10} weight="semibold" color={colors.surface}>
+                  {filterCount}
+                </Body>
+              </View>
+            </Pressable>
+          </ReAnimated.View>
+        ) : null}
       </View>
 
       <CategoryBar value={filter} onChange={setFilter} />
@@ -413,22 +434,7 @@ export default function ExploreScreen() {
 
       {/* Frosted status-bar strip. Skipped while a top banner is showing —
           those draw their own solid background behind the status bar. */}
-      {!mapOpen && !hasTopBanner && (
-        <Animated.View
-          pointerEvents="none"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: insets.top,
-            opacity: topBlurOpacity,
-          }}
-        >
-          <BlurView intensity={70} tint="light" style={{ flex: 1 }} />
-          <View style={{ height: 0.5, backgroundColor: "rgba(208,213,206,0.5)" }} />
-        </Animated.View>
-      )}
+      {!mapOpen && !hasTopBanner && <StatusBarBlur scrollY={scrollY} fadeStart={0} fadeLength={28} />}
 
       {/* The Map/List toggle floats above the glass tab bar — see
           (tabs)/_layout.jsx. */}
