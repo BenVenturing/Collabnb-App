@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { useQuery } from "convex/react";
-import { Search, Settings, MessageCircle, X, Trash2, Plus, ChevronRight } from "lucide-react-native";
+import { Search, Settings, X, Trash2, Plus, ChevronRight } from "lucide-react-native";
 import { api } from "@/convex/_generated/api";
 import { useConversations } from "@/hooks/useConversations";
 import { useSavedCollections } from "@/hooks/useSavedCollections";
@@ -14,6 +14,8 @@ import { normalizeListing } from "@/utils/listingHelpers";
 import { TAG_COLORS, TAG_TEXT_COLORS } from "@/lib/threadTags";
 import { threadTheme } from "@/lib/threadColors";
 import { colors } from "@/config/theme";
+import AtmosphericBackground from "@/components/AtmosphericBackground";
+import StatusBarBlur from "@/components/StatusBarBlur";
 
 const FILTERS = ["All", "Unread", "Applications", "Collabs", "Pitches"];
 
@@ -222,10 +224,6 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
   };
 
   const headerTitle = viewAs === "host" ? "Inbox" : "Messages";
-  const emptyStateText =
-    viewAs === "host"
-      ? "Start chatting with creators about collaborations"
-      : "Start chatting with hosts about collaborations";
 
   const confirmDelete = (item) => {
     Alert.alert("Delete conversation", "This removes it from your inbox. This can't be undone.", [
@@ -260,9 +258,9 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
           flexDirection: "row",
           paddingHorizontal: 20,
           paddingVertical: 14,
-          backgroundColor: "#fff",
+          backgroundColor: "rgba(255,255,255,0.72)",
           borderBottomWidth: 1,
-          borderBottomColor: colors.stone,
+          borderBottomColor: colors.hairline,
           borderLeftWidth: item.theme_color ? 3 : 0,
           borderLeftColor: accentColor,
         }}
@@ -312,17 +310,14 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff", paddingTop: insets.top }}>
+    <AtmosphericBackground style={{ flex: 1, paddingTop: insets.top }}>
       <StatusBar style="dark" />
 
       <View
         style={{
-          backgroundColor: "#fff",
           paddingHorizontal: 20,
           paddingTop: 16,
           paddingBottom: 12,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.stone,
         }}
       >
         {showSearch ? (
@@ -443,27 +438,13 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
       )}
 
       {isLoading ? (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40 }}>
-          <MessageCircle color={colors.stone} size={64} />
-          <Text style={{ fontSize: 20, fontWeight: "600", color: colors.ink, marginTop: 20 }}>Loading...</Text>
-        </View>
+        <View style={{ flex: 1 }} />
       ) : (
         <FlatList
           data={visible}
           renderItem={renderThread}
           keyExtractor={(item) => item.thread_key || item.id}
           contentContainerStyle={{ paddingBottom: insets.bottom + 64 }}
-          ListEmptyComponent={
-            !showSearch ? (
-              <View style={{ alignItems: "center", paddingHorizontal: 40, paddingTop: 80 }}>
-                <MessageCircle color={colors.stone} size={64} />
-                <Text style={{ fontSize: 20, fontWeight: "600", color: colors.ink, marginTop: 20 }}>No messages yet</Text>
-                <Text style={{ fontSize: 14, color: colors.slate, textAlign: "center", marginTop: 8 }}>
-                  {emptyStateText}
-                </Text>
-              </View>
-            ) : null
-          }
           ListFooterComponent={
             showSearch ? (
               <View>
@@ -495,6 +476,7 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
           }
         />
       )}
-    </View>
+      <StatusBarBlur />
+    </AtmosphericBackground>
   );
 }
