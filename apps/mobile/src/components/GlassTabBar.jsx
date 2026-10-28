@@ -86,8 +86,12 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
   const reduced = useReducedMotion();
   const native = isLiquidGlassAvailable();
 
-  // Routes hidden with href:null (sub-screens) don't get a slot.
-  const routes = state.routes.filter((r) => descriptors[r.key].options.href !== null);
+  // Routes hidden with href:null (sub-screens) don't get a slot. expo-router
+  // strips `href` before we see it and leaves display:none in its place.
+  const routes = state.routes.filter((r) => {
+    const o = descriptors[r.key].options;
+    return o.href !== null && o.tabBarItemStyle?.display !== "none";
+  });
   const n = routes.length;
   const activeIdx = Math.max(routes.findIndex((r) => r.key === state.routes[state.index]?.key), 0);
 
