@@ -30,8 +30,8 @@ import { backdrop } from "@/config/theme";
 
 const CLOUDS = require("../../assets/images/bg-clouds-hazy.png");
 // Image is this much wider than the screen; the drift pans across the overhang.
-const OVERHANG = 0.3;
-const DRIFT_MS = 90000;
+const OVERHANG = 0.6;
+const DRIFT_MS = 40000;
 
 export default function AtmosphericBackground({ children, style }) {
   const { width, height } = useWindowDimensions();
