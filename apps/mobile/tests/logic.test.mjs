@@ -47,7 +47,7 @@ test("host pipeline merge: applications replace invites, server contract wins", 
   assert.deepEqual(pipeline.mergeProposals([invited, other], [r]).map((p) => p.id), ["cvx_abc", "p_2"]);
 
   const k = contract.addRound(contract.emptyContract(), { modifiedBy: "creator", fields: { nights: "2" } });
-  const r2 = pipeline.collabToProposal({ ...row, contract: JSON.stringify(k) });
+  const r2 = pipeline.collabToProposal({ ...row, contract_draft: JSON.stringify(k) });
   const stale = { ...r2, contractHistory: [], signatures: { hostSignature: "old" } };
   const merged = pipeline.mergeProposals([stale], [r2])[0];
   assert.equal(merged.contractHistory.length, 1);
