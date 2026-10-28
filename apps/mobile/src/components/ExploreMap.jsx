@@ -9,22 +9,9 @@ import MapView, { Marker } from "react-native-maps";
 import { colors, fonts, radii, shadows } from "@/config/theme";
 import * as haptic from "@/utils/haptics";
 
-const DEFAULT_REGION = { latitude: 39.5, longitude: -98.5, latitudeDelta: 40, longitudeDelta: 40 };
-
-function regionForPoints(points, paddingFactor = 1.6) {
-  if (!points.length) return DEFAULT_REGION;
-  let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
-  for (const p of points) {
-    minLat = Math.min(minLat, p.lat); maxLat = Math.max(maxLat, p.lat);
-    minLng = Math.min(minLng, p.lng); maxLng = Math.max(maxLng, p.lng);
-  }
-  return {
-    latitude: (minLat + maxLat) / 2,
-    longitude: (minLng + maxLng) / 2,
-    latitudeDelta: Math.max((maxLat - minLat) * paddingFactor, 0.08),
-    longitudeDelta: Math.max((maxLng - minLng) * paddingFactor, 0.08),
-  };
-}
+// Opens fully zoomed out on the whole world, like web's globe view, and the
+// user zooms in from there.
+const WORLD_REGION = { latitude: 20, longitude: 0, latitudeDelta: 140, longitudeDelta: 360 };
 
 // Mirrors CollabMap's clusterPoints: never cluster a handful of pins, and
 // stop clustering once zoomed in close (small latitudeDelta ~ high zoom).
@@ -86,14 +73,10 @@ function ClusterPill({ count }) {
 
 // points: [{ id, lat, lng, label, redacted }]
 const ExploreMap = forwardRef(function ExploreMap(
-  { points = [], activeId = null, savedIds, visitedIds, onPinPress, onRegionChange, fitPoints },
+  { points = [], activeId = null, savedIds, visitedIds, onPinPress, onRegionChange },
   ref
 ) {
-  const [latitudeDelta, setLatitudeDelta] = useState(DEFAULT_REGION.latitudeDelta);
-  const initialRegion = useMemo(
-    () => regionForPoints(fitPoints?.length ? fitPoints : points),
-    [] // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  const [latitudeDelta, setLatitudeDelta] = useState(WORLD_REGION.latitudeDelta);
 
   const clusters = useMemo(() => clusterPoints(points, latitudeDelta), [points, latitudeDelta]);
 
@@ -127,7 +110,7 @@ const ExploreMap = forwardRef(function ExploreMap(
     <MapView
       ref={ref}
       style={{ flex: 1 }}
-      initialRegion={initialRegion}
+      initialRegion={WORLD_REGION}
       onRegionChangeComplete={handleRegionChangeComplete}
       showsUserLocation={false}
       showsCompass={false}

@@ -1,9 +1,7 @@
-// Explore tab — mirrors Collabnb Website/app/src/pages/Explore.jsx's data and
-// decisions (real Convex listings + samples, same property-type filters) and
-// now its composition too: a three-segment WHERE/WHAT/WHEN search, filter
-// chips, a "Trending Now" carousel, then "All Stays". See COMPONENT-SPEC.md
-// §6/§7/§9 — round 1 matched web's colors and type but kept mobile's own
-// layout, which is why it still didn't read as the same product.
+// Explore tab — same data and filters as Collabnb Website's Explore.jsx (real
+// Convex listings + samples, property types, collab types), laid out like
+// Airbnb's app: a "Start your search" pill that opens SearchOverlay, an icon
+// category strip, then small photo-first tiles (a trending row and a grid).
 //
 // Deliberately absent: web's floating glass pill navbar. Mobile has a native
 // tab bar and the owner is removing that header from web as well.
@@ -11,12 +9,12 @@
 // Map view mirrors CollabMap.jsx's phone-width behavior specifically (map on
 // top, in-view listings docked below) rather than its desktop split.
 
-import { View, FlatList, Dimensions, ActivityIndicator, Pressable, TouchableOpacity, TextInput, ScrollView, Animated } from "react-native";
+import { View, FlatList, Dimensions, ActivityIndicator, Pressable, Animated } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { List, X, MapPin } from "lucide-react-native";
+import { List, Search } from "lucide-react-native";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
@@ -25,85 +23,29 @@ import { useSavedCollections } from "@/hooks/useSavedCollections";
 import { useAccessGate } from "@/hooks/useAccessGate";
 import useMapViewStore from "@/utils/MapViewStore";
 import { normalizeListing } from "@/utils/listingHelpers";
-import { colors, radii, shadows, fonts } from "@/config/theme";
+import { colors, radii, shadows } from "@/config/theme";
 import ExploreMap from "@/components/ExploreMap";
+import CategoryBar from "@/components/explore/CategoryBar";
+import SearchOverlay from "@/components/explore/SearchOverlay";
+import MapResultsSheet from "@/components/explore/MapResultsSheet";
 import {
   AtmosphericBackground,
   Body,
   Chip,
-  CompactListRow,
   Display,
-  EyebrowLabel,
-  ListingCard,
+  ListingTile,
   PillButton,
-  SearchBar,
   SectionHeading,
 } from "@/components/ui";
 
-const PROP_FILTERS = ["All", "Cabin", "Villa", "Treehouse", "Glamping", "Lodge", "Estate", "Cottage"];
-
-// Mirrors Collabnb Website's lib/searchData.js — same option sets, so "What"
-// and "When" offer the same real choices as web, not placeholder content.
-const COLLAB_TYPES = [
-  { label: "UGC Video", emoji: "🎬" },
-  { label: "Instagram Reels", emoji: "📸" },
-  { label: "TikTok", emoji: "🎵" },
-  { label: "Photography", emoji: "📷" },
-  { label: "YouTube Vlog", emoji: "▶️" },
-  { label: "Blog Post", emoji: "✍️" },
-  { label: "Full Package", emoji: "✦" },
-];
-const AVAIL_OPTIONS = ["Any time", "This month", "Next month", "Next 3 months", "Next 6 months"];
-
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
 
-// Web's trending carousel lets the next card peek past the screen edge as the
-// affordance that the row scrolls. Keep the peek — don't pad it away.
-// Same width as the All Stays cards below (screen minus the list's 20pt side
-// padding), so the two sections read as one size of card rather than two.
-const TRENDING_CARD_WIDTH = Dimensions.get("window").width - 40;
-
-// Backdrop + sliding sheet for the Where/What/When fields — phone-sized
-// equivalent of web's under-field dropdown (Explore.jsx's <Dropdown>).
-function FieldSheet({ title, onClose, children }) {
-  const insets = useSafeAreaInsets();
-  return (
-    <TouchableOpacity
-      activeOpacity={1}
-      onPress={onClose}
-      style={{ position: "absolute", inset: 0, backgroundColor: "rgba(25,37,36,0.4)", zIndex: 50 }}
-    >
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={(e) => e.stopPropagation()}
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: colors.surface,
-          borderTopLeftRadius: radii.xl,
-          borderTopRightRadius: radii.xl,
-          paddingTop: 10,
-          paddingBottom: insets.bottom + 16,
-          maxHeight: "75%",
-          ...shadows.lg,
-        }}
-      >
-        <View
-          style={{ alignSelf: "center", width: 44, height: 5, borderRadius: radii.pill, backgroundColor: colors.stone, marginBottom: 12 }}
-        />
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, marginBottom: 12 }}>
-          <Body size={15} weight="semibold">{title}</Body>
-          <TouchableOpacity onPress={onClose}>
-            <X color={colors.ink} size={20} />
-          </TouchableOpacity>
-        </View>
-        {children}
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
-}
+const SCREEN_W = Dimensions.get("window").width;
+const GRID_GAP = 12;
+// Two tiles across, Airbnb-sized. The trending row shows a bit over two so the
+// next tile peeks in as the scroll affordance.
+const GRID_TILE_W = (SCREEN_W - 40 - GRID_GAP) / 2;
+const TRENDING_TILE_W = (SCREEN_W - 40 - GRID_GAP) / 2.25;
 
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
@@ -119,7 +61,7 @@ export default function ExploreScreen() {
   const [collabTypeFilter, setCollabTypeFilter] = useState(null);
   const [whereQuery, setWhereQuery] = useState("");
   const [whenLabel, setWhenLabel] = useState("");
-  const [activeField, setActiveField] = useState(null); // 'where' | 'what' | 'when' | null
+  const [searchOpen, setSearchOpen] = useState(false);
   const { isSignedIn, savedIds, toggleSaved } = useSavedCollections();
 
   // Same gate the website checks (api.gates.getMyAccess) — a trial-ended
@@ -174,13 +116,6 @@ export default function ExploreScreen() {
   useEffect(() => {
     setHasMapPoints(mapPoints.length > 0);
   }, [mapPoints.length, setHasMapPoints]);
-  // Seed the initial map fit from featured listings so a widely-scattered
-  // catalog doesn't open zoomed out to a near-blank world view (Explore.jsx's
-  // focusMapPoints does the same with its trending/for-you ranking).
-  const focusMapPoints = useMemo(() => {
-    const featured = mapListings.filter((l) => l.is_featured);
-    return (featured.length ? featured : mapListings).map((l) => ({ lat: l.lat, lng: l.lng }));
-  }, [mapListings]);
   const inBounds = (l) => {
     if (!mapBounds) return true;
     return (
@@ -196,7 +131,10 @@ export default function ExploreScreen() {
   const handlePinPress = (id) => {
     setActivePinId(id);
     const idx = mapListInBounds.findIndex((l) => l.id === id);
-    if (idx >= 0) dockListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.5 });
+    if (idx >= 0) {
+      dockListRef.current?.half();
+      dockListRef.current?.scrollTo(idx);
+    }
   };
 
   // Reverse-geocode the map's current center → "near {area}" label, mirroring
@@ -264,15 +202,13 @@ export default function ExploreScreen() {
   // One card definition for both the carousel and the vertical list, so the two
   // can never drift apart the way the old screen's inline card drifted from web.
   const renderCard = (item, width) => (
-    <ListingCard
+    <ListingTile
       width={width}
       image={item.image}
       title={item.title}
       location={item.location}
       price={item.compensation}
       deliverables={item.deliverables}
-      tag={item.collab_type || undefined}
-      authorName={item.host_name}
       featured={item.is_featured}
       badge={item.isSample ? "Sample" : undefined}
       saved={savedIds.has(item.id)}
@@ -282,52 +218,67 @@ export default function ExploreScreen() {
     />
   );
 
-  const header = (
-    <View style={{ paddingTop: insets.top + 16, gap: 18 }}>
-      <View style={{ paddingHorizontal: 20, gap: 16 }}>
-        <Display size={30}>Find your next collab</Display>
+  const searchSummary = [whereQuery || "Anywhere", whenLabel || "Any time", collabTypeFilter || "Any type"].join(" · ");
+  const hasSearch = Boolean(whereQuery || whenLabel || collabTypeFilter);
 
-        <SearchBar
-          segments={[
-            { label: "Where", placeholder: "Anywhere", value: whereQuery, onPress: () => setActiveField("where") },
-            {
-              label: "What",
-              placeholder: "Any type",
-              value: [filter !== "All" ? filter : null, collabTypeFilter].filter(Boolean).join(" · "),
-              onPress: () => setActiveField("what"),
-            },
-            { label: "When", placeholder: "Any dates", value: whenLabel, onPress: () => setActiveField("when") },
-          ]}
-          onSubmit={() => setActiveField("where")}
-        />
+  const header = (
+    <View style={{ paddingTop: insets.top + 10, gap: 14 }}>
+      <View style={{ paddingHorizontal: 20 }}>
+        <Pressable
+          onPress={() => setSearchOpen(true)}
+          accessibilityRole="search"
+          style={({ pressed }) => ({
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            backgroundColor: colors.surface,
+            borderRadius: radii.pill,
+            paddingVertical: hasSearch ? 10 : 15,
+            paddingHorizontal: 20,
+            transform: [{ scale: pressed ? 0.98 : 1 }],
+            ...shadows.md,
+          })}
+        >
+          <Search color={colors.ink} size={18} strokeWidth={2.4} />
+          <View style={{ alignItems: hasSearch ? "flex-start" : "center" }}>
+            <Body size={15} weight="semibold">
+              {hasSearch ? whereQuery || "Anywhere" : "Start your search"}
+            </Body>
+            {hasSearch ? (
+              <Body size={12} color={colors.sage} numberOfLines={1}>
+                {searchSummary}
+              </Body>
+            ) : null}
+          </View>
+        </Pressable>
       </View>
 
+      <CategoryBar value={filter} onChange={setFilter} />
+
       {trending.length > 0 && (
-        <View style={{ gap: 0 }}>
+        <View>
           <View style={{ paddingHorizontal: 20 }}>
-            <SectionHeading
-              title="Trending Now"
-              subtitle="Top picks this week"
-            />
+            <SectionHeading size={19} title="Trending now" />
           </View>
           <FlatList
             data={trending}
             horizontal
             showsHorizontalScrollIndicator={false}
             keyExtractor={(item) => `trending-${item.id}`}
-            snapToInterval={TRENDING_CARD_WIDTH + 14}
+            snapToInterval={TRENDING_TILE_W + GRID_GAP}
             snapToAlignment="start"
-            disableIntervalMomentum
             decelerationRate="fast"
-            contentContainerStyle={{ gap: 14, paddingHorizontal: 20, paddingBottom: 4 }}
-            renderItem={({ item }) => renderCard(item, TRENDING_CARD_WIDTH)}
+            contentContainerStyle={{ gap: GRID_GAP, paddingHorizontal: 20 }}
+            renderItem={({ item }) => renderCard(item, TRENDING_TILE_W)}
           />
         </View>
       )}
 
-      <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
+      <View style={{ paddingHorizontal: 20, paddingTop: 6 }}>
         <SectionHeading
-          title={filter === "All" ? "All Stays" : filter}
+          size={19}
+          title={filter === "All" ? "All stays" : filter}
           subtitle={`${listings.length} collab${listings.length === 1 ? "" : "s"} available`}
         />
       </View>
@@ -391,6 +342,8 @@ export default function ExploreScreen() {
         <Animated.FlatList
           data={listings}
           keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={{ gap: GRID_GAP }}
           ListHeaderComponent={header}
           onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
             useNativeDriver: true,
@@ -398,8 +351,8 @@ export default function ExploreScreen() {
           scrollEventThrottle={16}
           contentContainerStyle={{
             paddingHorizontal: 20,
-            gap: 16,
-            paddingBottom: insets.bottom + 90,
+            gap: 20,
+            paddingBottom: insets.bottom + 110,
           }}
           ListHeaderComponentStyle={{ marginHorizontal: -20, marginBottom: 4 }}
           showsVerticalScrollIndicator={false}
@@ -414,7 +367,7 @@ export default function ExploreScreen() {
               </Body>
             </View>
           }
-          renderItem={({ item }) => renderCard(item, undefined)}
+          renderItem={({ item }) => renderCard(item, GRID_TILE_W)}
         />
       )}
 
@@ -437,14 +390,14 @@ export default function ExploreScreen() {
         </Animated.View>
       )}
 
-      {/* The map toggle is drawn into the tab bar's own silhouette — see
-          (tabs)/_layout.jsx and BulgeTabBarBackground. */}
+      {/* The Map/List toggle floats above the glass tab bar — see
+          (tabs)/_layout.jsx. */}
 
       {/* Map view (full-screen) — map on top, in-view listings docked below,
           matching CollabMap's phone-width layout on the website. */}
       {mapOpen && (
         <View style={{ position: "absolute", inset: 0, backgroundColor: colors.bone }}>
-          <View style={{ flex: 1 }}>
+          <View style={{ position: "absolute", inset: 0 }}>
             <ExploreMap
               ref={mapRef}
               points={mapPoints}
@@ -452,7 +405,6 @@ export default function ExploreScreen() {
               savedIds={savedIds}
               onPinPress={handlePinPress}
               onRegionChange={setMapBounds}
-              fitPoints={focusMapPoints}
             />
             <PillButton
               label="Show list"
@@ -474,172 +426,29 @@ export default function ExploreScreen() {
             />
           </View>
 
-          <View
-            style={{
-              height: "28%",
-              borderTopWidth: 1,
-              borderTopColor: colors.hairline,
-              borderTopLeftRadius: radii.lg,
-              borderTopRightRadius: radii.lg,
-              backgroundColor: colors.bone,
-              paddingTop: 10,
-              ...shadows.lg,
-            }}
-          >
-            <View
-              style={{
-                width: 36,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: colors.stone,
-                alignSelf: "center",
-                marginBottom: 10,
-              }}
-            />
-            <Display size={14} style={{ paddingHorizontal: 16, marginBottom: 10 }}>
-              {mapListInBounds.length} collab{mapListInBounds.length === 1 ? "" : "s"}{" "}
-              {mapAreaLabel ? `near ${mapAreaLabel}` : "here"}
-            </Display>
-            {mapListInBounds.length === 0 ? (
-              <Body size={13} color={colors.sage} style={{ paddingHorizontal: 16 }}>
-                No collaborations in this area.
-              </Body>
-            ) : (
-              <FlatList
-                ref={dockListRef}
-                data={mapListInBounds}
-                horizontal
-                keyExtractor={(item) => item.id}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{
-                  paddingHorizontal: 16,
-                  gap: 10,
-                  paddingBottom: insets.bottom + 10,
-                }}
-                onScrollToIndexFailed={(info) => {
-                  dockListRef.current?.scrollToOffset({
-                    offset: info.averageItemLength * info.index,
-                    animated: true,
-                  });
-                }}
-                renderItem={({ item }) => (
-                  <CompactListRow
-                    width={248}
-                    image={item.image}
-                    title={item.title}
-                    location={item.location}
-                    price={item.compensation}
-                    active={activePinId === item.id}
-                    redacted={item._redacted === true}
-                    onPress={() => openListing(item)}
-                  />
-                )}
-              />
-            )}
-          </View>
+          <MapResultsSheet
+            ref={dockListRef}
+            listings={mapListInBounds}
+            title={`${mapListInBounds.length} collab${mapListInBounds.length === 1 ? "" : "s"}${mapAreaLabel ? ` near ${mapAreaLabel.split(",")[0]}` : ""}`}
+            savedIds={savedIds}
+            onToggleSave={toggleSave}
+            onOpen={openListing}
+            bottomInset={insets.bottom}
+          />
         </View>
       )}
 
-      {activeField === "where" && (
-        <FieldSheet title="Where" onClose={() => setActiveField(null)}>
-          <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: colors.bone,
-                borderRadius: radii.md,
-                paddingHorizontal: 14,
-                paddingVertical: 10,
-              }}
-            >
-              <MapPin color={colors.sage} size={16} style={{ marginRight: 8 }} />
-              <TextInput
-                value={whereQuery}
-                onChangeText={setWhereQuery}
-                placeholder="Search by city or stay name"
-                placeholderTextColor={colors.sage}
-                autoFocus
-                style={{ flex: 1, fontFamily: fonts.body, fontSize: 15, color: colors.ink }}
-              />
-              {whereQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setWhereQuery("")}>
-                  <X color={colors.sage} size={16} />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-          <ScrollView style={{ maxHeight: 280 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 8 }}>
-            <EyebrowLabel size={10} style={{ marginBottom: 8 }}>
-              {whereQuery ? "Matching stays" : "Suggested"}
-            </EyebrowLabel>
-            {listings.slice(0, 8).map((l) => (
-              <TouchableOpacity
-                key={l.id}
-                onPress={() => {
-                  setWhereQuery(l.location || l.title);
-                  setActiveField(null);
-                }}
-                style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.hairline }}
-              >
-                <Body size={14} weight="medium">{l.title}</Body>
-                <Body size={12} color={colors.sage}>{l.location}</Body>
-              </TouchableOpacity>
-            ))}
-            {listings.length === 0 && (
-              <Body size={13} color={colors.sage}>No matches yet — try a different search.</Body>
-            )}
-          </ScrollView>
-        </FieldSheet>
-      )}
-
-      {activeField === "what" && (
-        <FieldSheet title="What" onClose={() => setActiveField(null)}>
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 8 }}>
-            <EyebrowLabel size={10} style={{ marginBottom: 10 }}>Collab type</EyebrowLabel>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-              {COLLAB_TYPES.map((ct) => (
-                <Chip
-                  key={ct.label}
-                  label={`${ct.emoji} ${ct.label}`}
-                  active={collabTypeFilter === ct.label}
-                  onPress={() => setCollabTypeFilter(collabTypeFilter === ct.label ? null : ct.label)}
-                />
-              ))}
-            </View>
-            <EyebrowLabel size={10} style={{ marginBottom: 10 }}>Property type</EyebrowLabel>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-              {PROP_FILTERS.map((f) => (
-                <Chip key={f} label={f} active={filter === f} onPress={() => setFilter(f)} />
-              ))}
-            </View>
-          </ScrollView>
-        </FieldSheet>
-      )}
-
-      {activeField === "when" && (
-        <FieldSheet title="When" onClose={() => setActiveField(null)}>
-          <View style={{ paddingHorizontal: 20, paddingBottom: 8, gap: 8 }}>
-            {AVAIL_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt}
-                onPress={() => {
-                  setWhenLabel(opt === "Any time" ? "" : opt);
-                  setActiveField(null);
-                }}
-                style={{
-                  paddingVertical: 12,
-                  paddingHorizontal: 14,
-                  borderRadius: radii.md,
-                  backgroundColor: (whenLabel || "Any time") === opt ? colors.mint : colors.bone,
-                }}
-              >
-                <Body size={14} weight={(whenLabel || "Any time") === opt ? "semibold" : "regular"}>{opt}</Body>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </FieldSheet>
-      )}
+      <SearchOverlay
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        listings={listings}
+        initial={{ where: whereQuery, when: whenLabel, what: collabTypeFilter }}
+        onApply={({ where, when, what }) => {
+          setWhereQuery(where);
+          setWhenLabel(when);
+          setCollabTypeFilter(what);
+        }}
+      />
     </AtmosphericBackground>
   );
 }
