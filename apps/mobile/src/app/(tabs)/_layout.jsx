@@ -6,13 +6,13 @@ import {
   Search,
   Briefcase,
   MessageCircle,
-  User,
   Heart,
   Map as MapIcon,
   List,
 } from "lucide-react-native";
 import ThemedBackground from "@/components/ThemedBackground";
 import GlassTabBar from "@/components/GlassTabBar";
+import TabAvatar from "@/components/TabAvatar";
 import Glass from "@/components/Glass";
 import { Body } from "@/components/ui";
 import { colors, shadows } from "@/config/theme";
@@ -95,7 +95,7 @@ export default function TabLayout() {
           name="profile"
           options={{
             title: "Profile",
-            tabBarIcon: ({ color, size }) => <User color={color} size={22} />,
+            tabBarIcon: ({ color, focused }) => <TabAvatar color={color} focused={focused} />,
           }}
         />
         <Tabs.Screen
