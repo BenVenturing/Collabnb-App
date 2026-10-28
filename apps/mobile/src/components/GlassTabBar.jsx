@@ -21,6 +21,7 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  withSequence,
   withSpring,
   withTiming,
   interpolate,
@@ -33,6 +34,10 @@ import { colors, fonts, shadows } from "@/config/theme";
 
 const PAD = 6;
 const BAR_H = 64;
+// The bubble is WhatsApp-sized: nearly the bar's full height and a little
+// wider than its slot.
+const BUBBLE_INSET = 2;
+const BUBBLE_FLARE = 5;
 const FAST = { damping: 17, stiffness: 300, mass: 0.7 };
 const SLOW = { damping: 20, stiffness: 110, mass: 1 };
 // 0 / undefined hides the badge; large counts read "9+".
@@ -124,6 +129,12 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
     const goingRight = L > left.value;
     left.value = withSpring(L, goingRight ? SLOW : FAST);
     right.value = withSpring(R, goingRight ? FAST : SLOW);
+    // Magnifier pulse while it travels: the bubble swells and the icons it
+    // crosses grow, then it settles — like WhatsApp's tab lens.
+    lens.value = withSequence(
+      withTiming(0.6, { duration: 140 }),
+      withSpring(0, { damping: 15, stiffness: 170 }),
+    );
   }, [activeIdx, width, n, reduced]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const go = useCallback(
@@ -172,8 +183,8 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
     });
 
   const bubble = useAnimatedStyle(() => ({
-    left: PAD + left.value,
-    width: Math.max(right.value - left.value, 0),
+    left: PAD + left.value - BUBBLE_FLARE,
+    width: Math.max(right.value - left.value + BUBBLE_FLARE * 2, 0),
     transform: [{ scale: 1 + 0.22 * lens.value }],
     opacity: tabW.value ? 1 : 0,
   }));
@@ -201,7 +212,7 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
                 glassEffectStyle="clear"
                 isInteractive
                 tintColor="rgba(255,255,255,0.35)"
-                style={[{ position: "absolute", top: PAD, height: BAR_H - PAD * 2, borderRadius: (BAR_H - PAD * 2) / 2 }, bubble]}
+                style={[{ position: "absolute", top: BUBBLE_INSET, height: BAR_H - BUBBLE_INSET * 2, borderRadius: (BAR_H - BUBBLE_INSET * 2) / 2 }, bubble]}
               />
             </GlassContainer>
           ) : (
@@ -216,10 +227,10 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
               style={[
                 {
                   position: "absolute",
-                  top: PAD,
-                  height: BAR_H - PAD * 2,
-                  borderRadius: (BAR_H - PAD * 2) / 2,
-                  backgroundColor: "rgba(255,255,255,0.7)",
+                  top: BUBBLE_INSET,
+                  height: BAR_H - BUBBLE_INSET * 2,
+                  borderRadius: (BAR_H - BUBBLE_INSET * 2) / 2,
+                  backgroundColor: "rgba(25,37,36,0.07)",
                   borderWidth: 1,
                   borderColor: "rgba(255,255,255,0.95)",
                   ...shadows.md,
