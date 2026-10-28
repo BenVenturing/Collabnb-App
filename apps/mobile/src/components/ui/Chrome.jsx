@@ -128,6 +128,7 @@ export function ProfileHeader({
   avatar,
   name,
   badgeLabel,
+  badgeTone,
   handle,
   location,
   action,
@@ -231,7 +232,14 @@ export function ProfileHeader({
           {name}
         </Display>
 
-        {badgeLabel ? <Chip label={badgeLabel} eyebrow style={{ marginTop: 10 }} /> : null}
+        {badgeLabel ? (
+          <Chip
+            label={badgeLabel}
+            eyebrow
+            // Founder gold, same as web's founder star (#D4A843 → #B8922A).
+            style={[{ marginTop: 10 }, badgeTone === "gold" && { backgroundColor: "#D4A843", borderColor: "#B8922A" }]}
+          />
+        ) : null}
 
         {handle || location ? (
           <Body size={14} color={colors.sage} style={{ marginTop: 10, textAlign: "center" }}>
