@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Alert } from "react-native";
 import { useRouter } from "expo-router";
+import { useQuery } from "convex/react";
+import { useUser } from "@clerk/clerk-expo";
+import { api } from "@/convex/_generated/api";
 import useRoleStore from "@/utils/RoleStore";
 import useHostOnboardingStore from "@/utils/HostOnboardingStore";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
@@ -10,14 +13,24 @@ export function useRoleSwitch() {
   const { setRole } = useRoleStore();
   const { hostApprovalStatus } = useHostOnboardingStore();
   const { creatorApprovalStatus } = useCreatorOnboardingStore();
+  // The onboarding stores are per-device, so an account approved on the web (or
+  // an admin) would otherwise be sent back through onboarding on a new phone or
+  // simulator. Convex is the source of truth for approval.
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
 
   const [showRoleSwitchModal, setShowRoleSwitchModal] = useState(false);
   const [pendingTargetRole, setPendingTargetRole] = useState(null);
   const [isSwitching, setIsSwitching] = useState(false);
 
   const attemptRoleSwitch = async (targetRole) => {
-    const targetApprovalStatus =
-      targetRole === "host" ? hostApprovalStatus : creatorApprovalStatus;
+    const serverApproved =
+      profile?.is_admin === true ||
+      (targetRole === "host" ? profile?.host_verified === true : profile?.creator_verified === true);
+    const targetApprovalStatus = serverApproved
+      ? "approved"
+      : targetRole === "host" ? hostApprovalStatus : creatorApprovalStatus;
 
     if (targetApprovalStatus === "approved") {
       setIsSwitching(true);
