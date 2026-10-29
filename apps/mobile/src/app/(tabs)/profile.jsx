@@ -387,12 +387,11 @@ export default function CreatorProfileScreen() {
   const stats = [
     { label: "Collabs", value: collabs === undefined ? null : realCollabs.length },
     { label: "Followers", value: followers ? formatFollowers(followers) : null },
-    profile?.engagement_rate
+    // ER only shows once it comes from a connected account's live sync.
+    profile?.metrics_synced_at && profile?.engagement_rate
       ? { label: "Profile ER", value: `${profile.engagement_rate}%` }
-      : { label: "Profile ER", comingSoon: true, placeholder: "4.2%" },
-    // No collab carries a content ER yet.
-    { label: "Content ER", comingSoon: true, placeholder: "6.8%" },
-  ];
+      : null,
+  ].filter(Boolean);
 
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
