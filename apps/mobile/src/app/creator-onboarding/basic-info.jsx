@@ -1,5 +1,6 @@
 import { View, ScrollView, TouchableOpacity, Pressable, Alert, ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { Camera, ChevronLeft } from "lucide-react-native";
@@ -132,7 +133,7 @@ export default function CreatorBasicInfoScreen() {
 
   return (
     <AtmosphericBackground>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       {/* Header */}
       <View

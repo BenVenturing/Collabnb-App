@@ -5,7 +5,9 @@
 // File: /host/(tabs)/proposals.jsx
 // ============================================================
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import {
   View,
   Text,
@@ -869,6 +871,7 @@ export default function ProposalsScreen() {
   const proposals =
     hostId && convexProposals.length > 0 ? convexProposals : SAMPLE_PROPOSALS;
   const onSamples = proposals === SAMPLE_PROPOSALS;
+  const hostContracts = useQuery(api.contracts.getForParty, hostId ? { userId: String(hostId) } : "skip");
   const [selected, setSelected] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [view, setView] = useState("pipeline");
@@ -1084,6 +1087,38 @@ export default function ProposalsScreen() {
     },
   ];
 
+  const openProposal = (p) => {
+    setSelected(p);
+    setModalVisible(true);
+  };
+  const hostTodos = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const items = [];
+    proposals.forEach((p) => {
+      if (p.counterPending === "host") {
+        items.push({ type: "pending_action", title: `Respond to counter — ${p.creatorName}`, label: p.listing, sort: -1, onPress: () => openProposal(p) });
+      } else if (p.stage === "applied") {
+        items.push({ type: "pending_action", title: `Review application — ${p.creatorName}`, label: p.listing, sort: 0, onPress: () => openProposal(p) });
+      }
+    });
+    (hostContracts || []).forEach((k) => {
+      if (!k.check_in || k.check_in < today.getTime()) return;
+      const days = Math.round((k.check_in - today.getTime()) / 86400000);
+      if (days > 30) return;
+      const p = proposals.find((x) => String(x.contractId) === String(k._id));
+      items.push({
+        type: "stay_date",
+        title: `${k.creator_name || "Creator"} checks in — ${k.property_name || "your listing"}`,
+        label: days === 0 ? "Today" : `In ${days} day${days === 1 ? "" : "s"}`,
+        date: new Date(k.check_in),
+        sort: days,
+        onPress: p ? () => openProposal(p) : undefined,
+      });
+    });
+    return items.sort((a, b) => a.sort - b.sort);
+  }, [proposals, hostContracts]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const TIERS = [
     "all",
     "UGC Beginner",
@@ -1235,7 +1270,7 @@ export default function ProposalsScreen() {
         )}
 
         <View style={{ paddingHorizontal: 16, marginBottom: 18 }}>
-          <CollabCrmOverview stats={crmStats} />
+          <CollabCrmOverview stats={crmStats} todoItems={onSamples ? undefined : hostTodos} />
         </View>
 
         {/* Pipeline */}

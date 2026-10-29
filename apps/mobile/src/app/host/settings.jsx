@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -126,7 +127,7 @@ export default function HostSettingsScreen() {
 
   return (
     <ThemedBackground style={{ flex: 1 }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       {/* Header */}
       <View

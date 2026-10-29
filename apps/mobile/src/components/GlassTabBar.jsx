@@ -31,6 +31,7 @@ import { GlassContainer, GlassView, isLiquidGlassAvailable } from "expo-glass-ef
 import * as haptic from "@/utils/haptics";
 import Glass from "@/components/Glass";
 import { colors, fonts, shadows } from "@/config/theme";
+import { isDark } from "@/utils/ColorModeStore";
 
 const PAD = 6;
 const BAR_H = 64;
@@ -66,7 +67,7 @@ function TabItem({ index, label, icon, active, badge, tabW, center, lens, onPres
     >
       <Animated.View style={[{ alignItems: "center", gap: 3 }, style]}>
         <View>
-          {icon(active ? colors.ink : colors.sage)}
+          {icon(active ? colors.ink : isDark() ? colors.ink + "B3" : colors.sage)}
           {!!badge && (
             <View
               style={{
@@ -79,7 +80,7 @@ function TabItem({ index, label, icon, active, badge, tabW, center, lens, onPres
             </View>
           )}
         </View>
-        <Text style={{ fontFamily: active ? fonts.bodySemibold : fonts.bodyMedium, fontSize: 10.5, color: active ? colors.ink : colors.sage }}>
+        <Text style={{ fontFamily: active ? fonts.bodySemibold : fonts.bodyMedium, fontSize: 10.5, color: active ? colors.ink : isDark() ? colors.ink + "B3" : colors.sage }}>
           {label}
         </Text>
       </Animated.View>
@@ -206,12 +207,15 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
             <GlassContainer spacing={12} pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}>
               <GlassView
                 glassEffectStyle="regular"
+                colorScheme={isDark() ? "dark" : "light"}
+                tintColor={isDark() ? "rgba(8,14,26,0.72)" : undefined}
                 style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, borderRadius: BAR_H / 2 }}
               />
               <AnimatedGlass
                 glassEffectStyle="clear"
                 isInteractive
-                tintColor="rgba(255,255,255,0.35)"
+                colorScheme={isDark() ? "dark" : "light"}
+                tintColor={isDark() ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.35)"}
                 style={[{ position: "absolute", top: BUBBLE_INSET, height: BAR_H - BUBBLE_INSET * 2, borderRadius: (BAR_H - BUBBLE_INSET * 2) / 2 }, bubble]}
               />
             </GlassContainer>
@@ -230,9 +234,9 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
                   top: BUBBLE_INSET,
                   height: BAR_H - BUBBLE_INSET * 2,
                   borderRadius: (BAR_H - BUBBLE_INSET * 2) / 2,
-                  backgroundColor: "rgba(25,37,36,0.07)",
+                  backgroundColor: isDark() ? "rgba(255,255,255,0.12)" : "rgba(25,37,36,0.07)",
                   borderWidth: 1,
-                  borderColor: "rgba(255,255,255,0.95)",
+                  borderColor: isDark() ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.95)",
                   ...shadows.md,
                 },
                 bubble,

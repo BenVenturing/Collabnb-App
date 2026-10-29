@@ -9,7 +9,7 @@
 // See STYLE-GUIDE.md before styling any screen.
 
 /* ── WEB PARITY: color ──────────────────────────────────────────────────── */
-export const colors = {
+const lightColors = {
   ink: "#192524",
   slate: "#3C5759",
   sage: "#646B62",
@@ -25,6 +25,26 @@ export const colors = {
   danger: "#7F1D1D",
   dangerTint: "rgba(127,29,29,0.10)",
 };
+
+// NATIVE ONLY: night palette. `colors` is mutated in place by applyColorMode,
+// so every `colors.x` read picks up the active mode on the next render. The
+// root layout remounts the tree on a mode change; module-level StyleSheets
+// that capture colors at import time will not follow.
+const darkColors = {
+  ink: "#F4F5F6",
+  slate: "#D2D5D9",
+  sage: "#A6ABB2",
+  mint: "#1E2229",
+  stone: "#3B4048",
+  bone: "#04070D",
+  surface: "#13161B",
+  surfaceTint: "rgba(19,22,27,0.6)",
+  hairline: "rgba(255,255,255,0.10)",
+  danger: "#F08A8A",
+  dangerTint: "rgba(240,138,138,0.15)",
+};
+
+export const colors = { ...lightColors };
 
 /* ── WEB PARITY: type ───────────────────────────────────────────────────── */
 // Cabinet Grotesk = display, Satoshi = body. Both are real now (assets/fonts,
@@ -78,7 +98,7 @@ export const radii = {
 // single biggest reason mobile reads cheaper than web. Render via
 // <AtmosphericBackground />, never by hand.
 export const backdrop = {
-  base: colors.bone,
+  base: lightColors.bone,
   // radial-gradient(ellipse 90% 60% at 50% 0%, #D1EBDB 0%, transparent 70%)
   glow: {
     color: colors.mint,
@@ -96,7 +116,7 @@ export const backdrop = {
 // Three variants from index.css. CSS gives each an inset top highlight that RN
 // cannot express as a shadow — <Glass /> draws it as a 1px hairline instead.
 // expo-blur also has no saturate(), so tintSaturate is applied as an overlay.
-export const glass = {
+const lightGlass = {
   regular: {
     background: "rgba(255,255,255,0.55)",
     blur: 24,
@@ -125,6 +145,42 @@ export const glass = {
     radius: radii.lg,
   },
 };
+
+const darkGlass = {
+  regular: {
+    ...lightGlass.regular,
+    background: "rgba(19,22,27,0.55)",
+    border: "rgba(255,255,255,0.12)",
+    insetTop: "rgba(255,255,255,0.14)",
+    insetBottom: "rgba(0,0,0,0.25)",
+  },
+  small: {
+    ...lightGlass.small,
+    background: "rgba(19,22,27,0.5)",
+    border: "rgba(255,255,255,0.10)",
+    insetTop: "rgba(255,255,255,0.10)",
+  },
+  card: {
+    ...lightGlass.card,
+    background: "rgba(19,22,27,0.94)",
+    border: "rgba(255,255,255,0.10)",
+    insetTop: "rgba(255,255,255,0.10)",
+    insetBottom: "rgba(0,0,0,0.25)",
+  },
+};
+
+export const glass = {
+  regular: { ...lightGlass.regular },
+  small: { ...lightGlass.small },
+  card: { ...lightGlass.card },
+};
+
+export function applyColorMode(isDark) {
+  Object.assign(colors, isDark ? darkColors : lightColors);
+  Object.assign(backdrop, { base: colors.bone });
+  const g = isDark ? darkGlass : lightGlass;
+  Object.keys(g).forEach((k) => Object.assign(glass[k], g[k]));
+}
 
 /* ── WEB PARITY: motion ─────────────────────────────────────────────────── */
 // Bezier control points, not Easing objects, so this file stays dependency

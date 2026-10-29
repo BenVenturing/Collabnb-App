@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { Image } from "expo-image";
 import {
   CheckCircle,
@@ -111,7 +112,7 @@ export default function CreatorSubmitApplicationScreen() {
   if (isSubmitted) {
     return (
       <AtmosphericBackground>
-        <StatusBar style="dark" />
+        <StatusBar style={statusBarStyle()} />
 
         <View
           style={{
@@ -179,7 +180,7 @@ export default function CreatorSubmitApplicationScreen() {
   // ── Pre-Submit Review State ─────────────────────────────────
   return (
     <AtmosphericBackground>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       {/* Header */}
       <View

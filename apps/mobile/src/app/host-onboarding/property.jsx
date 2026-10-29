@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { AlertCircle } from "lucide-react-native";
 import useHostOnboardingStore from "@/utils/HostOnboardingStore";
 import HostOnboardingShell from "@/components/HostOnboardingShell";
@@ -62,7 +63,7 @@ export default function PropertyIntakeScreen() {
       onNext={handleContinue}
       onBack={handleBack}
     >
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       <ScrollView
         style={{ flex: 1 }}

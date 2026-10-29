@@ -12,8 +12,15 @@ import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { ID_PREFIX, planReminders } from "@/utils/reminders";
 
-export function useCollabReminders(collabs) {
-  const plan = useMemo(() => planReminders({ collabs, now: new Date() }), [collabs]);
+// `prefs` is profile.notification_prefs (shared with web Settings): collabReminders
+// off schedules nothing; collabReminderDays picks the due-date lead times.
+export function useCollabReminders(collabs, prefs) {
+  const enabled = prefs?.collabReminders !== false;
+  const dueDays = prefs?.collabReminderDays;
+  const plan = useMemo(
+    () => (enabled ? planReminders({ collabs, now: new Date(), dueDays }) : []),
+    [collabs, enabled, dueDays],
+  );
   // Only re-run when the plan itself changes, not on every render.
   const signature = plan.map((r) => `${r.identifier}@${r.date.getTime()}`).join("|");
 

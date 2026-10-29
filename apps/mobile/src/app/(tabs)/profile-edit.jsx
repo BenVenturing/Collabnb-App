@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useState, useEffect, useRef } from "react";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -160,7 +161,7 @@ export default function CreatorProfileEditScreen() {
 
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       {/* Header */}
       <View

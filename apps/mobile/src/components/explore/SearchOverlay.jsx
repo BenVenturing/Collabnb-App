@@ -16,11 +16,13 @@ import {
   UIManager,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { X, Search, MapPin, Sparkles } from "lucide-react-native";
+import { X, Search } from "lucide-react-native";
 import * as haptic from "@/utils/haptics";
 import { colors, fonts, radii, shadows } from "@/config/theme";
 import { Body, Display, Chip } from "@/components/ui";
 import { BlurView } from "expo-blur";
+import PlaceIcon, { FlexiblePin } from "./PlaceIcon";
+import { COUNTRY_ICONS } from "@/config/places";
 
 if (Platform.OS === "android") UIManager.setLayoutAnimationEnabledExperimental?.(true);
 
@@ -29,6 +31,8 @@ const ease = () =>
 
 export const WHEN_OPTIONS = ["Any time", "This month", "Next month", "Next 3 months", "Next 6 months"];
 export const WHAT_OPTIONS = ["UGC Video", "Instagram Reels", "TikTok", "Photography", "YouTube Vlog", "Blog Post", "Full Package"];
+
+const POPULAR = ["France", "Italy", "Japan", "Thailand", "Greece", "Egypt", "Australia", "Mexico"];
 
 function Card({ children, style }) {
   return (
@@ -91,6 +95,14 @@ export default function SearchOverlay({ visible, onClose, listings = [], initial
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
   }, [listings, where]);
+
+  const countries = useMemo(() => {
+    const q = where.trim().toLowerCase();
+    const list = q
+      ? COUNTRY_ICONS.filter((c) => [c.name, ...(c.aliases ?? [])].some((n) => n.toLowerCase().includes(q)))
+      : POPULAR.map((n) => COUNTRY_ICONS.find((c) => c.name === n));
+    return list.slice(0, q ? 12 : 8);
+  }, [where]);
 
   const switchTo = (key) => {
     haptic.select();
@@ -201,18 +213,26 @@ export default function SearchOverlay({ visible, onClose, listings = [], initial
                   contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }}
                 >
                   {!where ? (
-                    <PlaceRow icon={<Sparkles color={colors.ink} size={18} />} name="I'm flexible" sub="Every stay, anywhere" onPress={() => pickPlace("")} />
+                    <PlaceRow icon={<FlexiblePin />} name="I'm flexible" sub="Every stay, anywhere" onPress={() => pickPlace("")} />
                   ) : null}
-                  {places.map((p) => (
+                  {places.map((p, i) => (
                     <PlaceRow
                       key={p.name}
-                      icon={<MapPin color={colors.ink} size={18} />}
+                      icon={<PlaceIcon location={p.name} index={i} />}
                       name={p.name}
                       sub={`${p.count} collab${p.count === 1 ? "" : "s"}`}
                       onPress={() => pickPlace(p.name)}
                     />
                   ))}
-                  {where && places.length === 0 ? (
+                  {countries.length > 0 ? (
+                    <Body size={11} weight="semibold" color={colors.sage} style={{ marginTop: 10, marginBottom: 2, letterSpacing: 0.8 }}>
+                      {where ? "COUNTRIES" : "POPULAR DESTINATIONS"}
+                    </Body>
+                  ) : null}
+                  {countries.map((c, i) => (
+                    <PlaceRow key={c.name} icon={<PlaceIcon icon={c.icon} index={i} />} name={c.name} sub="Explore stays" onPress={() => pickPlace(c.name)} />
+                  ))}
+                  {where && places.length === 0 && countries.length === 0 ? (
                     <Body size={13} color={colors.sage} style={{ paddingVertical: 12 }}>
                       No stays there yet
                     </Body>

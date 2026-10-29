@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import {
   CheckCircle,
   Link,
@@ -104,7 +105,7 @@ export default function HostSubmitScreen() {
   if (isSubmitted) {
     return (
       <AtmosphericBackground>
-        <StatusBar style="dark" />
+        <StatusBar style={statusBarStyle()} />
 
         <View
           style={{
@@ -167,7 +168,7 @@ export default function HostSubmitScreen() {
   if (isSkipped) {
     return (
       <AtmosphericBackground>
-        <StatusBar style="dark" />
+        <StatusBar style={statusBarStyle()} />
 
         <View
           style={{
@@ -236,7 +237,7 @@ export default function HostSubmitScreen() {
       showBackButton={false}
       nextDisabled={submitting}
     >
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       <ScrollView
         style={{ flex: 1 }}

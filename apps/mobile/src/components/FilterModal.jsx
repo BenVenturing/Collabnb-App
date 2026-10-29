@@ -9,6 +9,7 @@ import {
   Pressable,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { X } from "lucide-react-native";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
@@ -122,7 +123,7 @@ export default function FilterModal({
       onRequestClose={onClose}
     >
       <AtmosphericBackground style={{ flex: 1 }}>
-        <StatusBar style="dark" />
+        <StatusBar style={statusBarStyle()} />
 
         {/* Header */}
         <View

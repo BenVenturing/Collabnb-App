@@ -12,6 +12,7 @@
 import { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useQuery, useMutation } from "convex/react";
@@ -553,7 +554,7 @@ export default function CollabDetailScreen() {
   if (collab === undefined) {
     return (
       <AtmosphericBackground>
-        <StatusBar style="dark" />
+        <StatusBar style={statusBarStyle()} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator color={colors.slate} />
         </View>
@@ -564,7 +565,7 @@ export default function CollabDetailScreen() {
   if (!collab) {
     return (
       <AtmosphericBackground>
-        <StatusBar style="dark" />
+        <StatusBar style={statusBarStyle()} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40 }}>
           <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 18, color: colors.ink, textAlign: "center" }}>
             Collaboration not found
@@ -608,7 +609,7 @@ export default function CollabDetailScreen() {
 
   return (
     <AtmosphericBackground>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
       <View
         style={{
           paddingTop: insets.top + 12,

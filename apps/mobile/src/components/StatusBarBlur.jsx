@@ -9,6 +9,7 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { isDark } from "@/utils/ColorModeStore";
 
 const FEATHER = 22;
 
@@ -39,9 +40,9 @@ export default function StatusBarBlur({ scrollY, fadeStart = 0, fadeLength = 40 
           />
         }
       >
-        <BlurView intensity={45} tint="light" style={StyleSheet.absoluteFill} />
+        <BlurView intensity={45} tint={isDark() ? "dark" : "light"} style={StyleSheet.absoluteFill} />
         <LinearGradient
-          colors={["rgba(239,236,233,0.7)", "rgba(239,236,233,0.25)"]}
+          colors={isDark() ? ["rgba(0,0,0,0.92)", "rgba(0,0,0,0.5)"] : ["rgba(239,236,233,0.7)", "rgba(239,236,233,0.25)"]}
           style={StyleSheet.absoluteFill}
         />
       </MaskedView>

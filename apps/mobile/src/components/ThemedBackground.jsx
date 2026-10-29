@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { getTheme, subscribeToTheme, THEMES } from "../utils/ThemeStore";
+import { isDark } from "../utils/ColorModeStore";
+import { colors } from "../config/theme";
 
 export default function ThemedBackground({ children, style }) {
   const [themeId, setThemeId] = useState("white");
@@ -17,6 +19,10 @@ export default function ThemedBackground({ children, style }) {
   const theme =
     THEMES.find((t) => t.id === themeId) ||
     THEMES.find((t) => t.id === "white");
+
+  if (isDark()) {
+    return <View style={[{ flex: 1, backgroundColor: colors.bone }, style]}>{children}</View>;
+  }
 
   // For white theme, render plain View instead of LinearGradient to avoid gradient artifacts
   if (themeId === "white") {

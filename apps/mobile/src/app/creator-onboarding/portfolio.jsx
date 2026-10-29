@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { Plus, X, Video } from "lucide-react-native";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -112,7 +113,7 @@ export default function PortfolioScreen() {
 
   return (
     <AtmosphericBackground style={{ paddingTop: insets.top }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       {/* Progress Bar */}
       <View style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16 }}>

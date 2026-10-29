@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useQuery } from "convex/react";
@@ -64,7 +65,7 @@ export default function SubscribeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bone }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
       <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, alignItems: "flex-end" }}>
         <TouchableOpacity
           onPress={() => router.back()}

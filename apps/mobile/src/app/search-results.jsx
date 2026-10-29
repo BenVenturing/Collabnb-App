@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -55,7 +56,7 @@ export default function SearchResultsScreen() {
   };
 
   return <View style={{ flex: 1, backgroundColor: "#fff" }}>
-    <StatusBar style="dark" />
+    <StatusBar style={statusBarStyle()} />
     <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, borderColor: c.line }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
         <TouchableOpacity accessibilityLabel="Go back" onPress={() => router.back()} style={s.iconButton}><ChevronLeft color={c.ink} size={23} /></TouchableOpacity>

@@ -7,6 +7,7 @@ import {
   Dimensions,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
@@ -189,7 +190,7 @@ export default function HostCreatorsScreen() {
 
   return (
     <AtmosphericBackground>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{

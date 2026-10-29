@@ -4,7 +4,8 @@
 // identifiers are deterministic) and the rules are testable.
 //
 // Rules:
-//  * Due-date: 3 days before, 1 day before, and the day itself, at 10:00 local.
+//  * Due-date: at 10:00 local on each of `dueDays` days before (default 3, 1
+//    and the day itself — the creator picks these in Settings > Notifications).
 //    Only for active, non-terminated collabs that are past "pending".
 //  * Your turn: if the contract is waiting on the creator, or the host asked
 //    for changes on a deliverable, nudge once, 24h from now.
@@ -18,7 +19,10 @@ const at10 = (base, plusDays) => {
   return d;
 };
 
-export function planReminders({ collabs = [], now = new Date() }) {
+const whenLabel = (before) =>
+  before === 0 ? "today" : before === 1 ? "tomorrow" : before === 7 ? "in a week" : `in ${before} days`;
+
+export function planReminders({ collabs = [], now = new Date(), dueDays = [3, 1, 0] }) {
   const out = [];
   for (const c of collabs) {
     if (!c || !c.isActive || c.status === "terminated") continue;
@@ -28,7 +32,8 @@ export function planReminders({ collabs = [], now = new Date() }) {
 
     const days = Number(c.daysLeft);
     if (Number.isFinite(days) && days > 0) {
-      for (const [before, when] of [[3, "in 3 days"], [1, "tomorrow"], [0, "today"]]) {
+      for (const before of dueDays) {
+        const when = whenLabel(before);
         if (days < before) continue;
         const date = at10(now, days - before);
         if (date.getTime() <= now.getTime() + 60000) continue;

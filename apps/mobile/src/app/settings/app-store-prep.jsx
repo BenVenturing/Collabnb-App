@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ChevronLeft, Copy, FileText } from "lucide-react-native";
@@ -40,7 +41,7 @@ export default function AppStorePrepScreen() {
 
   return (
     <AtmosphericBackground>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       <View
         style={{

@@ -74,6 +74,7 @@ const MapResultsSheet = forwardRef(function MapResultsSheet(
             <ListingTile
               width={TILE_W}
               image={item.image}
+              images={item.images}
               title={item.title}
               location={item.location}
               price={item.compensation}

@@ -9,7 +9,7 @@ import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { useQuery } from "convex/react";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ThemedBackground from "@/components/ThemedBackground";
@@ -21,6 +21,7 @@ import { api } from "@/convex/_generated/api";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { LoadingScreen } from "@/components/ui";
 import SaveToast from "@/components/SaveToast";
+import { initColorMode, useColorMode } from "@/utils/ColorModeStore";
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -71,11 +72,12 @@ function PushNotificationsBridge() {
 }
 
 function AppShell() {
+  const { isDark } = useColorMode();
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemedBackground style={{ flex: 1 }}>
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack key={isDark ? "dark" : "light"} screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
           </Stack>
           {convexClient ? <SaveToast /> : null}
@@ -98,13 +100,18 @@ export default function RootLayout() {
     "Satoshi-Bold": require("../../assets/fonts/Satoshi-Bold.ttf"),
   });
 
+  const [modeReady, setModeReady] = useState(false);
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    initColorMode().then(() => setModeReady(true));
+  }, []);
+
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && modeReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, modeReady]);
 
-  if (!fontsLoaded && !fontError) {
+  if ((!fontsLoaded && !fontError) || !modeReady) {
     return null;
   }
 

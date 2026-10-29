@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ArrowLeft, X, HelpCircle } from "lucide-react-native";
@@ -21,7 +22,7 @@ export default function ListingCreationShell({
 
   return (
     <View style={{ flex: 1, backgroundColor: "#EFECE9" }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       {/* Top Bar */}
       <View

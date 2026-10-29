@@ -7,6 +7,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -52,6 +53,7 @@ import SettingsModal from "@/components/Profile/SettingsModal";
 import RoleSwitchModal from "@/components/Profile/RoleSwitchModal";
 import ShareProfileSheet from "@/components/Profile/ShareProfileSheet";
 import StatusBarBlur from "@/components/StatusBarBlur";
+import CommunityGlobe from "@/components/CommunityGlobe";
 import { useBottomPull, PulledSection, usePullToast, PullToast } from "@/components/PullReveal";
 
 const LOCATION_PREF_KEY = "@collabnb_creator_location_prefs_v1";
@@ -60,8 +62,6 @@ const DEFAULT_PHOTO = {
 };
 const BIO_LIMIT = 155;
 const COLLAB_CARD_WIDTH = 220;
-// Scroll depth at which the banner has gone and the status bar sits on bone.
-const STATUS_FLIP_Y = 190;
 
 function buildSocialLinks(profile) {
   const links = [];
@@ -254,7 +254,6 @@ function PastCollabCard({ collab, sample = false, onPress }) {
 export default function CreatorProfileScreen() {
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
-  const darkRef = useRef(false);
   const isFocused = useIsFocused();
   const [showShare, setShowShare] = useState(false);
   const router = useRouter();
@@ -273,7 +272,6 @@ export default function CreatorProfileScreen() {
   const [bioExpanded, setBioExpanded] = useState(false);
   const [collabPrefs, setCollabPrefs] = useState(null);
   const [pastRevealed, setPastRevealed] = useState(false);
-  const [darkStatus, setDarkStatus] = useState(false);
   const toast = usePullToast();
 
   const {
@@ -339,7 +337,7 @@ export default function CreatorProfileScreen() {
   if (!isSignedIn) {
     return (
       <AtmosphericBackground style={{ flex: 1 }}>
-        <StatusBar style="dark" />
+        <StatusBar style={statusBarStyle()} />
         <View
           style={{
             flex: 1,
@@ -398,9 +396,7 @@ export default function CreatorProfileScreen() {
 
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
-      {/* Only while focused: tabs stay mounted, and a lingering "light" bar
-          would leave white status text on the other tabs' pale backgrounds. */}
-      {isFocused ? <StatusBar style={darkStatus ? "dark" : "light"} /> : null}
+      {isFocused ? <StatusBar style={statusBarStyle()} /> : null}
 
       <Animated.ScrollView
         style={{ flex: 1 }}
@@ -412,20 +408,11 @@ export default function CreatorProfileScreen() {
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           {
             useNativeDriver: true,
-            listener: (e) => {
-              bottomPull.onScroll(e);
-              const dark = e.nativeEvent.contentOffset.y > STATUS_FLIP_Y;
-              if (dark !== darkRef.current) {
-                darkRef.current = dark;
-                setDarkStatus(dark);
-              }
-            },
+            listener: bottomPull.onScroll,
           },
         )}
       >
         <ProfileHeader
-          scrollY={scrollY}
-          hero={profile?.banner_url ? { uri: profile.banner_url } : null}
           avatar={profile?.avatar_url ? { uri: profile.avatar_url } : DEFAULT_PHOTO}
           name={profile?.full_name || "Your profile"}
           badgeTone={profile?.is_founder ? "gold" : undefined}
@@ -439,7 +426,7 @@ export default function CreatorProfileScreen() {
           topRight={
             <Pressable onPress={() => router.push("/(tabs)/settings")}>
               <Glass variant="small" contentStyle={{ padding: 10 }}>
-                <Settings color={colors.surface} size={22} />
+                <Settings color={colors.ink} size={22} />
               </Glass>
             </Pressable>
           }
@@ -530,6 +517,10 @@ export default function CreatorProfileScreen() {
           </View>
         ) : null}
 
+        <View style={{ marginTop: 8, marginBottom: 28 }}>
+          <CommunityGlobe active={isFocused} />
+        </View>
+
         {pastRevealed && realCollabs.length > 0 ? (
           <PulledSection style={{ marginBottom: 28 }}>
             <View style={{ paddingHorizontal: 20 }}>
@@ -559,7 +550,7 @@ export default function CreatorProfileScreen() {
         ) : null}
       </Animated.ScrollView>
 
-      <StatusBarBlur scrollY={scrollY} fadeStart={STATUS_FLIP_Y - 30} />
+      <StatusBarBlur scrollY={scrollY} fadeStart={0} fadeLength={30} />
       <PullToast text={toast.text} />
 
       <SettingsModal

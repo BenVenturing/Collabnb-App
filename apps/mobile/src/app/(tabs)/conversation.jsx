@@ -10,6 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState, useEffect, useRef } from "react";
@@ -203,7 +204,7 @@ export default function CreatorConversationScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={0}
     >
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       {/* Header */}
       <View

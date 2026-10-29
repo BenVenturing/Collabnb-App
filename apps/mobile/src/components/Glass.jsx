@@ -18,6 +18,7 @@ import { View } from "react-native";
 import { BlurView } from "expo-blur";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { colors, glass } from "@/config/theme";
+import { isDark } from "@/utils/ColorModeStore";
 
 export default function Glass({
   variant = "regular",
@@ -34,7 +35,8 @@ export default function Glass({
     return (
       <GlassView
         glassEffectStyle="regular"
-        tintColor="rgba(209,235,219,0.18)"
+        colorScheme={isDark() ? "dark" : "light"}
+        tintColor={isDark() ? "rgba(15,25,38,0.35)" : "rgba(209,235,219,0.18)"}
         style={[{ borderRadius: v.radius, overflow: "hidden" }, style]}
       >
         <View style={contentStyle}>{children}</View>
@@ -57,7 +59,7 @@ export default function Glass({
     >
       <BlurView
         intensity={v.blur}
-        tint="light"
+        tint={isDark() ? "dark" : "light"}
         style={{ borderRadius: v.radius }}
       >
         {/* Stands in for saturate() — a whisper of brand mint over the blur.

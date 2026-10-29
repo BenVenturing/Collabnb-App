@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { Instagram, Music, Youtube } from "lucide-react-native";
 import KeyboardAvoidingAnimatedView from "@/components/KeyboardAvoidingAnimatedView";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
@@ -86,7 +87,7 @@ export default function SocialLinksScreen() {
   return (
     <KeyboardAvoidingAnimatedView style={{ flex: 1 }} behavior="padding">
       <AtmosphericBackground style={{ paddingTop: insets.top }}>
-        <StatusBar style="dark" />
+        <StatusBar style={statusBarStyle()} />
 
         {/* Progress Bar */}
         <View style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16 }}>

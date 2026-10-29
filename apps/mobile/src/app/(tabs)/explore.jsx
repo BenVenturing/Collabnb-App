@@ -11,6 +11,7 @@
 
 import { View, FlatList, Dimensions, Pressable, Animated } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { List, Search, SlidersHorizontal } from "lucide-react-native";
@@ -28,6 +29,7 @@ import { colors, radii, shadows } from "@/config/theme";
 import ExploreMap from "@/components/ExploreMap";
 import CategoryBar from "@/components/explore/CategoryBar";
 import SearchOverlay from "@/components/explore/SearchOverlay";
+import ListingPeek from "@/components/explore/ListingPeek";
 import MapResultsSheet from "@/components/explore/MapResultsSheet";
 import StatusBarBlur from "@/components/StatusBarBlur";
 import {
@@ -190,7 +192,18 @@ export default function ExploreScreen() {
   // as soon as anything scrolls under it, and stays invisible at rest so the
   // background reads clean. Opacity only, so it can run on the native driver.
   const scrollY = useRef(new Animated.Value(0)).current;
-
+  const [headingY, setHeadingY] = useState(600);
+  const searchFade = {
+    opacity: scrollY.interpolate({ inputRange: [0, 110], outputRange: [1, 0], extrapolate: "clamp" }),
+    transform: [{ translateY: scrollY.interpolate({ inputRange: [0, 110], outputRange: [0, 24], extrapolate: "clamp" }) }],
+  };
+  const headingFade = {
+    opacity: scrollY.interpolate({
+      inputRange: [headingY - insets.top - 80, headingY - insets.top],
+      outputRange: [1, 0],
+      extrapolate: "clamp",
+    }),
+  };
 
   // Opening from the tab bar's arc can't reset these itself, so clear the
   // previous session's viewport whenever the map comes back up.
@@ -233,6 +246,8 @@ export default function ExploreScreen() {
     await toggleSaved(listing.id);
   };
 
+  const [peek, setPeek] = useState(null);
+
   const openListing = (item) =>
     router.push({
       pathname: "/listing-detail",
@@ -245,6 +260,7 @@ export default function ExploreScreen() {
     <ListingTile
       width={width}
       image={item.image}
+      images={item.images}
       title={item.title}
       location={item.location}
       price={item.compensation}
@@ -255,6 +271,7 @@ export default function ExploreScreen() {
       redacted={item._redacted === true}
       onToggleSave={() => toggleSave(item)}
       onPress={() => openListing(item)}
+      onLongPress={() => setPeek(item)}
     />
   );
 
@@ -264,6 +281,7 @@ export default function ExploreScreen() {
   // pill; a round glass filter button with a count pops in beside it instead.
   const header = (
     <View style={{ paddingTop: insets.top + 10, gap: 14 }}>
+      <Animated.View style={[{ gap: 14 }, searchFade]}>
       <View style={{ paddingHorizontal: 20, flexDirection: "row", alignItems: "center", gap: 10 }}>
         <Pressable
           onPress={() => setSearchOpen(true)}
@@ -318,6 +336,7 @@ export default function ExploreScreen() {
       </View>
 
       <CategoryBar value={filter} onChange={setFilter} />
+      </Animated.View>
 
       {trending.length > 0 && (
         <View>
@@ -338,13 +357,16 @@ export default function ExploreScreen() {
         </View>
       )}
 
-      <View style={{ paddingHorizontal: 20, paddingTop: 6 }}>
+      <Animated.View
+        onLayout={(e) => setHeadingY(e.nativeEvent.layout.y)}
+        style={[{ paddingHorizontal: 20, paddingTop: 6 }, headingFade]}
+      >
         <SectionHeading
           size={19}
           title={filter === "All" ? "All stays" : filter}
           subtitle={`${listings.length} collab${listings.length === 1 ? "" : "s"} available`}
         />
-      </View>
+      </Animated.View>
     </View>
   );
 
@@ -354,7 +376,7 @@ export default function ExploreScreen() {
 
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       {/* Trial countdown */}
       {showTrialBanner && (
@@ -484,6 +506,17 @@ export default function ExploreScreen() {
         </View>
       )}
 
+      <ListingPeek
+        listing={peek}
+        saved={peek ? savedIds.has(peek.id) : false}
+        onToggleSave={() => peek && toggleSave(peek)}
+        onOpen={() => {
+          const item = peek;
+          setPeek(null);
+          openListing(item);
+        }}
+        onClose={() => setPeek(null)}
+      />
       <SearchOverlay
         visible={searchOpen}
         onClose={() => setSearchOpen(false)}

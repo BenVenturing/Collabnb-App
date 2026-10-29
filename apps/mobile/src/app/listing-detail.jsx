@@ -21,6 +21,7 @@ import {
   Animated as RNAnimated,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -902,7 +903,7 @@ function RedactedListingDetail({ listing, onBack, onSubscribe }) {
   const insets = useSafeAreaInsets();
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Blurred hero */}
         <View style={{ height: 300, position: "relative", overflow: "hidden" }}>
@@ -1344,7 +1345,7 @@ export default function ListingDetailScreen() {
 
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       {/* Photo Gallery */}
       <RNAnimated.ScrollView

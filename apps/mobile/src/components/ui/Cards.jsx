@@ -1,12 +1,14 @@
 // Cards and grids. See COMPONENT-SPEC.md §5, §7, §8.
 
-import { View, Pressable, StyleSheet } from "react-native";
+import { useState } from "react";
+import { View, Pressable, StyleSheet, FlatList } from "react-native";
 import { Image } from "expo-image";
 import { Heart, Lock } from "lucide-react-native";
 import { colors, radii, shadows } from "@/config/theme";
 import { Body, Display, EyebrowLabel } from "./Text";
 import { Chip, RoundButton } from "./Chip";
 import Glass from "../Glass";
+import { isDark } from "@/utils/ColorModeStore";
 
 // 2xN grid of value-over-label cells split by full-bleed hairlines.
 // Collabs / Followers / Profile ER / Content ER, and the contract's
@@ -103,10 +105,61 @@ export function StatGrid({ items, columns = 2, footer, eyebrowLabels = false, st
   );
 }
 
-// Airbnb-style tile: one rounded cover photo, a few lines of small text
-// underneath, no card chrome and no host. Used on Explore.
+// Swipeable photo strip with page dots (Airbnb). A single photo renders
+// without the pager. Taps and long presses go to the caller.
+export function PhotoPager({ images, width, height, redacted = false, onPress, onLongPress }) {
+  const [page, setPage] = useState(0);
+  const photos = images?.length ? images : [null];
+  const renderPhoto = (uri) => (
+    <Pressable onPress={onPress} onLongPress={onLongPress} delayLongPress={350}>
+      <Image
+        source={uri ? { uri } : null}
+        style={{ width, height }}
+        contentFit="cover"
+        blurRadius={redacted ? 25 : 0}
+        transition={150}
+      />
+    </Pressable>
+  );
+  if (photos.length === 1 || redacted) return renderPhoto(photos[0]);
+  return (
+    <View>
+      <FlatList
+        data={photos}
+        keyExtractor={(uri, i) => `${i}-${uri}`}
+        horizontal
+        pagingEnabled
+        nestedScrollEnabled
+        showsHorizontalScrollIndicator={false}
+        getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+        onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
+        renderItem={({ item }) => renderPhoto(item)}
+      />
+      <View
+        pointerEvents="none"
+        style={{ position: "absolute", bottom: 8, left: 0, right: 0, flexDirection: "row", justifyContent: "center", gap: 4 }}
+      >
+        {photos.map((_, i) => (
+          <View
+            key={i}
+            style={{
+              width: 5,
+              height: 5,
+              borderRadius: 3,
+              backgroundColor: i === page ? "#FFFFFF" : "rgba(255,255,255,0.55)",
+            }}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// Airbnb-style tile: rounded swipeable photos, a few lines of small text
+// underneath, no card chrome and no host. Used on Explore. Long press peeks.
 export function ListingTile({
   image,
+  images,
   title,
   location,
   price,
@@ -116,6 +169,7 @@ export function ListingTile({
   saved = false,
   redacted = false,
   onPress,
+  onLongPress,
   onToggleSave,
   width,
   style,
@@ -124,23 +178,27 @@ export function ListingTile({
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={350}
       style={({ pressed }) => [{ width, transform: [{ scale: pressed ? 0.98 : 1 }] }, style]}
     >
-      <View style={{ aspectRatio: 1, borderRadius: radii.lg, overflow: "hidden", backgroundColor: colors.stone }}>
-        <Image
-          source={image ? { uri: image } : null}
-          style={{ width: "100%", height: "100%" }}
-          contentFit="cover"
-          blurRadius={redacted ? 25 : 0}
-          transition={150}
+      <View style={{ width, height: width, borderRadius: radii.lg, overflow: "hidden", backgroundColor: colors.stone }}>
+        <PhotoPager
+          images={images?.length ? images : [image]}
+          width={width}
+          height={width}
+          redacted={redacted}
+          onPress={onPress}
+          onLongPress={onLongPress}
         />
         {redacted ? (
-          <View style={{ ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" }}>
+          <View pointerEvents="none" style={{ ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" }}>
             <Lock color={colors.surface} size={22} />
           </View>
         ) : null}
         {pill ? (
           <View
+            pointerEvents="none"
             style={{
               position: "absolute",
               top: 10,
@@ -151,7 +209,7 @@ export function ListingTile({
               paddingVertical: 4,
             }}
           >
-            <Body size={11} weight="semibold">
+            <Body size={11} weight="semibold" color="#192524">
               {pill}
             </Body>
           </View>
@@ -161,7 +219,7 @@ export function ListingTile({
             <Heart
               size={22}
               color={colors.surface}
-              fill={saved ? colors.ink : "rgba(25,37,36,0.35)"}
+              fill={saved ? colors.ink : isDark() ? "rgba(255,255,255,0.22)" : "rgba(25,37,36,0.35)"}
               strokeWidth={2}
             />
           </Pressable>
@@ -281,14 +339,14 @@ export function ListingCard({
               backgroundColor: "rgba(255,255,255,0.92)",
             }}
           >
-            <Body size={11} weight="semibold" color={colors.sage}>
+            <Body size={11} weight="semibold" color="#646B62">
               {badge}
             </Body>
           </View>
         ) : null}
 
         <RoundButton onPress={onToggleSave} size={36} style={{ position: "absolute", top: 12, right: 12 }}>
-          <Heart size={18} color={colors.ink} fill={saved ? colors.ink : "transparent"} />
+          <Heart size={18} color="#192524" fill={saved ? "#192524" : "transparent"} />
         </RoundButton>
       </View>
 

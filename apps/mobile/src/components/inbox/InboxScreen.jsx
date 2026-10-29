@@ -1,12 +1,14 @@
-import { useMemo, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, TextInput, Alert } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { View, Text, FlatList, TouchableOpacity, TextInput, Alert, ScrollView } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Swipeable } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { useQuery } from "convex/react";
-import { Search, Settings, X, Trash2, Plus, ChevronRight } from "lucide-react-native";
+import { Search, Settings, X, Trash2, Plus, ChevronRight, ChevronDown, ChevronUp, Pin, PinOff } from "lucide-react-native";
 import { api } from "@/convex/_generated/api";
 import { useConversations } from "@/hooks/useConversations";
 import { useSavedCollections } from "@/hooks/useSavedCollections";
@@ -14,10 +16,13 @@ import { normalizeListing } from "@/utils/listingHelpers";
 import { TAG_COLORS, TAG_TEXT_COLORS } from "@/lib/threadTags";
 import { threadTheme } from "@/lib/threadColors";
 import { colors } from "@/config/theme";
+import { isDark } from "@/utils/ColorModeStore";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import StatusBarBlur from "@/components/StatusBarBlur";
 
 const FILTERS = ["All", "Unread", "Applications", "Collabs", "Pitches"];
+const PINNED_KEY = "inbox_pinned_threads";
+const MAX_PINS = 3;
 
 function ListingRow({ listing, onPress }) {
   return (
@@ -130,11 +135,37 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [startingChat, setStartingChat] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [pinnedKeys, setPinnedKeys] = useState([]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(PINNED_KEY)
+      .then((raw) => raw && setPinnedKeys(JSON.parse(raw)))
+      .catch(() => {});
+  }, []);
+
+  const threadKey = (t) => t.thread_key || t.id;
+
+  const togglePin = (item) => {
+    const key = threadKey(item);
+    const isPinned = pinnedKeys.includes(key);
+    if (!isPinned && pinnedKeys.length >= MAX_PINS) {
+      Alert.alert("Pin limit reached", `You can only pin up to ${MAX_PINS} chats.`);
+      return;
+    }
+    const next = isPinned ? pinnedKeys.filter((k) => k !== key) : [key, ...pinnedKeys];
+    setPinnedKeys(next);
+    AsyncStorage.setItem(PINNED_KEY, JSON.stringify(next)).catch(() => {});
+  };
 
   // Matches web's `activeThreads = threads.filter(t => !t.archived)` — archived
   // threads drop out of the main list with no "view archived" surface on web
   // either, so mobile doesn't add one.
-  const activeThreads = useMemo(() => threads.filter((t) => !t.archived), [threads]);
+  const activeThreads = useMemo(() => {
+    const active = threads.filter((t) => !t.archived);
+    const pinned = pinnedKeys.map((k) => active.find((t) => threadKey(t) === k)).filter(Boolean);
+    return [...pinned, ...active.filter((t) => !pinnedKeys.includes(threadKey(t)))];
+  }, [threads, pinnedKeys]);
 
   const tagFiltered = useMemo(() => {
     if (activeFilter === "All") return activeThreads;
@@ -246,19 +277,40 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
     </TouchableOpacity>
   );
 
+  const renderLeftActions = (item, isPinned) => (
+    <TouchableOpacity
+      onPress={() => togglePin(item)}
+      style={{
+        width: 76,
+        backgroundColor: colors.slate,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {isPinned ? <PinOff color="#fff" size={22} /> : <Pin color="#fff" size={22} />}
+    </TouchableOpacity>
+  );
+
   const renderThread = ({ item }) => {
     const isCollabnb = item.tag === "Collabnb" || item.tag === "Notifications";
     const accentColor = threadTheme(item).dot;
+    const isPinned = pinnedKeys.includes(threadKey(item));
     return (
-      <Swipeable renderRightActions={() => renderRightActions(item)} overshootRight={false}>
+      <Swipeable
+        renderRightActions={() => renderRightActions(item)}
+        renderLeftActions={() => renderLeftActions(item, isPinned)}
+        overshootRight={false}
+        overshootLeft={false}
+      >
       <TouchableOpacity
         onPress={() => openThread(item)}
+        onLongPress={() => togglePin(item)}
         activeOpacity={0.7}
         style={{
           flexDirection: "row",
           paddingHorizontal: 20,
           paddingVertical: 14,
-          backgroundColor: "rgba(255,255,255,0.72)",
+          backgroundColor: isDark() ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.72)",
           borderBottomWidth: 1,
           borderBottomColor: colors.hairline,
           borderLeftWidth: item.theme_color ? 3 : 0,
@@ -276,7 +328,10 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
             >
               {item.listing_title}
             </Text>
-            <Text style={{ fontSize: 12, color: colors.sage }}>{item.timestamp}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              {isPinned && <Pin color={colors.sage} size={12} />}
+              <Text style={{ fontSize: 12, color: colors.sage }}>{item.timestamp}</Text>
+            </View>
           </View>
           {!isCollabnb && (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 }}>
@@ -311,7 +366,7 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
 
   return (
     <AtmosphericBackground style={{ flex: 1, paddingTop: insets.top }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       <View
         style={{
@@ -371,32 +426,63 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
                     justifyContent: "center",
                   }}
                 >
-                  <Plus color="#fff" size={16} />
+                  <Plus color={colors.bone} size={16} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setShowSettings((s) => !s)}>
                   <Settings color={colors.ink} size={24} />
                 </TouchableOpacity>
               </View>
             </View>
-            <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
-              {FILTERS.map((f) => (
-                <TouchableOpacity
-                  key={f}
-                  onPress={() => setActiveFilter(f)}
-                  style={{
-                    paddingHorizontal: 14,
-                    paddingVertical: 6,
-                    borderRadius: 20,
-                    backgroundColor: activeFilter === f ? colors.slate : "rgba(255,255,255,0.5)",
-                    borderWidth: 1,
-                    borderColor: activeFilter === f ? colors.slate : "rgba(60,87,89,0.15)",
-                  }}
-                >
-                  <Text style={{ fontSize: 12, fontWeight: "500", color: activeFilter === f ? colors.bone : colors.slate }}>
-                    {f}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <View style={{ flexDirection: "row", alignItems: "flex-start", marginBottom: 12 }}>
+              {(() => {
+                const chips = FILTERS.map((f) => (
+                  <TouchableOpacity
+                    key={f}
+                    onPress={() => setActiveFilter(f)}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 6,
+                      borderRadius: 20,
+                      backgroundColor: activeFilter === f ? colors.slate : isDark() ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.5)",
+                      borderWidth: 1,
+                      borderColor: activeFilter === f ? colors.slate : isDark() ? "rgba(255,255,255,0.14)" : "rgba(60,87,89,0.15)",
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: "500", color: activeFilter === f ? colors.bone : colors.slate }}>
+                      {f}
+                    </Text>
+                  </TouchableOpacity>
+                ));
+                return filtersExpanded ? (
+                  <View style={{ flex: 1, flexDirection: "row", flexWrap: "wrap", gap: 8 }}>{chips}</View>
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={{ flex: 1 }}
+                    contentContainerStyle={{ gap: 8, paddingRight: 8 }}
+                  >
+                    {chips}
+                  </ScrollView>
+                );
+              })()}
+              <TouchableOpacity
+                onPress={() => setFiltersExpanded((e) => !e)}
+                hitSlop={8}
+                style={{
+                  width: 30,
+                  height: 30,
+                  marginLeft: 8,
+                  borderRadius: 15,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: isDark() ? "rgba(255,255,255,0.14)" : "rgba(60,87,89,0.15)",
+                  backgroundColor: isDark() ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.5)",
+                }}
+              >
+                {filtersExpanded ? <ChevronUp color={colors.slate} size={16} /> : <ChevronDown color={colors.slate} size={16} />}
+              </TouchableOpacity>
             </View>
           </>
         )}

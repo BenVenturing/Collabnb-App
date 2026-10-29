@@ -9,6 +9,7 @@
 
 import { ScrollView, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowRight, Map as MapIcon, Star, Search as SearchIcon, Briefcase, Heart, MessageCircle, User } from "lucide-react-native";
@@ -118,7 +119,7 @@ export default function GalleryScreen() {
 
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
       <ScrollView
         contentContainerStyle={{
           paddingTop: insets.top + 20,

@@ -7,7 +7,7 @@
 
 export { EyebrowLabel, Display, Body, SectionHeading } from "./Text";
 export { Chip, PillButton, RoundButton } from "./Chip";
-export { StatGrid, ListingCard, ListingTile, CompactListRow } from "./Cards";
+export { StatGrid, ListingCard, ListingTile, PhotoPager, CompactListRow } from "./Cards";
 export { FormField, SearchBar, SegmentedToggle } from "./Inputs";
 export {
   StickyActionBar,

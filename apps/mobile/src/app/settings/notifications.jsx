@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, Switch } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useQuery, useMutation } from "convex/react";
@@ -17,6 +18,10 @@ const DEFAULT_PREFS = {
   collabReminders: true,
   marketing: false,
 };
+
+// Mirrors web Settings: days before a content deadline to remind.
+const REMINDER_DAYS = [[7, "1 week"], [3, "3 days"], [1, "1 day"], [0, "Due day"]];
+export const DEFAULT_REMINDER_DAYS = [3, 1, 0];
 
 const notificationOptions = [
   {
@@ -69,7 +74,7 @@ export default function NotificationsScreen() {
 
   return (
     <AtmosphericBackground>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       {/* Header */}
       <View
@@ -199,6 +204,36 @@ export default function NotificationsScreen() {
                   disabled={!profileId}
                 />
               </View>
+              {option.key === "collabReminders" && settings.collabReminders && profile?.role !== "host" ? (
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                  {REMINDER_DAYS.map(([d, label]) => {
+                    const days = settings.collabReminderDays ?? DEFAULT_REMINDER_DAYS;
+                    const on = days.includes(d);
+                    return (
+                      <TouchableOpacity
+                        key={d}
+                        disabled={!profileId}
+                        onPress={() =>
+                          updateSetting(
+                            "collabReminderDays",
+                            on ? days.filter((x) => x !== d) : [...days, d].sort((x, y) => y - x),
+                          )
+                        }
+                        style={{
+                          paddingVertical: 7,
+                          paddingHorizontal: 12,
+                          borderRadius: 999,
+                          backgroundColor: on ? colors.ink : colors.hairline,
+                        }}
+                      >
+                        <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: on ? colors.surface : colors.slate }}>
+                          {label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ) : null}
             </View>
           ))}
         </Glass>

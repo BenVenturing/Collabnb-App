@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import useHostOnboardingStore from "@/utils/HostOnboardingStore";
 import HostOnboardingShell from "@/components/HostOnboardingShell";
 import { Display, Body, FormField } from "@/components/ui";
@@ -48,7 +49,7 @@ export default function HostProfileScreen() {
       onNext={handleContinue}
       onBack={() => router.back()}
     >
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       <ScrollView
         style={{ flex: 1 }}

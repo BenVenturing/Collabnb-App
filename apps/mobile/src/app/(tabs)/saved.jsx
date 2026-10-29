@@ -1,6 +1,6 @@
 // Creator V1 screen (namespaced to avoid host collisions)
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -10,15 +10,111 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Plus, MoreVertical } from "lucide-react-native";
 import { useSavedCollections } from "@/hooks/useSavedCollections";
 import StatusBarBlur from "@/components/StatusBarBlur";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
+import SavedInspirationCard from "@/components/SavedInspirationCard";
 import { colors, fonts, tracking, track, lineHeights } from "@/config/theme";
+
+const TYPE_MS = 28;
+const HOLD_MS = 1800;
+
+// Types the empty-state message out once, holds briefly, then fades away so
+// the carousel isn't crowded.
+const QUOTES = [
+  "Great content starts with a real place.",
+  "Show the feeling, not just the room.",
+  "Your first three seconds are the whole pitch.",
+  "Authentic beats polished, every time.",
+  "Stay curious. The best stories find you.",
+  "One honest clip outweighs ten staged ones.",
+];
+
+function SavedQuotes() {
+  const [i, setI] = useState(0);
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const run = Animated.sequence([
+      Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
+      Animated.delay(3600),
+      Animated.timing(opacity, { toValue: 0, duration: 700, useNativeDriver: true }),
+    ]);
+    run.start(({ finished }) => {
+      if (finished) setI((n) => (n + 1) % QUOTES.length);
+    });
+    return () => run.stop();
+  }, [i, opacity]);
+
+  return (
+    <Animated.Text
+      style={{
+        opacity,
+        marginTop: 36,
+        paddingHorizontal: 48,
+        fontFamily: fonts.body,
+        fontSize: 12.5,
+        fontStyle: "italic",
+        color: colors.sage,
+        textAlign: "center",
+        minHeight: 36,
+      }}
+    >
+      {QUOTES[i]}
+    </Animated.Text>
+  );
+}
+
+function TypewriterMessage({ title, body, onDone }) {
+  const full = `${title}\n${body}`;
+  const [n, setN] = useState(0);
+  const opacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (n < full.length) {
+      const t = setTimeout(() => setN(n + 1), TYPE_MS);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(
+      () =>
+        Animated.timing(opacity, { toValue: 0, duration: 600, useNativeDriver: true }).start(
+          () => onDone?.(),
+        ),
+      HOLD_MS,
+    );
+    return () => clearTimeout(t);
+  }, [n, full.length, opacity]);
+
+  const shown = full.slice(0, n);
+  const [line1, line2 = ""] = shown.split("\n");
+
+  return (
+    <Animated.View style={{ opacity, paddingHorizontal: 40, marginTop: 20, alignItems: "center", minHeight: 80 }}>
+      <Text
+        style={{
+          fontFamily: fonts.displaySemibold,
+          fontSize: 20,
+          color: colors.ink,
+          textAlign: "center",
+          marginBottom: 8,
+          letterSpacing: track(20, tracking.display),
+        }}
+      >
+        {line1}
+      </Text>
+      <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage, textAlign: "center" }}>
+        {line2}
+      </Text>
+    </Animated.View>
+  );
+}
 
 export default function CreatorSavedScreen() {
   const insets = useSafeAreaInsets();
@@ -26,6 +122,7 @@ export default function CreatorSavedScreen() {
   const { isSignedIn, collections: lists, listingsById, isLoading, createList } = useSavedCollections();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newListName, setNewListName] = useState("");
+  const [introDone, setIntroDone] = useState(false);
 
   const handleCreateList = async () => {
     if (!newListName.trim()) {
@@ -52,7 +149,7 @@ export default function CreatorSavedScreen() {
   if (!isSignedIn) {
     return (
       <AtmosphericBackground style={{ flex: 1 }}>
-        <StatusBar style="dark" />
+        <StatusBar style={statusBarStyle()} />
         <View
           style={{
             flex: 1,
@@ -112,7 +209,7 @@ export default function CreatorSavedScreen() {
           justifyContent: "center",
         }}
       >
-        <StatusBar style="dark" />
+        <StatusBar style={statusBarStyle()} />
         <ActivityIndicator color={colors.slate} />
       </AtmosphericBackground>
     );
@@ -120,7 +217,7 @@ export default function CreatorSavedScreen() {
 
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -319,30 +416,17 @@ export default function CreatorSavedScreen() {
         </View>
 
         {lists.length === 0 && (
-          <View
-            style={{
-              paddingHorizontal: 40,
-              paddingTop: 40,
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: fonts.displaySemibold,
-                fontSize: 20,
-                color: colors.ink,
-                textAlign: "center",
-                marginBottom: 8,
-                letterSpacing: track(20, tracking.display),
-              }}
-            >
-              Create your first wishlist
-            </Text>
-            <Text
-              style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage, textAlign: "center" }}
-            >
-              As you explore, tap the heart on a stay to save it here.
-            </Text>
+          <View style={{ paddingTop: 24, alignItems: "center" }}>
+            <SavedInspirationCard />
+            {introDone ? (
+              <SavedQuotes />
+            ) : (
+              <TypewriterMessage
+                title="Create your first wishlist"
+                body="As you explore, tap the heart on a stay to save it here."
+                onDone={() => setIntroDone(true)}
+              />
+            )}
           </View>
         )}
       </ScrollView>

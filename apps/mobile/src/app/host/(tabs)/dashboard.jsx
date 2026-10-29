@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useHostDashboard from "@/hooks/useHostDashboard";
@@ -788,7 +789,7 @@ export default function DashboardScreen() {
 
   return (
     <AtmosphericBackground>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
       <View style={[styles.safe, { paddingTop: insets.top }]}>
         <ScrollView
           showsVerticalScrollIndicator={false}

@@ -1,6 +1,7 @@
 // Privacy Policy Screen — Collabnb
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
@@ -28,7 +29,7 @@ export default function PrivacyPolicyScreen() {
 
   return (
     <AtmosphericBackground style={{ paddingTop: insets.top }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       {/* Header */}
       <View

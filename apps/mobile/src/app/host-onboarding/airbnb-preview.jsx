@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { MapPin } from "lucide-react-native";
 import { AtmosphericBackground, Display, Body, PillButton, Glass } from "@/components/ui";
 import { colors } from "@/config/theme";
@@ -22,7 +23,7 @@ export default function AirbnbPreviewScreen() {
 
   return (
     <AtmosphericBackground style={{ paddingTop: insets.top }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       {/* Progress Bar */}
       <View style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16 }}>

@@ -33,6 +33,8 @@ export function normalizeListing(l) {
     lng: typeof l.lng === "number" ? l.lng : undefined,
     is_featured: l.is_featured === true,
     image: images[0] || IMG_FALLBACK,
+    images: images.length ? images.slice(0, 6) : [IMG_FALLBACK],
+    description: l.description || "",
     property_type: l.property_type || "",
     collab_type: l.collab_type || "",
     compensation: compensationLabel(l),

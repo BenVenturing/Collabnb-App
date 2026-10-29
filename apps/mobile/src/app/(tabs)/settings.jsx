@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -22,6 +23,7 @@ import {
   getTheme,
   THEMES,
 } from "@/utils/ThemeStore";
+import { COLOR_MODES, getColorMode, setColorMode, useColorMode } from "@/utils/ColorModeStore";
 import { useRoleSwitch } from "@/hooks/useRoleSwitch";
 import { useVerification } from "@/hooks/useVerification";
 
@@ -36,7 +38,8 @@ const SAMPLE_CREATOR = {
 export default function CreatorSettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [selectedTheme, setSelectedTheme] = useState("sand");
+  const { mode: colorMode } = useColorMode();
+  const [selectedTheme, setSelectedTheme] = useState("white");
   const [vibeExpanded, setVibeExpanded] = useState(false);
 
   const { attemptRoleSwitch } = useRoleSwitch();
@@ -51,6 +54,7 @@ export default function CreatorSettingsScreen() {
 
   const handleThemeSelect = async (themeId) => {
     setSelectedTheme(themeId);
+    if (themeId !== "white" && getColorMode() !== "light") setColorMode("light");
     await setStoreTheme(themeId);
   };
 
@@ -112,7 +116,7 @@ export default function CreatorSettingsScreen() {
 
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       {/* Header */}
       <View
@@ -250,6 +254,44 @@ export default function CreatorSettingsScreen() {
         </Text>
         <View style={{ marginHorizontal: 20, ...shadows.sm }}>
           <Glass variant="small">
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.ink, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 }}>
+              Color mode
+            </Text>
+              <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingBottom: 14 }}>
+                {COLOR_MODES.map((m) => (
+                  <TouchableOpacity
+                    key={m.id}
+                    onPress={() => {
+                      if (m.id === "dark" && selectedTheme !== "white") {
+                        Alert.alert("Dark mode", "Dark mode needs the Plain White vibe. Pick Plain White under Your Vibe first.");
+                        return;
+                      }
+                      setColorMode(m.id);
+                    }}
+                    activeOpacity={0.8}
+                    style={{
+                      flex: 1,
+                      alignItems: "center",
+                      paddingVertical: 9,
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: colorMode === m.id ? colors.ink : colors.stone,
+                      backgroundColor: colorMode === m.id ? colors.ink : "transparent",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: fonts.bodyMedium,
+                        fontSize: 13,
+                        color: colorMode === m.id ? colors.bone : colors.ink,
+                      }}
+                    >
+                      {m.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            <View style={{ height: 1, backgroundColor: colors.hairline }} />
           <TouchableOpacity
             onPress={() => setVibeExpanded(!vibeExpanded)}
             activeOpacity={0.8}
@@ -291,54 +333,45 @@ export default function CreatorSettingsScreen() {
             <View
               style={{
                 flexDirection: "row",
-                justifyContent: "space-evenly",
+                justifyContent: "space-between",
                 alignItems: "center",
-                paddingHorizontal: 8,
-                paddingTop: 14,
-                paddingBottom: 16,
+                paddingHorizontal: 20,
+                paddingVertical: 16,
                 borderTopWidth: 1,
-                borderTopColor: "rgba(60,87,89,0.06)",
+                borderTopColor: colors.hairline,
               }}
             >
-              {THEMES.map((theme) => (
-                <View
-                  key={theme.id}
-                  style={{ alignItems: "center", width: 44 }}
-                >
+              {THEMES.map((theme) => {
+                const on = selectedTheme === theme.id;
+                return (
                   <TouchableOpacity
+                    key={theme.id}
                     onPress={() => handleThemeSelect(theme.id)}
                     activeOpacity={0.7}
+                    accessibilityLabel={theme.label}
+                    accessibilityState={{ selected: on }}
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 17,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderWidth: 1.5,
+                      borderColor: on ? colors.ink : "transparent",
+                    }}
                   >
                     <View
-                      style={[
-                        {
-                          width: 34,
-                          height: 34,
-                          borderRadius: 17,
-                          overflow: "hidden",
-                        },
-                        selectedTheme === theme.id && {
-                          transform: [{ scale: 1.18 }],
-                          shadowColor: colors.ink,
-                          shadowOffset: { width: 0, height: 6 },
-                          shadowOpacity: 0.2,
-                          shadowRadius: 10,
-                          elevation: 8,
-                        },
-                      ]}
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
+                        overflow: "hidden",
+                        backgroundColor: theme.id === "white" ? "#FFFFFF" : undefined,
+                        borderWidth: theme.id === "white" ? 1 : 0,
+                        borderColor: colors.stone,
+                      }}
                     >
-                      {theme.id === "white" ? (
-                        <View
-                          style={{
-                            width: 34,
-                            height: 34,
-                            borderRadius: 17,
-                            backgroundColor: colors.surface,
-                            borderWidth: 1.5,
-                            borderColor: colors.stone,
-                          }}
-                        />
-                      ) : (
+                      {theme.id !== "white" && (
                         <LinearGradient
                           colors={theme.colors}
                           start={{ x: 0, y: 0 }}
@@ -348,19 +381,8 @@ export default function CreatorSettingsScreen() {
                       )}
                     </View>
                   </TouchableOpacity>
-                  <Text
-                    style={{
-                      fontFamily: selectedTheme === theme.id ? fonts.bodySemibold : fonts.bodyMedium,
-                      fontSize: 8,
-                      color: selectedTheme === theme.id ? colors.ink : colors.sage,
-                      textAlign: "center",
-                      marginTop: 4,
-                    }}
-                  >
-                    {theme.label}
-                  </Text>
-                </View>
-              ))}
+                );
+              })}
             </View>
           )}
           </Glass>

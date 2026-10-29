@@ -1,5 +1,6 @@
 import { View, TouchableOpacity } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Home, ArrowLeft } from "lucide-react-native";
@@ -13,7 +14,7 @@ export default function HostComingSoonScreen() {
 
   return (
     <AtmosphericBackground style={{ paddingTop: insets.top }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       <View
         style={{

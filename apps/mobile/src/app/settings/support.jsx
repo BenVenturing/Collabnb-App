@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, Alert, Linking } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ChevronLeft, Mail, Copy, ExternalLink } from "lucide-react-native";
@@ -30,7 +31,7 @@ export default function SupportScreen() {
 
   return (
     <AtmosphericBackground>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
 
       <View
         style={{
