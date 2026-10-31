@@ -50,6 +50,35 @@ function relativeTime(ts) {
   return `${days}d ago`;
 }
 
+// Shown only while the host has no real proposals, so the board never opens
+// empty. Actions on it are no-ops (see `live` below).
+const SAMPLE_ID = "sample_proposal";
+const SAMPLE_PROPOSAL = {
+  id: SAMPLE_ID,
+  collaborationId: null,
+  creatorId: null,
+  creatorName: "Maya Ortiz",
+  handle: "@mayaexplores",
+  avatar: null,
+  tier: "UGC Pro",
+  followers: "48.2K",
+  listing: "Lakeside Forest Treehouse · Sample",
+  listingId: null,
+  stage: "applied",
+  status: "pending",
+  note: "Love the treehouse — I'd shoot golden-hour Reels plus a photo set and tag you in every post.",
+  stayDates: "Dec 12 – Dec 15",
+  deliverables: "2 Reels, 10 photos",
+  lastUpdate: "2h ago",
+  counterPending: null,
+  contractId: null,
+  threadKey: null,
+  contractHistory: [],
+  signatures: {},
+  locked: false,
+  isSample: true,
+};
+
 /**
  * The host proposal board, backed by Convex. Replaces SAMPLE_PROPOSALS.
  */
@@ -110,25 +139,33 @@ export function useHostProposals() {
     [pitchesRaw, collabsById],
   );
 
+  const isLoading = !!hostId && pitchesRaw === undefined;
+  const live =
+    (fn) =>
+    (id, ...rest) =>
+      String(id).startsWith("sample_") ? Promise.resolve() : fn(id, ...rest);
+
   return {
     profile,
     hostId,
-    proposals,
+    proposals: !isLoading && proposals.length === 0 ? [SAMPLE_PROPOSAL] : proposals,
     listings: listingsRaw ?? [],
-    isLoading: !!hostId && pitchesRaw === undefined,
+    isLoading,
     // The board's own actions. Declining and approving are pitch-level;
     // everything past approval advances the collaboration instead.
-    approve: (id, note) => updateStatus({ id, status: "approved", hostNote: note }),
-    decline: (id, note) => updateStatus({ id, status: "declined", hostNote: note }),
-    review: (id, note) => updateStatus({ id, status: "under_review", hostNote: note }),
+    approve: live((id, note) => updateStatus({ id, status: "approved", hostNote: note })),
+    decline: live((id, note) => updateStatus({ id, status: "declined", hostNote: note })),
+    review: live((id, note) => updateStatus({ id, status: "under_review", hostNote: note })),
     // Writes only the note, by re-sending the status the pitch already has.
-    saveNote: (id, status, note) => updateStatus({ id, status, hostNote: note }),
+    saveNote: live((id, status, note) => updateStatus({ id, status, hostNote: note })),
     advanceCollab: (collaborationId, nextStage) =>
       advanceStage({ id: String(collaborationId), nextStage }),
-    sendCounter: (id, fields, note) =>
+    sendCounter: live((id, fields, note) =>
       sendCounterMutation({ id, fromParty: "host", fields, note }),
-    signContract: (id, signerName) =>
+    ),
+    signContract: live((id, signerName) =>
       signContractMutation({ id, party: "host", signerName }),
+    ),
   };
 }
 

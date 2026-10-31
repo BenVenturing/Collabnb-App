@@ -18,6 +18,7 @@ import {
   TextInput,
   Image,
   Share,
+  Alert,
   Animated as RNAnimated,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
@@ -804,7 +805,8 @@ function PhotoGallery({ listingId, images, coverImage, scrollY }) {
 
 // Fixed over the page: frosted round back / share / heart on the photo, then
 // a white bar with the title fades in once the photo has scrolled away.
-function DetailTopBar({ scrollY, title, onBack, onShare, onSave, saved, isHost, onEdit }) {
+function DetailTopBar({ scrollY, title, onBack, onShare, onSave, saved, isHost, menuItems }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const insets = useSafeAreaInsets();
   const solid = scrollY.interpolate({ inputRange: [HERO_H - insets.top - 90, HERO_H - insets.top - 40], outputRange: [0, 1], extrapolate: "clamp" });
   const Round = ({ onPress, children, label }) => (
@@ -842,7 +844,7 @@ function DetailTopBar({ scrollY, title, onBack, onShare, onSave, saved, isHost, 
           {title}
         </RNAnimated.Text>
         {isHost ? (
-          <Round onPress={onEdit} label="Edit listing">
+          <Round onPress={() => setMenuOpen((v) => !v)} label="Listing options">
             <Pencil color={colors.ink} size={16} />
           </Round>
         ) : (
@@ -856,6 +858,48 @@ function DetailTopBar({ scrollY, title, onBack, onShare, onSave, saved, isHost, 
           </>
         )}
       </View>
+      {isHost && menuOpen && (
+        <View
+          style={{
+            position: "absolute",
+            top: insets.top + 6 + 42,
+            right: 16,
+            minWidth: 150,
+            paddingVertical: 6,
+            borderRadius: 14,
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.hairline,
+            shadowColor: "#000",
+            shadowOpacity: 0.12,
+            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 4 },
+            elevation: 6,
+          }}
+        >
+          {menuItems.map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              disabled={item.disabled}
+              onPress={() => {
+                setMenuOpen(false);
+                item.onPress();
+              }}
+              style={{ paddingHorizontal: 16, paddingVertical: 11 }}
+            >
+              <Text
+                style={{
+                  fontFamily: fonts.bodyMedium,
+                  fontSize: 14,
+                  color: item.danger ? "#C86868" : item.disabled ? colors.sage : colors.ink,
+                }}
+              >
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -1200,6 +1244,8 @@ export default function ListingDetailScreen() {
   );
   const createCollectionCvx = useMutation(api.collections.create);
   const toggleSaveCvx = useMutation(api.collections.toggleSave);
+  const updateListingCvx = useMutation(api.listings.update);
+  const deleteListingCvx = useMutation(api.listings.deleteListing);
   const isSaved = (myCollections || []).some((c) => c.listing_ids.includes(listingId));
 
   const [listing, setListing] = useState(null);
@@ -1318,11 +1364,64 @@ export default function ListingDetailScreen() {
     router.back();
   };
 
-  const handleEdit = () => {
+  // The create wizard reads its fields from the local draft, so load the
+  // stored listing into it first — editing starts from what's already saved.
+  const handleEdit = async () => {
+    const l = convexListing;
+    if (l) {
+      const [city, country] = (l.location || "").split(",").map((x) => x.trim());
+      await ListingDraftStore.init();
+      await ListingDraftStore.updateDraft({
+        title: l.title || "",
+        location_city: l.location_city || city || "",
+        location_country: l.location_country || country || "",
+        airbnb_url: l.property_url || "",
+        collaboration_brief: l.collaboration_brief || l.about || "",
+        compensation_type: l.compensation_type || "free_stay",
+        stay_nights: l.nights ?? 2,
+        cash_payout: l.cash_amount ?? 0,
+        creator_tier_required: l.creator_tier || "micro",
+        deliverable_load: l.deliverable_load || "moderate",
+        images: l.gallery_images?.length ? l.gallery_images : l.image ? [l.image] : [],
+        perks: l.perks || [],
+        vibe_tags: l.vibe_tags || [],
+        affiliate_code: l.affiliate_code || "",
+        collaboration_window: { startDate: l.collab_start || "", endDate: l.collab_end || "" },
+        turnaround_time_days: l.turnaround_days ?? 14,
+        deliverables: l.deliverables_list || [],
+        ...(l.revision_policy ? { revision_policy: l.revision_policy } : {}),
+        ...(l.usage_rights ? { usage_rights: l.usage_rights } : {}),
+        status: l.status || "draft",
+        _editingId: listingId,
+      });
+    }
     router.push({
       pathname: "/host/listings/create/basics",
       params: { id: listingId, editMode: "true" },
     });
+  };
+
+  const isPaused = convexListing?.status === "unpublished";
+  const isDraftListing = convexListing?.status === "draft";
+
+  const handleTogglePause = () => {
+    updateListingCvx({ id: listingId, status: isPaused ? "published" : "unpublished" }).catch(() =>
+      Alert.alert("Error", "Couldn't update that listing. Please try again."),
+    );
+  };
+
+  const handleDelete = () => {
+    Alert.alert("Delete listing?", `"${listing.title}" will be permanently deleted.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () =>
+          deleteListingCvx({ id: listingId })
+            .then(() => router.back())
+            .catch(() => Alert.alert("Error", "Couldn't delete that listing. Please try again.")),
+      },
+    ]);
   };
 
   const handleApply = () => {
@@ -1797,12 +1896,21 @@ export default function ListingDetailScreen() {
         onSave={() => setSaveModalVisible(true)}
         saved={isSaved}
         isHost={isHost}
-        onEdit={handleEdit}
+        menuItems={[
+          { label: "Edit", onPress: handleEdit },
+          {
+            label: isPaused ? "Unpause" : "Pause",
+            onPress: handleTogglePause,
+            disabled: isDraftListing,
+          },
+          { label: "Delete", onPress: handleDelete, danger: true },
+        ]}
       />
 
       {/* BOTTOM ACTION BAR — COMPONENT-SPEC.md §12. Price over a sage
           deliverables sub-line, wide dark pill CTA. Collapses to a single
           full-width action on the host's own listing. */}
+      {!isHost && (
       <StickyActionBar
         style={{
           position: "absolute",
@@ -1835,6 +1943,7 @@ export default function ListingDetailScreen() {
         onAction={isHost ? handleEdit : hasApplied ? undefined : handleApply}
         disabled={!isHost && hasApplied}
       />
+      )}
 
       {/* Apply Modal */}
       <ApplyModal
