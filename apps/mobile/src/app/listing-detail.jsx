@@ -28,7 +28,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import MapView, { Marker } from "react-native-maps";
-import { Share2, Heart, Quote, Star, Check, Plus, ArrowRight, ChevronLeft, Pencil } from "lucide-react-native";
+import { Share2, Heart, Quote, Star, Check, Plus, ArrowRight, ChevronLeft, Pencil, Flag } from "lucide-react-native";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
@@ -36,6 +36,7 @@ import ListingDraftStore from "@/utils/ListingDraftStore";
 import { AmenityIcon } from "@/lib/amenityIcons";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
+import UserSafetySheet from "@/components/UserSafetySheet";
 import {
   StickyActionBar,
   StatGrid,
@@ -1254,6 +1255,7 @@ export default function ListingDetailScreen() {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [applyVisible, setApplyVisible] = useState(false);
   const [saveModalVisible, setSaveModalVisible] = useState(false);
+  const [safetyVisible, setSafetyVisible] = useState(false);
   const detailScrollY = useRef(new RNAnimated.Value(0)).current;
 
   useEffect(() => {
@@ -1517,7 +1519,25 @@ export default function ListingDetailScreen() {
                 Collabnb Host
               </Text>
             </View>
+            {hostProfile?._id && profile?._id && String(hostProfile._id) !== String(profile._id) ? (
+              <TouchableOpacity
+                onPress={() => setSafetyVisible(true)}
+                hitSlop={10}
+                accessibilityLabel="Report or block host"
+              >
+                <Flag color={colors.sage} size={20} />
+              </TouchableOpacity>
+            ) : null}
           </View>
+          {safetyVisible && hostProfile?._id && profile?._id ? (
+            <UserSafetySheet
+              visible
+              onClose={() => setSafetyVisible(false)}
+              profileId={String(profile._id)}
+              targetId={String(hostProfile._id)}
+              targetName={hostProfile.full_name || listing.host}
+            />
+          ) : null}
         </View>
 
         <View

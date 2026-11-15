@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
-import { X, AlertCircle, Archive, Check } from "lucide-react-native";
+import { X, AlertCircle, Archive, Check, Flag } from "lucide-react-native";
 import { useState } from "react";
 import { TAG_OPTIONS, TAG_COLORS, TAG_TEXT_COLORS } from "@/lib/threadTags";
 import { THEME_COLORS, THEME_COLOR_IDS } from "@/lib/threadColors";
@@ -16,6 +16,7 @@ export default function ConversationDetailsSheet({
   onUpdateTag,
   onSetColor,
   onClose,
+  onReportOrBlock,
 }) {
   const insets = useSafeAreaInsets();
   const [showHelpForm, setShowHelpForm] = useState(false);
@@ -310,6 +311,15 @@ export default function ConversationDetailsSheet({
                   <AlertCircle color={colors.ink} size={22} />
                   <Text style={{ fontSize: 15, color: colors.ink, flex: 1 }}>Help Center request</Text>
                 </TouchableOpacity>
+                {!isCollabnb && onReportOrBlock && (
+                  <TouchableOpacity
+                    onPress={onReportOrBlock}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 16, paddingVertical: 16 }}
+                  >
+                    <Flag color="#c0392b" size={22} />
+                    <Text style={{ fontSize: 15, color: "#c0392b", flex: 1 }}>Report or block</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </>
           )}

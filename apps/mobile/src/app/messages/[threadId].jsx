@@ -12,6 +12,7 @@ import { api } from "@/convex/_generated/api";
 import { useThreadMessages } from "@/hooks/useThreadMessages";
 import { useConversations } from "@/hooks/useConversations";
 import ConversationDetailsSheet from "@/components/ConversationDetailsSheet";
+import UserSafetySheet from "@/components/UserSafetySheet";
 import { colors } from "@/config/theme";
 
 export default function ThreadScreen() {
@@ -28,9 +29,11 @@ export default function ThreadScreen() {
   const currentThread = threads.find((t) => (t.thread_key || t.id) === threadKey);
   const tag = currentThread?.tag || tagParam;
 
-  const { messages, isLoading, sending, error, send, markRead } = useThreadMessages(threadKey, profile);
+  const { messages, otherId: messageOtherId, isLoading, sending, error, send, markRead } = useThreadMessages(threadKey, profile);
+  const otherId = messageOtherId || currentThread?.other_id || null;
   const [draft, setDraft] = useState("");
   const [showDetails, setShowDetails] = useState(false);
+  const [showSafety, setShowSafety] = useState(false);
   const flatListRef = useRef(null);
   const readMarked = useRef(false);
 
@@ -226,6 +229,25 @@ export default function ThreadScreen() {
           onUpdateTag={(newTag) => updateTag(threadKey, newTag)}
           onSetColor={(color) => setThreadColor(threadKey, color)}
           onClose={() => setShowDetails(false)}
+          onReportOrBlock={
+            otherId && profile?._id
+              ? () => {
+                  setShowDetails(false);
+                  setShowSafety(true);
+                }
+              : undefined
+          }
+        />
+      )}
+
+      {showSafety && otherId && profile?._id && (
+        <UserSafetySheet
+          visible
+          onClose={() => setShowSafety(false)}
+          profileId={String(profile._id)}
+          targetId={otherId}
+          targetName={hostName}
+          onBlocked={() => router.back()}
         />
       )}
     </KeyboardAvoidingView>

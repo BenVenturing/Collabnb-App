@@ -27,6 +27,11 @@ export function useThreadMessages(threadKey, profile) {
     [rawMessages, myId]
   );
 
+  const otherId = useMemo(() => {
+    const m = (rawMessages ?? []).find((x) => x.sender_id && x.sender_id !== myId);
+    return m ? String(m.sender_id) : null;
+  }, [rawMessages, myId]);
+
   const send = useCallback(
     async (text) => {
       const trimmed = text.trim();
@@ -61,6 +66,7 @@ export function useThreadMessages(threadKey, profile) {
 
   return {
     messages,
+    otherId,
     isLoading: rawMessages === undefined,
     sending,
     error,

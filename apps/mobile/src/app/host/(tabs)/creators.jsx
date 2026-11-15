@@ -43,6 +43,7 @@ import StatusBarBlur from "@/components/StatusBarBlur";
 import { BottomSheet } from "@/components/ui";
 import { colors, fonts, tracking, track } from "@/config/theme";
 import { api } from "@/convex/_generated/api";
+import UserSafetySheet from "@/components/UserSafetySheet";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const FEED_CARD_GAP = 12;
@@ -67,6 +68,7 @@ export default function HostCreatorsScreen() {
   const [viewMode, setViewMode] = useState("swipe");
   const [detailCreator, setDetailCreator] = useState(null);
   const [pitchPreview, setPitchPreview] = useState(null);
+  const [safetyCreator, setSafetyCreator] = useState(null);
   const [sendingPitch, setSendingPitch] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [workedWithOnly, setWorkedWithOnly] = useState(false);
@@ -438,8 +440,22 @@ export default function HostCreatorsScreen() {
           setDetailCreator(null);
           setPitchPreview(creator);
         }}
+        onReport={(creator) => {
+          setDetailCreator(null);
+          setSafetyCreator(creator);
+        }}
         onClose={() => setDetailCreator(null)}
       />
+
+      {safetyCreator && profile?._id ? (
+        <UserSafetySheet
+          visible
+          onClose={() => setSafetyCreator(null)}
+          profileId={String(profile._id)}
+          targetId={String(safetyCreator.id)}
+          targetName={safetyCreator.name}
+        />
+      ) : null}
 
       <PitchPreviewSheet
         creator={pitchPreview}
@@ -659,7 +675,7 @@ function PitchPreviewSheet({ creator, listing, text, sending, onCancel, onConfir
   );
 }
 
-function CreatorDetailSheet({ creator, isSaved, hasWorkedWith, onViewPastCollabs, onToggleSave, onPitch, onClose }) {
+function CreatorDetailSheet({ creator, isSaved, hasWorkedWith, onViewPastCollabs, onToggleSave, onPitch, onReport, onClose }) {
   if (!creator) return null;
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
@@ -728,6 +744,9 @@ function CreatorDetailSheet({ creator, isSaved, hasWorkedWith, onViewPastCollabs
                 </Text>
               </TouchableOpacity>
             ) : null}
+            <TouchableOpacity onPress={() => onReport(creator)} hitSlop={8}>
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: "#c0392b" }}>Report or block</Text>
+            </TouchableOpacity>
           </ScrollView>
           <View style={{ flexDirection: "row", gap: 10 }}>
             <TouchableOpacity
