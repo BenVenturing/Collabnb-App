@@ -16,6 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth as useClerkAuth } from "@clerk/clerk-expo";
 import { X, ChevronRight } from "lucide-react-native";
 import ThemedBackground from "@/components/ThemedBackground";
+import PricingToolButton from "@/components/PricingToolButton";
 import {
   setTheme as setStoreTheme,
   getTheme,
@@ -251,6 +252,8 @@ export default function HostSettingsScreen() {
           </View>
           <ChevronRight color="#D0D5CE" size={18} />
         </TouchableOpacity>
+
+        <PricingToolButton style={{ marginHorizontal: 20, marginTop: 10 }} />
 
         {/* APPEARANCE */}
         <Text

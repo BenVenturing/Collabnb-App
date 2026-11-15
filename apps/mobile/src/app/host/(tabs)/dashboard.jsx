@@ -38,7 +38,8 @@ import { Body } from "@/components/ui";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CARD_INNER_WIDTH = SCREEN_WIDTH - 40; // 20px horizontal padding each side
+const CARD_WIDTH = SCREEN_WIDTH - 40; // 20px horizontal padding each side
+const LISTING_CARD_HEIGHT = 420;
 const DRAFT_KEY = "@collabnb_host_listing_draft_v1"; // ListingDraftStore's in-progress draft
 const LOCAL_DRAFT_ID = "local_draft";
 
@@ -195,7 +196,7 @@ function ListingCard({
               })
         }
       >
-      <Glass variant="card" contentStyle={styles.listingCardContent}>
+      <Glass variant="card" style={styles.listingCardGlass} contentStyle={styles.listingCardContent}>
       {/* Photo Swiper */}
       <View style={styles.photoContainer}>
         <FlatList
@@ -207,7 +208,7 @@ function ListingCard({
           viewabilityConfig={viewabilityConfig.current}
           keyExtractor={(_, i) => `photo-${i}`}
           renderItem={({ item }) => (
-            <View style={{ width: CARD_INNER_WIDTH - 32, height: 180 }}>
+            <View style={{ width: CARD_WIDTH, height: LISTING_CARD_HEIGHT }}>
               {item.type === "image" ? (
                 <Image
                   source={{ uri: item.uri }}
@@ -235,9 +236,16 @@ function ListingCard({
         </View>
       </View>
 
+      {/* pointerEvents none so swipes reach the photo list underneath */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={["rgba(25,37,36,0)", "rgba(25,37,36,0.62)", "rgba(25,37,36,0.9)"]}
+        locations={[0, 0.3, 1]}
+        style={styles.listingOverlay}
+      >
       {/* Status + Location */}
       <View style={styles.listingCardTop}>
-        <View style={[styles.statusPill, { backgroundColor: status.bg }]}>
+        <View style={styles.statusPill}>
           <View style={[styles.dot6, { backgroundColor: status.color }]} />
           <Text style={[styles.statusLabel, { color: status.color }]}>
             {status.label}
@@ -251,7 +259,7 @@ function ListingCard({
       </Text>
 
       <View style={styles.listingMeta}>
-        <View style={[styles.tierBadge, { backgroundColor: tier.bg }]}>
+        <View style={styles.tierBadge}>
           <Text style={[styles.tierText, { color: tier.color }]}>
             {listing.tierRequired}
           </Text>
@@ -271,10 +279,11 @@ function ListingCard({
               <Text style={styles.listingStatNum}>{s.num}</Text>
               <Text style={styles.listingStatLabel}>{s.label}</Text>
             </View>
-            {i < arr.length - 1 && <View style={styles.statDividerV} />}
+            {i < arr.length - 1 && <View style={styles.listingStatDivider} />}
           </React.Fragment>
         ))}
       </View>
+      </LinearGradient>
       </Glass>
       </TouchableOpacity>
 
@@ -560,6 +569,16 @@ export default function DashboardScreen() {
     });
   };
 
+  // A draft left behind by an abandoned edit still carries _editingId, and
+  // publishing it would overwrite that live listing instead of creating one.
+  const startNewListing = async () => {
+    await ListingDraftStore.init();
+    if (ListingDraftStore.getDraft()?._editingId) {
+      await ListingDraftStore.clearDraft();
+    }
+    router.push("/host/listings/create/index");
+  };
+
   const editListing = (listing) => {
     if (listing.id === LOCAL_DRAFT_ID) {
       router.push("/host/listings/create/basics");
@@ -668,7 +687,7 @@ export default function DashboardScreen() {
               </View>
               <TouchableOpacity
                 style={styles.addBtn}
-                onPress={() => router.push("/host/listings/create/index")}
+                onPress={startNewListing}
                 accessibilityRole="button"
                 accessibilityLabel="New listing"
               >
@@ -896,7 +915,16 @@ const styles = StyleSheet.create({
   // Shadow lives on this outer node — Glass's own View sets overflow:"hidden",
   // which would otherwise clip an RN shadow drawn on the same layer.
   listingCardShadow: { ...shadows.md, borderRadius: radii.lg },
-  listingCardContent: { padding: 16 },
+  listingCardGlass: { borderWidth: 0 },
+  listingCardContent: { height: LISTING_CARD_HEIGHT },
+  listingOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: 16,
+    paddingTop: 64,
+  },
   cardMenuWrap: { position: "absolute", top: 12, right: 12, zIndex: 10 },
   cardMenuBtn: {
     width: 34,
@@ -927,17 +955,10 @@ const styles = StyleSheet.create({
   cardMenuItemText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.ink },
   cardMenuItemDanger: { color: "#C86868" }, // no brand token — semantic danger red, flagged
   cardMenuItemMuted: { color: colors.sage },
-  photoContainer: {
-    width: "100%",
-    height: 180,
-    borderRadius: 12,
-    overflow: "hidden",
-    marginBottom: 14,
-    position: "relative",
-  },
+  photoContainer: StyleSheet.absoluteFillObject,
   dotIndicators: {
     position: "absolute",
-    bottom: 8,
+    top: 24,
     left: 0,
     right: 0,
     flexDirection: "row",
@@ -964,13 +985,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.92)",
   },
   statusLabel: { fontFamily: fonts.bodyMedium, fontSize: 11 },
-  listingLocation: { fontFamily: fonts.body, fontSize: 11, color: colors.sage },
+  listingLocation: { fontFamily: fonts.body, fontSize: 11, color: colors.bone },
   listingTitle: {
     fontFamily: fonts.display,
     fontSize: 15,
-    color: colors.ink,
+    color: colors.bone,
     marginBottom: 10,
     lineHeight: 21,
   },
@@ -980,19 +1002,25 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 14,
   },
-  tierBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  tierBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.92)",
+  },
   tierText: { fontFamily: fonts.bodyMedium, fontSize: 11 },
-  compType: { fontFamily: fonts.body, fontSize: 11, color: colors.sage },
+  compType: { fontFamily: fonts.body, fontSize: 11, color: colors.bone },
   listingStats: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(25,37,36,0.04)",
+    backgroundColor: "rgba(255,255,255,0.14)",
     borderRadius: 12,
     padding: 10,
   },
   listingStat: { flex: 1, alignItems: "center" },
-  listingStatNum: { fontFamily: fonts.display, fontSize: 15, color: colors.ink },
-  listingStatLabel: { fontFamily: fonts.body, fontSize: 10, color: colors.sage, marginTop: 1 },
+  listingStatNum: { fontFamily: fonts.display, fontSize: 15, color: colors.bone },
+  listingStatLabel: { fontFamily: fonts.body, fontSize: 10, color: colors.bone, marginTop: 1 },
+  listingStatDivider: { width: 1, height: 28, backgroundColor: "rgba(255,255,255,0.2)" },
 
 
   feedCardShadow: { ...shadows.md, borderRadius: radii.lg },

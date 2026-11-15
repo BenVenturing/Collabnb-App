@@ -14,6 +14,7 @@ import { Camera, X, HelpCircle } from "lucide-react-native";
 import ListingCreationShell from "@/components/ListingCreationShell";
 import ListingDraftStore from "@/utils/ListingDraftStore";
 import GlassHelpModal from "@/components/GlassHelpModal";
+import PricingToolButton from "@/components/PricingToolButton";
 import { colors, fonts, tracking, track } from "@/config/theme";
 
 export default function CreateListingBasics() {
@@ -555,6 +556,17 @@ export default function CreateListingBasics() {
                 />
               </View>
             </View>
+          )}
+
+          {(draft.compensation_type === "paid" ||
+            draft.compensation_type === "hybrid") && (
+            <PricingToolButton
+              style={{ marginBottom: 20 }}
+              initialValue={{
+                compensationType: draft.compensation_type,
+                cashAmount: draft.cash_payout,
+              }}
+            />
           )}
 
           {/* Stay Nights (if Free or Hybrid) */}

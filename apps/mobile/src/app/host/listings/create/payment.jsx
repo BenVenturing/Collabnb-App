@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from "react-na
 import { useState, useEffect } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { useQuery, useAction } from "convex/react";
+import { useQuery, useAction, useMutation } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { CreditCard, Check, Landmark, Info } from "lucide-react-native";
 import ListingCreationShell from "@/components/ListingCreationShell";
@@ -33,6 +33,10 @@ export default function CreateListingPayment() {
   const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
   const createSetupSession = useAction(api.stripe.createHostCardSetupSession);
   const verifySetupSession = useAction(api.stripe.verifyHostCardSetupSession);
+  const createListing = useMutation(api.listings.create);
+  const updateListing = useMutation(api.listings.update);
+  const generateUploadUrl = useMutation(api.uploads.generateUploadUrl);
+  const finalizeUpload = useMutation(api.uploads.finalizeUpload);
 
   const [draft, setDraft] = useState(ListingDraftStore.getDraft());
   const [busy, setBusy] = useState(false);
@@ -47,6 +51,9 @@ export default function CreateListingPayment() {
     const unsub = ListingDraftStore.subscribe(() => setDraft(ListingDraftStore.getDraft()));
     return unsub;
   }, []);
+
+  const editingId = draft?._editingId;
+  const existingListing = useQuery(api.listings.getById, editingId ? { id: editingId } : "skip");
 
   const cashAmount = draft?.cash_payout || 0;
   const hasSavedMethod = !!profile?.stripe_default_payment_method_id;
@@ -98,20 +105,87 @@ export default function CreateListingPayment() {
     setError("");
     setPublishing(true);
     try {
-      if (isEditMode && params.id) {
-        await ListingDraftStore.updateExistingListing(params.id, draft);
+      if (!profile?._id) throw new Error("Your host profile isn't loaded yet. Please try again.");
+      if (editingId && existingListing === undefined) {
+        throw new Error("Still loading your listing. Please try again.");
+      }
+      if (editingId && existingListing?.is_sample === true) {
+        throw new Error("Sample listings can't be edited. Create your own listing instead.");
+      }
+
+      const photos = [];
+      for (const uri of draft.images || []) {
+        if (/^https?:\/\//.test(uri)) {
+          photos.push(uri);
+          continue;
+        }
+        const blob = await (await fetch(uri)).blob();
+        const uploadUrl = await generateUploadUrl();
+        const res = await fetch(uploadUrl, {
+          method: "POST",
+          headers: { "Content-Type": blob.type || "image/jpeg" },
+          body: blob,
+        });
+        if (!res.ok) throw new Error("A photo failed to upload. Please try again.");
+        const { storageId } = await res.json();
+        photos.push(await finalizeUpload({ storageId }));
+      }
+
+      const cashy = draft.compensation_type === "paid" || draft.compensation_type === "hybrid";
+      const stays = draft.compensation_type === "free_stay" || draft.compensation_type === "hybrid";
+      const win = draft.collaboration_window || {};
+      const fields = {
+        title: draft.title,
+        location: [draft.location_city, draft.location_country].filter(Boolean).join(", "),
+        location_city: draft.location_city,
+        location_country: draft.location_country,
+        property_url: draft.airbnb_url || undefined,
+        collaboration_brief: draft.collaboration_brief,
+        compensation_type: draft.compensation_type,
+        cash_amount: cashy ? draft.cash_payout || 0 : undefined,
+        nights: stays ? draft.stay_nights : undefined,
+        stay_value: stays ? (draft.stay_nights || 0) * 200 : undefined,
+        creator_tier: draft.creator_tier_required,
+        deliverable_load: draft.deliverable_load,
+        image: photos[0],
+        gallery_images: photos,
+        perks: draft.perks || [],
+        vibe_tags: draft.vibe_tags || [],
+        affiliate_code: draft.affiliate_code || undefined,
+        collab_start: win.startDate || undefined,
+        collab_end: win.endDate || undefined,
+        turnaround_days: draft.turnaround_time_days,
+        deliverables_list: (draft.deliverables || []).map((d) => ({
+          type: d.type,
+          quantity: d.quantity,
+          description: d.description || "",
+        })),
+        deliverable_count: (draft.deliverables || []).reduce((sum, d) => sum + (d.quantity || 0), 0),
+        revision_policy: draft.revision_policy,
+        usage_rights: draft.usage_rights,
+      };
+
+      if (editingId) {
+        await updateListing({ id: editingId, ...fields });
+        await ListingDraftStore.clearDraft();
         Alert.alert("Changes Saved ✓", "Your listing has been updated.", [
           {
             text: "View Listing",
-            onPress: () => router.replace(`/listing-detail?id=${params.id}&isHost=true`),
+            onPress: () => router.replace(`/listing-detail?id=${editingId}&isHost=true`),
           },
         ]);
       } else {
-        await ListingDraftStore.publishListing();
+        await createListing({
+          ...fields,
+          host_id: String(profile._id),
+          status: "published",
+          payout_handling: "platform",
+        });
+        await ListingDraftStore.clearDraft();
         setShowConfetti(true);
       }
     } catch (err) {
-      setError("Failed to save listing. Please try again.");
+      setError(err?.data || err?.message || "Failed to save listing. Please try again.");
       setPublishing(false);
     }
   };
