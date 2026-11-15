@@ -1,467 +1,247 @@
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  Image,
-} from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { View, ScrollView, Pressable, Animated } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "expo-router";
-import { useState, useEffect, useCallback } from "react";
-import { useFocusEffect } from "@react-navigation/native";
-import HostGlassSheet from "@/components/HostGlassSheet";
-import ThemedBackground from "@/components/ThemedBackground";
-import { Settings } from "lucide-react-native";
-import useRoleStore from "@/utils/RoleStore";
-import useHostOnboardingStore from "@/utils/HostOnboardingStore";
-import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
-import ListingDraftStore from "@/utils/ListingDraftStore";
-import { useConversations } from "@/hooks/useConversations";
+import { useIsFocused } from "@react-navigation/native";
 import { useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
+import { Globe, Settings, Share2, UserRound } from "lucide-react-native";
+import { colors } from "@/config/theme";
+import {
+  AtmosphericBackground,
+  Glass,
+  ProfileHeader,
+  StatGrid,
+  SectionHeading,
+  PillButton,
+  Body,
+  Display,
+  LoadingScreen,
+} from "@/components/ui";
+import LinksSection from "@/components/Profile/LinksSection";
+import { PastCollabCard, buildSocialLinks } from "@/components/Profile/profileShared";
+import ShareProfileSheet from "@/components/Profile/ShareProfileSheet";
+import StatusBarBlur from "@/components/StatusBarBlur";
+import CommunityGlobe from "@/components/CommunityGlobe";
+import { useBottomPull, PulledSection, usePullToast, PullToast } from "@/components/PullReveal";
 
-// Shown only until the signed-in host's own profile loads, and for the fields
-// Convex has no column for (the property photo is the listing's hero).
-const SAMPLE_HOST = {
-  name: "Ben",
-  propertyName: "The Grove",
-  location: "Asheville, NC",
-  verified: true,
-  bio: "Welcome to The Grove — a beachfront glass villa designed for creators who want content that stops the scroll. Surrounded by tropical palms, an infinity pool, and golden hour light every evening. We partner with travel and lifestyle creators who share our love for intentional, beautiful spaces. Every collab is personal to us.",
-  totalCollabs: 12,
-  creatorsWorkedWith: 8,
-  propertyPhoto: {
-    uri: "https://ucarecdn.com/38af81bb-8d32-4aa8-9e45-ad795a5c9aa7/-/format/auto/",
-  },
-  hostPhoto: {
-    uri: "https://ucarecdn.com/6d425040-e4c3-46f0-a774-91ac597ebe24/-/format/auto/",
-  },
+const DEFAULT_PHOTO = {
+  uri: "https://ucarecdn.com/6d425040-e4c3-46f0-a774-91ac597ebe24/-/format/auto/",
 };
+const BIO_LIMIT = 155;
 
 export default function HostProfileScreen() {
   const insets = useSafeAreaInsets();
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const isFocused = useIsFocused();
   const router = useRouter();
-  const { setRole } = useRoleStore();
-  const { hostApprovalStatus, loadDraft: loadHostDraft } =
-    useHostOnboardingStore();
-  const { creatorApprovalStatus, loadDraft: loadCreatorDraft } =
-    useCreatorOnboardingStore();
-  const { unreadCount } = useConversations();
-
-  const { user } = useUser();
+  const { user, isSignedIn } = useUser();
   const email = user?.primaryEmailAddress?.emailAddress;
+
   const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
   const hostId = profile?._id ? String(profile._id) : null;
-  const hostCollabs = useQuery(api.collaborations.getByHost, hostId ? { hostId } : "skip");
-  const hostListings = useQuery(api.listings.getByHost, hostId ? { host_id: hostId } : "skip");
+  const collabs = useQuery(api.collaborations.getByHost, hostId ? { hostId } : "skip");
+  const listings = useQuery(api.listings.getByHost, hostId ? { host_id: hostId } : "skip");
+
+  const [showShare, setShowShare] = useState(false);
+  const [bioExpanded, setBioExpanded] = useState(false);
+  const [pastRevealed, setPastRevealed] = useState(false);
+  const toast = usePullToast();
 
   // Samples exist to populate an empty dashboard; counting them would inflate
-  // both figures below.
-  const realCollabs = (hostCollabs ?? []).filter((c) => c.is_sample !== true);
-  const distinctCreators = new Set(
-    realCollabs.map((c) => c.creator_id).filter(Boolean),
-  ).size;
-
-  // SAMPLE_HOST used to supply all of this, so every host saw "Ben" and
-  // "The Grove" on their own profile.
-  const host = {
-    name: profile?.full_name || SAMPLE_HOST.name,
-    propertyName: profile?.business_name || SAMPLE_HOST.propertyName,
-    location:
-      [profile?.city, profile?.region || profile?.country].filter(Boolean).join(", ") ||
-      SAMPLE_HOST.location,
-    verified: profile ? profile.is_verified === true : SAMPLE_HOST.verified,
-    bio: profile?.bio || SAMPLE_HOST.bio,
-    totalCollabs: hostCollabs ? realCollabs.length : SAMPLE_HOST.totalCollabs,
-    // Distinct creators, not a second copy of the collab count.
-    creatorsWorkedWith: hostCollabs ? distinctCreators : SAMPLE_HOST.creatorsWorkedWith,
-    hostPhoto: profile?.avatar_url ? { uri: profile.avatar_url } : SAMPLE_HOST.hostPhoto,
-    propertyPhoto: profile?.banner_url ? { uri: profile.banner_url } : SAMPLE_HOST.propertyPhoto,
-  };
-
-  const [showRoleSwitchModal, setShowRoleSwitchModal] = useState(false);
-  const [pendingTargetRole, setPendingTargetRole] = useState(null);
-  const [isSwitching, setIsSwitching] = useState(false);
-  const [bioExpanded, setBioExpanded] = useState(false);
-
-  const [stats, setStats] = useState({
-    publishedListings: 0,
-    unpublishedListings: 0,
-    unreadMessages: 0,
-    lastUpdated: new Date(),
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadHostDraft();
-    loadCreatorDraft();
-  }, []);
-
-  const refreshStats = useCallback(async () => {
-    setLoading(true);
-    try {
-      const convexListings = hostListings ?? [];
-      const localListings = convexListings.length
-        ? convexListings
-        : await ListingDraftStore.getPublishedListings();
-      const published = localListings.filter((l) => l.status === "published").length;
-      const unpublished = localListings.filter(
-        (l) => l.status === "unpublished" || l.status === "draft",
-      ).length;
-      setStats({
-        publishedListings: published,
-        unpublishedListings: unpublished,
-        unreadMessages: unreadCount,
-        lastUpdated: new Date(),
-      });
-    } catch (error) {
-      console.error("Failed to load host stats:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [unreadCount, hostListings]);
-
-  useFocusEffect(
-    useCallback(() => {
-      refreshStats();
-    }, [refreshStats]),
+  // the stats below.
+  const realCollabs = useMemo(
+    () => (collabs ?? []).filter((c) => c.is_sample !== true),
+    [collabs],
+  );
+  const pastCollabs = useMemo(
+    () => realCollabs.filter((c) => c.status === "completed" || c.status === "approved"),
+    [realCollabs],
+  );
+  const publishedListings = useMemo(
+    () => (listings ?? []).filter((l) => l.status === "published" && l.is_sample !== true),
+    [listings],
   );
 
-  const attemptRoleSwitch = async (targetRole) => {
-    const isAdmin = await AsyncStorage.getItem("@collabnb_is_admin_v1");
-    if (isAdmin === "true") {
-      await AsyncStorage.setItem("@collabnb_active_mode_v1", targetRole);
-      router.replace(
-        targetRole === "host" ? "/host/(tabs)/dashboard" : "/explore",
-      );
-      return;
-    }
-    const targetApprovalStatus =
-      targetRole === "host" ? hostApprovalStatus : creatorApprovalStatus;
-    if (targetApprovalStatus === "approved") {
-      setIsSwitching(true);
-      try {
-        await setRole(targetRole);
-        setTimeout(() => {
-          setIsSwitching(false);
-          router.replace(
-            targetRole === "host" ? "/host/(tabs)/proposals" : "/explore",
-          );
-        }, 400);
-      } catch (error) {
-        setIsSwitching(false);
-        Alert.alert("Error", "Failed to switch roles. Please try again.");
-      }
-    } else if (targetApprovalStatus === "not_submitted") {
-      setPendingTargetRole(targetRole);
-      setShowRoleSwitchModal(true);
-    } else if (targetApprovalStatus === "pending") {
-      Alert.alert(
-        `${targetRole === "host" ? "Host" : "Creator"} setup pending`,
-        "Your application is under review. We'll notify you when you're approved.",
-        [{ text: "OK" }],
-      );
-    }
-  };
+  const handlePull = useCallback(() => {
+    if (collabs === undefined) return;
+    if (pastCollabs.length > 0) setPastRevealed(true);
+    else toast.show("No past collabs yet. Finish one to show it here");
+  }, [collabs, pastCollabs.length, toast.show]);
+  const bottomPull = useBottomPull(handlePull);
 
-  const startOnboarding = () => {
-    setShowRoleSwitchModal(false);
-    if (pendingTargetRole === "host") {
-      router.push("/host-onboarding/property");
-    } else {
-      router.push("/creator-onboarding/basic-info");
-    }
-  };
+  if (!isSignedIn) {
+    return (
+      <AtmosphericBackground style={{ flex: 1 }}>
+        <StatusBar style={statusBarStyle()} />
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 40,
+          }}
+        >
+          <UserRound size={44} color={colors.stone} style={{ marginBottom: 18 }} />
+          <Display size={20} style={{ textAlign: "center", marginBottom: 8 }}>
+            Sign in to see your profile
+          </Display>
+          <Body size={15} color={colors.slate} style={{ textAlign: "center", marginBottom: 24 }}>
+            Your stats, links, and past collabs live on your account.
+          </Body>
+          <PillButton label="Sign in" onPress={() => router.push("/signin")} />
+        </View>
+      </AtmosphericBackground>
+    );
+  }
+
+  if (profile === undefined) {
+    return <LoadingScreen label="Loading profile" />;
+  }
+
+  const socialLinks = profile ? buildSocialLinks(profile) : [];
+  const personalLink = profile?.portfolio
+    ? { title: "Website", url: profile.portfolio, icon: Globe }
+    : null;
+  const bio = profile?.bio || "";
+  const bioTruncated = !bioExpanded && bio.length > BIO_LIMIT;
+
+  const locationLine = [profile?.city, profile?.region, profile?.country]
+    .filter(Boolean)
+    .join(" ");
+
+  const stats = [
+    { label: "Collabs", value: collabs === undefined ? null : realCollabs.length },
+    {
+      label: "Creators",
+      value:
+        collabs === undefined
+          ? null
+          : new Set(realCollabs.map((c) => c.creator_id).filter(Boolean)).size,
+    },
+    { label: "Live Listings", value: listings === undefined ? null : publishedListings.length },
+  ];
 
   return (
-    <ThemedBackground style={{ flex: 1 }}>
-      <StatusBar style={statusBarStyle()} />
-      <ScrollView
+    <AtmosphericBackground style={{ flex: 1 }}>
+      {isFocused ? <StatusBar style={statusBarStyle()} /> : null}
+
+      <Animated.ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
+        showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
+        {...bottomPull}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          {
+            useNativeDriver: true,
+            listener: bottomPull.onScroll,
+          },
+        )}
       >
-        <HostGlassSheet>
-          {/* Header */}
-          <View
-            style={{
-              paddingTop: insets.top + 20,
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 24,
-            }}
-          >
-            <Text style={{ fontSize: 32, fontWeight: "700", color: "#192524" }}>
-              Host Profile
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/host/settings")}
-              style={{
-                backgroundColor: "rgba(60, 87, 89, 0.15)",
-                borderRadius: 20,
-                padding: 10,
-              }}
-            >
-              <Settings color="#3C5759" size={24} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Property Photo + overlapping Host Avatar — plain Views, not tappable */}
-          <View
-            style={{
-              width: "100%",
-              height: 220,
-              borderRadius: 16,
-              overflow: "visible",
-              position: "relative",
-              marginBottom: 44,
-            }}
-          >
-            <Image
-              source={host.propertyPhoto}
-              style={{ width: "100%", height: 220, borderRadius: 16 }}
-              resizeMode="cover"
+        <ProfileHeader
+          avatar={profile?.avatar_url ? { uri: profile.avatar_url } : DEFAULT_PHOTO}
+          name={profile?.full_name || "Your profile"}
+          badgeTone={profile?.is_founder ? "gold" : undefined}
+          badgeLabel={
+            profile?.is_founder
+              ? "★ Founding Member"
+              : profile?.is_verified
+                ? "Verified Host"
+                : "Host"
+          }
+          handle={profile?.username ? `@${profile.username}` : null}
+          location={locationLine || null}
+          topRight={
+            <Pressable onPress={() => router.push("/host/settings")}>
+              <Glass variant="small" contentStyle={{ padding: 10 }}>
+                <Settings color={colors.ink} size={22} />
+              </Glass>
+            </Pressable>
+          }
+          action={
+            <PillButton
+              label="Share Profile"
+              variant="glass"
+              size={13}
+              icon={<Share2 size={15} color={colors.ink} />}
+              onPress={() => profile && setShowShare(true)}
+              style={{ paddingVertical: 10, paddingHorizontal: 18 }}
             />
-            <View
-              style={{
-                position: "absolute",
-                bottom: -32,
-                left: 20,
-                width: 64,
-                height: 64,
-                borderRadius: 32,
-                borderWidth: 3,
-                borderColor: "#FFFFFF",
-                overflow: "hidden",
-              }}
-            >
-              <Image
-                source={host.hostPhoto}
-                style={{ width: "100%", height: "100%" }}
-                resizeMode="cover"
-              />
+          }
+          style={{ marginBottom: 24 }}
+        />
+
+        <View style={{ paddingHorizontal: 20 }}>
+          <StatGrid compact columns={3} items={stats} style={{ marginBottom: 20 }} />
+
+          {bio ? (
+            <View style={{ marginBottom: 28 }}>
+              <Body size={15} color={colors.slate}>
+                {bioTruncated ? `${bio.slice(0, BIO_LIMIT)}…` : bio}
+              </Body>
+              {bio.length > BIO_LIMIT ? (
+                <Pressable onPress={() => setBioExpanded(!bioExpanded)} hitSlop={8}>
+                  <Body
+                    size={14}
+                    weight="semibold"
+                    style={{ marginTop: 6, textDecorationLine: "underline" }}
+                  >
+                    {bioExpanded ? "Show less" : "Show more"}
+                  </Body>
+                </Pressable>
+              ) : null}
             </View>
-          </View>
+          ) : null}
+        </View>
 
-          {/* Host Info */}
-          <View style={{ marginBottom: 16 }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 4,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Inter-Bold",
-                  fontSize: 22,
-                  color: "#192524",
-                  marginRight: 8,
-                }}
-              >
-                {host.name}
-              </Text>
-              {host.verified && (
-                <View
-                  style={{
-                    backgroundColor: "rgba(74,155,127,0.15)",
-                    borderWidth: 1,
-                    borderColor: "rgba(74,155,127,0.3)",
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderRadius: 12,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: "Inter-Medium",
-                      fontSize: 11,
-                      color: "#4A9B7F",
-                    }}
-                  >
-                    ✓ Verified
-                  </Text>
-                </View>
-              )}
+        {personalLink || socialLinks.length > 0 ? (
+          <LinksSection personalLink={personalLink} socialLinks={socialLinks} />
+        ) : null}
+
+        <View style={{ marginTop: 8, marginBottom: 28 }}>
+          <CommunityGlobe active={isFocused} />
+        </View>
+
+        {pastRevealed && pastCollabs.length > 0 ? (
+          <PulledSection style={{ marginBottom: 28 }}>
+            <View style={{ paddingHorizontal: 20 }}>
+              <SectionHeading size={18} title="Past Collabs" />
             </View>
-            <Text
-              style={{
-                fontFamily: "Inter-Medium",
-                fontSize: 15,
-                color: "#3C5759",
-                marginBottom: 6,
-              }}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 20, gap: 14, paddingBottom: 4 }}
             >
-              {host.propertyName}
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Inter-Regular",
-                fontSize: 13,
-                color: "#959D90",
-              }}
-            >
-              📍 {host.location}
-            </Text>
-          </View>
-
-          {/* Bio */}
-          <View style={{ marginBottom: 20 }}>
-            <Text
-              style={{
-                fontFamily: "Inter-Regular",
-                fontSize: 14,
-                color: "#3C5759",
-                lineHeight: 20,
-              }}
-              numberOfLines={bioExpanded ? undefined : 4}
-            >
-              {host.bio}
-            </Text>
-            <TouchableOpacity onPress={() => setBioExpanded(!bioExpanded)}>
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: "600",
-                  color: "#3C5759",
-                  marginTop: 6,
-                  textDecorationLine: "underline",
-                }}
-              >
-                {bioExpanded ? "Show less" : "Show more"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Quick Actions */}
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 10,
-              marginTop: 20,
-              marginBottom: 24,
-            }}
-          >
-            {[
-              {
-                emoji: "💬",
-                label: "Message",
-                onPress: () => router.push("/host/(tabs)/inbox"),
-              },
-              {
-                emoji: "🏡",
-                label: "View Property",
-                onPress: () =>
-                  router.push({
-                    pathname: "/listing-detail",
-                    params: { id: "l1", isHost: "true" },
-                  }),
-              },
-              {
-                emoji: "📍",
-                label: "Location",
-                onPress: () => console.log("open map"),
-              },
-            ].map((btn) => (
-              <TouchableOpacity
-                key={btn.label}
-                onPress={btn.onPress}
-                style={{
-                  flex: 1,
-                  backgroundColor: "rgba(255,255,255,0.55)",
-                  borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: "rgba(255,255,255,0.75)",
-                  paddingVertical: 12,
-                  alignItems: "center",
-                  shadowColor: "#3C5759",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.08,
-                  shadowRadius: 8,
-                  elevation: 2,
-                }}
-              >
-                <Text style={{ fontSize: 16, marginBottom: 4 }}>
-                  {btn.emoji}
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: "Inter-Medium",
-                    fontSize: 12,
-                    color: "#192524",
-                  }}
-                >
-                  {btn.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Divider */}
-          <View
-            style={{ height: 1, backgroundColor: "#F0F0F0", marginBottom: 24 }}
-          />
-
-          {/* Collab Stats */}
-          <View style={{ marginBottom: 24 }}>
-            <View style={{ flexDirection: "row", gap: 10, marginBottom: 24 }}>
-              {[
-                { value: host.totalCollabs, label: "Total Collabs" },
-                {
-                  value: host.creatorsWorkedWith,
-                  label: "Creators\nWorked With",
-                },
-              ].map((stat) => (
-                <View
-                  key={stat.label}
-                  style={{
-                    flex: 1,
-                    backgroundColor: "rgba(255,255,255,0.55)",
-                    borderRadius: 16,
-                    borderWidth: 1,
-                    borderColor: "rgba(255,255,255,0.75)",
-                    padding: 16,
-                    alignItems: "center",
-                    shadowColor: "#3C5759",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.08,
-                    shadowRadius: 8,
-                    elevation: 2,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 28,
-                      fontWeight: "800",
-                      color: "#192524",
-                      letterSpacing: -0.5,
-                    }}
-                  >
-                    {stat.value}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: "#959D90",
-                      marginTop: 4,
-                      textAlign: "center",
-                    }}
-                  >
-                    {stat.label}
-                  </Text>
-                </View>
+              {pastCollabs.map((c) => (
+                <PastCollabCard
+                  key={String(c._id)}
+                  collab={c}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/listing-detail",
+                      params: { id: c.listing_id, isHost: "true" },
+                    })
+                  }
+                />
               ))}
-            </View>
-          </View>
-        </HostGlassSheet>
-      </ScrollView>
-    </ThemedBackground>
+            </ScrollView>
+          </PulledSection>
+        ) : null}
+      </Animated.ScrollView>
+
+      <StatusBarBlur scrollY={scrollY} fadeStart={0} fadeLength={30} />
+      <PullToast text={toast.text} />
+
+      <ShareProfileSheet
+        visible={showShare}
+        onClose={() => setShowShare(false)}
+        profile={profile}
+      />
+    </AtmosphericBackground>
   );
 }

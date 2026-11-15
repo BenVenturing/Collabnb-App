@@ -109,7 +109,7 @@ export function usePushNotifications(profile) {
     });
 
     return () => {
-      Notifications.removeNotificationSubscription(responseSub);
+      responseSub.remove();
     };
   }, [router]);
 }
