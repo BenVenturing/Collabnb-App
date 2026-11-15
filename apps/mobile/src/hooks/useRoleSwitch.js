@@ -28,9 +28,13 @@ export function useRoleSwitch() {
     const serverApproved =
       profile?.is_admin === true ||
       (targetRole === "host" ? profile?.host_verified === true : profile?.creator_verified === true);
+    const hostNotApproved =
+      targetRole === "host" && !!profile && !serverApproved && profile.role !== "host";
     const targetApprovalStatus = serverApproved
       ? "approved"
-      : targetRole === "host" ? hostApprovalStatus : creatorApprovalStatus;
+      : hostNotApproved
+        ? "not_submitted"
+        : targetRole === "host" ? hostApprovalStatus : creatorApprovalStatus;
 
     if (targetApprovalStatus === "approved") {
       setIsSwitching(true);

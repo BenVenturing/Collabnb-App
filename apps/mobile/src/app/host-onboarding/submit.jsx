@@ -29,6 +29,7 @@ export default function HostSubmitScreen() {
   const email = user?.primaryEmailAddress?.emailAddress;
   const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
   const updateProfile = useMutation(api.profiles.updateProfile);
+  const requestRoleSwitch = useMutation(api.profiles.requestRoleSwitch);
 
   const {
     workEmail,
@@ -81,6 +82,15 @@ export default function HostSubmitScreen() {
           portfolio: websiteUrl || undefined,
         },
       });
+      // Without this the server never learns of the request: no pending_role, no admin notice.
+      if (profile.role !== "host") {
+        await requestRoleSwitch({
+          profileId: String(profile._id),
+          targetRole: "host",
+          business_name: businessName || undefined,
+          website_url: websiteUrl || undefined,
+        });
+      }
       updateField("hostApprovalStatus", "pending");
       triggerConfetti();
       setIsSubmitted(true);
