@@ -5,7 +5,7 @@
 // File: /host/(tabs)/proposals.jsx
 // ============================================================
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import {
@@ -19,11 +19,10 @@ import {
   Modal,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
-import { Search, X } from "lucide-react-native";
+import { Search, X, SlidersHorizontal } from "lucide-react-native";
 import { threadKeyFor } from "@/utils/threads";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
@@ -33,8 +32,6 @@ import { filterProposals, listingOptions } from "@/utils/proposalFilters";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
-
-const STORAGE_KEY = "@collabnb_proposals_v1";
 
 // ─── Contract negotiation ──────────────────────────────────────
 const CONTRACT_FIELDS = [
@@ -157,6 +154,7 @@ const STAGES = [
 ];
 
 const ACTIVE_STAGES = STAGES.filter((s) => s.id !== "completed");
+const COMPLETED_TAB = STAGES.find((s) => s.id === "completed");
 
 const TIER_CONFIG = {
   "UGC Beginner": { color: colors.sage, bg: "rgba(100,107,98,0.12)" },
@@ -164,95 +162,6 @@ const TIER_CONFIG = {
   "Micro Influencer": { color: "#7B68C8", bg: "rgba(123,104,200,0.12)" }, // no brand token — semantic tier purple
   Influencer: { color: "#C86868", bg: "rgba(200,104,104,0.12)" }, // no brand token — semantic tier red
 };
-
-const SAMPLE_PROPOSALS = [
-  {
-    id: "p1",
-    creatorName: "Maya Chen",
-    handle: "@mayaexplores",
-    tier: "Micro Influencer",
-    followers: "28.4k",
-    listing: "Treehouse Suite — Summer Escape",
-    listingId: "l1",
-    stage: "confirmed",
-    note: "Loves botanical stays. Confirmed June 14–16.",
-    stayDates: "June 14–16",
-    deliverables: "2 Reels, 4 Stories, 1 TikTok",
-    lastUpdate: "2d ago",
-  },
-  {
-    id: "p2",
-    creatorName: "Jordan Ellis",
-    handle: "@jordantravels",
-    tier: "UGC Pro",
-    followers: "12.1k",
-    listing: "Cliffside Villa — Weekend Collab",
-    listingId: "l2",
-    stage: "negotiating",
-    note: "Wants to bring a partner. 2 nights vs 3.",
-    stayDates: "",
-    deliverables: "3 Reels, 6 Stories",
-    lastUpdate: "5h ago",
-  },
-  {
-    id: "p3",
-    creatorName: "Priya Nair",
-    handle: "@priyaframes",
-    tier: "Influencer",
-    followers: "91k",
-    listing: "Treehouse Suite — Summer Escape",
-    listingId: "l1",
-    stage: "applied",
-    note: "",
-    stayDates: "",
-    deliverables: "",
-    lastUpdate: "1d ago",
-  },
-  {
-    id: "p4",
-    creatorName: "Sam Kowalski",
-    handle: "@samwanders",
-    tier: "UGC Beginner",
-    followers: "3.2k",
-    listing: "Desert Dome — Content Weekend",
-    listingId: "l3",
-    stage: "invited",
-    note: "",
-    stayDates: "",
-    deliverables: "",
-    lastUpdate: "3d ago",
-  },
-  {
-    id: "p5",
-    creatorName: "Lena Park",
-    handle: "@lenavisuals",
-    tier: "UGC Pro",
-    followers: "8.7k",
-    listing: "Desert Dome — Content Weekend",
-    listingId: "l3",
-    stage: "live",
-    note: "Currently on property. Content due in 5 days.",
-    stayDates: "June 8–10",
-    deliverables: "2 TikToks, 3 Reels",
-    lastUpdate: "12h ago",
-  },
-  {
-    id: "p6",
-    creatorName: "Alex Rivers",
-    handle: "@alexroams",
-    tier: "Micro Influencer",
-    followers: "19.2k",
-    listing: "Desert Dome — Content Weekend",
-    listingId: "l3",
-    stage: "completed",
-    note: "Great collab. Very professional.",
-    stayDates: "May 20–22",
-    deliverables: "1 YouTube, 2 Reels, 5 Stories",
-    lastUpdate: "3w ago",
-    rating: 5,
-    contentUrl: "https://instagram.com/alexroams",
-  },
-];
 
 // ─── SUB-COMPONENTS ──────────────────────────────────────────
 function Avatar({ name, size = 38 }) {
@@ -866,49 +775,20 @@ export default function ProposalsScreen() {
     signContract,
   } = useHostProposals();
 
-  // Samples stand in only while there's no host profile to query against or no
-  // real pitch yet, so a new host still sees what the board will look like.
-  const proposals =
-    hostId && convexProposals.length > 0 ? convexProposals : SAMPLE_PROPOSALS;
-  const onSamples = proposals === SAMPLE_PROPOSALS;
+  const proposals = convexProposals;
   const hostContracts = useQuery(api.contracts.getForParty, hostId ? { userId: String(hostId) } : "skip");
   const [selected, setSelected] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [view, setView] = useState("pipeline");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [tierFilter, setTierFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [listingFilter, setListingFilter] = useState("all");
   const [declinedOpen, setDeclinedOpen] = useState(false);
+  const [stageTab, setStageTab] = useState(null);
   const [counterTarget, setCounterTarget] = useState(null);
   const [signTarget, setSignTarget] = useState(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      AsyncStorage.getItem(STORAGE_KEY)
-        .then((s) => {
-          if (s) setProposals(JSON.parse(s));
-        })
-        .catch(() => {});
-    }, []),
-  );
-
-  const persist = async (updated) => {
-    setProposals(updated);
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {}
-  };
-
   const handleStageChange = async (id, newStage) => {
-    if (onSamples) {
-      const updated = proposals.map((p) =>
-        p.id === id ? { ...p, stage: newStage, lastUpdate: "just now" } : p,
-      );
-      await persist(updated);
-      setSelected((prev) => (prev ? { ...prev, stage: newStage } : prev));
-      return;
-    }
-
     const proposal = proposals.find((p) => p.id === id);
     if (!proposal) return;
 
@@ -939,99 +819,42 @@ export default function ProposalsScreen() {
   };
 
   const handleSave = async (id, fields) => {
-    if (!onSamples) {
-      const proposal = proposals.find((p) => p.id === id);
-      try {
-        // updateStatus is the only way to write host_note, and it notifies the
-        // creator whenever it is handed "approved" or "declined" — so the note
-        // is re-sent with the status it already has, never a changed one.
-        if (fields.note !== undefined && proposal) {
-          if (proposal.status === "approved" || proposal.status === "declined") {
-            Alert.alert(
-              "Note not saved",
-              "Notes can't be edited once a proposal is approved or declined — it would re-notify the creator.",
-            );
-          } else {
-            await saveNote(id, proposal.status, fields.note);
-          }
+    const proposal = proposals.find((p) => p.id === id);
+    try {
+      // updateStatus is the only way to write host_note, and it notifies the
+      // creator whenever it is handed "approved" or "declined" — so the note
+      // is re-sent with the status it already has, never a changed one.
+      if (fields.note !== undefined && proposal) {
+        if (proposal.status === "approved" || proposal.status === "declined") {
+          Alert.alert(
+            "Note not saved",
+            "Notes can't be edited once a proposal is approved or declined — it would re-notify the creator.",
+          );
+        } else {
+          await saveNote(id, proposal.status, fields.note);
         }
-        setSelected((prev) => (prev ? { ...prev, ...fields } : prev));
-      } catch (error) {
-        Alert.alert("Couldn't save", error?.message || "Please try again.");
       }
-      return;
+      setSelected((prev) => (prev ? { ...prev, ...fields } : prev));
+    } catch (error) {
+      Alert.alert("Couldn't save", error?.message || "Please try again.");
     }
-
-    const updated = proposals.map((p) =>
-      p.id === id ? { ...p, ...fields } : p,
-    );
-    await persist(updated);
-    setSelected((prev) => (prev ? { ...prev, ...fields } : prev));
   };
 
-  const STAGE_ORDER = ["invited", "applied", "negotiating", "confirmed", "live"];
-
   const handleCounterSend = async (id, fields, note) => {
-    if (!onSamples) {
-      try {
-        await sendCounter(id, fields, note);
-      } catch (error) {
-        Alert.alert("Couldn't send", error?.message || "Please try again.");
-      }
-      setCounterTarget(null);
-      return;
+    try {
+      await sendCounter(id, fields, note);
+    } catch (error) {
+      Alert.alert("Couldn't send", error?.message || "Please try again.");
     }
-
-    const updated = proposals.map((p) => {
-      if (p.id !== id) return p;
-      const history = p.contractHistory || [];
-      const nextHistory = [
-        ...history,
-        { version: history.length + 1, modifiedBy: "host", fields, note },
-      ];
-      const curIdx = STAGE_ORDER.indexOf(p.stage);
-      const negotiatingIdx = STAGE_ORDER.indexOf("negotiating");
-      const nextStage =
-        curIdx >= 0 && curIdx < negotiatingIdx ? "negotiating" : p.stage;
-      return {
-        ...p,
-        contractHistory: nextHistory,
-        stage: nextStage,
-        lastUpdate: "just now",
-      };
-    });
-    await persist(updated);
-    setSelected((prev) =>
-      prev ? updated.find((p) => p.id === prev.id) : prev,
-    );
     setCounterTarget(null);
   };
 
   const handleSign = async (id, name) => {
-    if (!onSamples) {
-      try {
-        await signContract(id, name);
-      } catch (error) {
-        Alert.alert("Couldn't sign", error?.message || "Please try again.");
-      }
-      setSignTarget(null);
-      return;
+    try {
+      await signContract(id, name);
+    } catch (error) {
+      Alert.alert("Couldn't sign", error?.message || "Please try again.");
     }
-
-    const updated = proposals.map((p) => {
-      if (p.id !== id) return p;
-      const signatures = {
-        ...(p.signatures || {}),
-        hostSignature: name,
-        hostSignedAt: new Date().toISOString(),
-      };
-      const locked = !!(signatures.hostSignature && signatures.creatorSignature);
-      return { ...p, signatures, locked, lastUpdate: "just now" };
-    });
-    await persist(updated);
-    setSelected((prev) =>
-      prev ? updated.find((p) => p.id === prev.id) : prev,
-    );
     setSignTarget(null);
   };
 
@@ -1055,6 +878,13 @@ export default function ProposalsScreen() {
   const archived = filtered.filter((p) => p.stage === "completed");
   const declined = filtered.filter((p) => p.stage === "declined");
   const byStage = (id) => active.filter((p) => p.stage === id);
+  const currentStage =
+    stageTab ||
+    (ACTIVE_STAGES.find((st) => byStage(st.id).length > 0) || ACTIVE_STAGES[1]).id;
+  const showingCompleted = currentStage === "completed";
+  const stageCards = showingCompleted ? archived : byStage(currentStage);
+  const activeFilterCount = (tierFilter !== "all" ? 1 : 0) + (listingFilter !== "all" ? 1 : 0);
+  const currentStageMeta = STAGES.find((st) => st.id === currentStage);
 
   const crmStats = [
     {
@@ -1148,62 +978,25 @@ export default function ProposalsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Toggle */}
-        <View style={styles.viewToggle}>
-          <TouchableOpacity
-            style={[
-              styles.toggleBtn,
-              view === "pipeline" && styles.toggleBtnActive,
-            ]}
-            onPress={() => setView("pipeline")}
-          >
-            <Text
-              style={[
-                styles.toggleBtnText,
-                view === "pipeline" && styles.toggleBtnTextActive,
-              ]}
-            >
-              Pipeline
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.toggleBtn,
-              view === "archive" && styles.toggleBtnActive,
-            ]}
-            onPress={() => setView("archive")}
-          >
-            <Text
-              style={[
-                styles.toggleBtnText,
-                view === "archive" && styles.toggleBtnTextActive,
-              ]}
-            >
-              Completed ({archived.length})
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Search — matches creator name, handle, listing or the host's note */}
-        <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-              backgroundColor: "rgba(255,255,255,0.6)",
-              borderWidth: 1,
-              borderColor: "rgba(60,87,89,0.15)",
-              borderRadius: radii.pill,
-              paddingHorizontal: 14,
-              paddingVertical: 9,
-            }}
-          >
+        {isLoading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator color={colors.slate} />
+          </View>
+        ) : (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollBody}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+        {/* Search + filter toggle — filters stay tucked away until asked for */}
+        <View style={styles.searchBar}>
+          <View style={styles.searchField}>
             <Search color={colors.sage} size={15} />
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Search creators, listings, notes"
+              placeholder="Search"
               placeholderTextColor={colors.sage}
               style={{ flex: 1, fontFamily: fonts.body, fontSize: 13, color: colors.ink, padding: 0 }}
               autoCorrect={false}
@@ -1215,113 +1008,155 @@ export default function ProposalsScreen() {
               </TouchableOpacity>
             )}
           </View>
-        </View>
-
-        {/* Tier Filter */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterRow}
-          contentContainerStyle={styles.filterContent}
-        >
-          {TIERS.map((f) => (
-            <TouchableOpacity
-              key={f}
-              style={[
-                styles.filterChip,
-                tierFilter === f && styles.filterChipActive,
-              ]}
-              onPress={() => setTierFilter(f)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  tierFilter === f && styles.filterChipTextActive,
-                ]}
-              >
-                {f === "all" ? "All Tiers" : f}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {listings.length > 1 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.filterRow}
-            contentContainerStyle={styles.filterContent}
+          <TouchableOpacity
+            style={[styles.filterToggle, (filtersOpen || activeFilterCount > 0) && styles.filterToggleOn]}
+            onPress={() => setFiltersOpen((v) => !v)}
+            accessibilityRole="button"
+            accessibilityLabel={filtersOpen ? "Hide filters" : "Show filters"}
           >
-            {["all", ...listings].map((l) => (
-              <TouchableOpacity
-                key={l}
-                style={[styles.filterChip, listingFilter === l && styles.filterChipActive]}
-                onPress={() => setListingFilter(l)}
-              >
-                <Text
-                  style={[styles.filterChipText, listingFilter === l && styles.filterChipTextActive]}
-                  numberOfLines={1}
-                >
-                  {l === "all" ? "All Listings" : l}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-
-        <View style={{ paddingHorizontal: 16, marginBottom: 18 }}>
-          <CollabCrmOverview stats={crmStats} todoItems={onSamples ? undefined : hostTodos} />
+            <SlidersHorizontal
+              color={filtersOpen || activeFilterCount > 0 ? colors.bone : colors.slate}
+              size={16}
+            />
+            {activeFilterCount > 0 && (
+              <View style={styles.filterBadge}>
+                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
 
-        {/* Pipeline */}
-        {view === "pipeline" && (
+        <Text style={styles.stageLabel}>
+          {currentStageMeta?.label} · {stageCards.length}
+        </Text>
+
+        {filtersOpen && (
           <>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.board}
+              style={styles.stageTabs}
+              contentContainerStyle={styles.stageTabsContent}
             >
-              {ACTIVE_STAGES.map((stage) => {
-                const cards = byStage(stage.id);
+              {[...ACTIVE_STAGES, COMPLETED_TAB].map((stage) => {
+                const count = stage.id === "completed" ? archived.length : byStage(stage.id).length;
+                const on = stage.id === currentStage;
                 return (
-                  <View key={stage.id} style={styles.pipelineCol}>
-                    <View
-                      style={[styles.colHeader, { backgroundColor: stage.bg }]}
-                    >
-                      <Text>{stage.emoji}</Text>
-                      <Text style={[styles.colLabel, { color: stage.color }]}>
-                        {stage.label}
+                  <TouchableOpacity
+                    key={stage.id}
+                    style={[
+                      styles.stageTab,
+                      on && { backgroundColor: stage.color, borderColor: stage.color },
+                    ]}
+                    onPress={() => setStageTab(stage.id)}
+                  >
+                    <Text style={[styles.stageTabText, on && styles.stageTabTextActive]}>
+                      {stage.label}
+                    </Text>
+                    <View style={[styles.stageTabCount, on && styles.stageTabCountActive]}>
+                      <Text style={[styles.stageTabCountText, on && { color: stage.color }]}>
+                        {count}
                       </Text>
-                      <View
-                        style={[
-                          styles.colCount,
-                          { backgroundColor: stage.color },
-                        ]}
-                      >
-                        <Text style={styles.colCountText}>{cards.length}</Text>
-                      </View>
                     </View>
-                    {cards.length === 0 ? (
-                      <Text style={styles.emptyColText}>None here</Text>
-                    ) : (
-                      cards.map((p) => (
-                        <ProposalCard
-                          key={p.id}
-                          proposal={p}
-                          onPress={() => {
-                            setSelected(p);
-                            setModalVisible(true);
-                          }}
-                        />
-                      ))
-                    )}
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </ScrollView>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterRow}
+              contentContainerStyle={styles.filterContent}
+            >
+              {TIERS.map((f) => (
+                <TouchableOpacity
+                  key={f}
+                  style={[
+                    styles.filterChip,
+                    tierFilter === f && styles.filterChipActive,
+                  ]}
+                  onPress={() => setTierFilter(f)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      tierFilter === f && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {f === "all" ? "All Tiers" : f}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {listings.length > 1 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.filterRow}
+                contentContainerStyle={styles.filterContent}
+              >
+                {["all", ...listings].map((l) => (
+                  <TouchableOpacity
+                    key={l}
+                    style={[styles.filterChip, listingFilter === l && styles.filterChipActive]}
+                    onPress={() => setListingFilter(l)}
+                  >
+                    <Text
+                      style={[styles.filterChipText, listingFilter === l && styles.filterChipTextActive]}
+                      numberOfLines={1}
+                    >
+                      {l === "all" ? "All Listings" : l}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </>
+        )}
+
+        <View style={{ paddingHorizontal: 16, marginBottom: 18 }}>
+          <CollabCrmOverview stats={crmStats} todoItems={hostTodos} />
+        </View>
+
+        {/* Stage tabs over a single vertical list; Completed is the last tab */}
+        <>
+
+            <View style={styles.stageList}>
+              {stageCards.length === 0 ? (
+                <View style={styles.emptyStage}>
+                  <Text style={styles.emptyStageTitle}>
+                    {proposals.length === 0
+                      ? "No proposals yet"
+                      : `Nothing ${currentStageMeta?.label.toLowerCase()} right now`}
+                  </Text>
+                  <Text style={styles.emptyStageSub}>
+                    {proposals.length === 0
+                      ? "Invite creators to your listings and their applications will land here."
+                      : "Proposals move here as they progress."}
+                  </Text>
+                  {proposals.length === 0 && (
+                    <TouchableOpacity
+                      style={styles.emptyStageBtn}
+                      onPress={() => router.push("/host/(tabs)/creators")}
+                    >
+                      <Text style={styles.inviteBtnText}>Find creators</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                stageCards.map((p) =>
+                  showingCompleted ? (
+                    <ArchiveCard key={p.id} proposal={p} onPress={() => openProposal(p)} />
+                  ) : (
+                    <ProposalCard key={p.id} proposal={p} onPress={() => openProposal(p)} />
+                  ),
+                )
+              )}
+            </View>
 
             {/* Declined — kept out of the pipeline columns, tucked below */}
-            {declined.length > 0 && (
+            {declined.length > 0 && !showingCompleted && (
               <View style={styles.declinedSection}>
                 <TouchableOpacity
                   style={styles.declinedHeader}
@@ -1344,32 +1179,8 @@ export default function ProposalsScreen() {
                   ))}
               </View>
             )}
-          </>
-        )}
-
-        {/* Archive */}
-        {view === "archive" && (
-          <ScrollView contentContainerStyle={styles.archiveList}>
-            {archived.length === 0 ? (
-              <View style={styles.emptyArchive}>
-                <Text style={styles.emptyArchiveIcon}>⭐</Text>
-                <Text style={styles.emptyArchiveText}>
-                  No completed collabs yet
-                </Text>
-              </View>
-            ) : (
-              archived.map((p) => (
-                <ArchiveCard
-                  key={p.id}
-                  proposal={p}
-                  onPress={() => {
-                    setSelected(p);
-                    setModalVisible(true);
-                  }}
-                />
-              ))
-            )}
-          </ScrollView>
+        </>
+        </ScrollView>
         )}
 
         <DetailModal
@@ -1454,8 +1265,52 @@ const styles = StyleSheet.create({
   toggleBtnText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.sage },
   toggleBtnTextActive: { fontFamily: fonts.bodySemibold, color: colors.bone },
 
-  filterRow: { maxHeight: 40, marginBottom: 6 },
-  filterContent: { paddingHorizontal: 20, gap: 8, alignItems: "center" },
+  filterRow: { flexGrow: 0, marginBottom: 8 },
+  stageLabel: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+    color: colors.sage,
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  searchBar: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, marginBottom: 10 },
+  searchField: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(255,255,255,0.6)",
+    borderWidth: 1,
+    borderColor: "rgba(60,87,89,0.15)",
+    borderRadius: radii.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  filterToggle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.6)",
+    borderWidth: 1,
+    borderColor: "rgba(60,87,89,0.15)",
+  },
+  filterToggleOn: { backgroundColor: colors.slate, borderColor: colors.slate },
+  filterBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: colors.ink,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterBadgeText: { fontFamily: fonts.bodySemibold, fontSize: 10, color: colors.bone },
+  filterContent: { paddingHorizontal: 16, gap: 8, alignItems: "center" },
   filterChip: {
     paddingHorizontal: 12,
     paddingVertical: 5,
@@ -1468,37 +1323,51 @@ const styles = StyleSheet.create({
   filterChipText: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.slate },
   filterChipTextActive: { color: colors.bone },
 
-  board: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-    gap: 12,
-    alignItems: "flex-start",
-  },
-  pipelineCol: { width: 210 },
-  colHeader: {
+  loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
+  scrollBody: { paddingBottom: 120 },
+  stageTabs: { flexGrow: 0, marginBottom: 12 },
+  stageTabsContent: { paddingHorizontal: 16, gap: 8, alignItems: "center" },
+  stageTab: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 12,
-    marginBottom: 10,
+    paddingLeft: 12,
+    paddingRight: 6,
+    paddingVertical: 6,
+    borderRadius: radii.pill,
+    backgroundColor: "rgba(255,255,255,0.5)",
+    borderWidth: 1,
+    borderColor: "rgba(60,87,89,0.15)",
   },
-  colLabel: { fontFamily: fonts.bodySemibold, fontSize: 12, flex: 1 },
-  colCount: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+  stageTabText: { fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.slate },
+  stageTabTextActive: { color: colors.surface },
+  stageTabCount: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 5,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(60,87,89,0.1)",
   },
-  colCountText: { fontFamily: fonts.bodySemibold, fontSize: 10, color: colors.surface },
-  emptyColText: {
+  stageTabCountActive: { backgroundColor: colors.surface },
+  stageTabCountText: { fontFamily: fonts.bodySemibold, fontSize: 11, color: colors.slate },
+  stageList: { paddingHorizontal: 16 },
+  emptyStage: { alignItems: "center", paddingVertical: 32, paddingHorizontal: 24 },
+  emptyStageTitle: { fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink, marginBottom: 4 },
+  emptyStageSub: {
     fontFamily: fonts.body,
-    fontSize: 11,
-    color: colors.stone,
+    fontSize: 13,
+    color: colors.sage,
     textAlign: "center",
-    paddingVertical: 20,
+    lineHeight: 19,
+  },
+  emptyStageBtn: {
+    marginTop: 14,
+    backgroundColor: colors.slate,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 20,
   },
 
   proposalCardShadow: { ...shadows.sm, borderRadius: radii.md, marginBottom: 10 },
@@ -1545,11 +1414,11 @@ const styles = StyleSheet.create({
   tierBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
   tierText: { fontFamily: fonts.bodySemibold, fontSize: 10 },
 
-  declinedSection: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 16 },
+  declinedSection: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 16 },
   declinedHeader: { paddingVertical: 10 },
   declinedHeaderText: { fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.sage },
 
-  archiveList: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 },
+  archiveList: { paddingHorizontal: 16, paddingTop: 8 },
   archiveCardShadow: { ...shadows.sm, borderRadius: radii.md, marginBottom: 10 },
   archiveCardContent: { padding: 14 },
   archiveSub: { fontFamily: fonts.body, fontSize: 11, color: colors.sage },

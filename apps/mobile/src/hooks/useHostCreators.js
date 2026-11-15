@@ -7,16 +7,62 @@ import { formatFollowers } from "@/utils/profileHelpers";
 
 const HIDE_SAMPLES_KEY = "@collabnb:host_hide_sample_creators";
 
+const MONOGRAM_MAX_BYTES = 30000;
+const avatarChecks = new Map();
+
+function clerkAvatarPayload(uri) {
+  const payload = uri.split("img.clerk.com/")[1]?.split("?")[0];
+  if (!payload) return null;
+  try {
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "=")));
+  } catch {
+    return null;
+  }
+}
+
+// Many avatars aren't photos, and the URL alone can't always tell: Clerk's
+// generated initials are marked in its payload, but Google's letter avatars are
+// only recognisable as small PNGs, and some stored images have since been
+// deleted. A failed check keeps the avatar rather than hiding a real photo.
+async function isRealPhoto(uri) {
+  const clerk = clerkAvatarPayload(uri);
+  if (clerk?.type === "default") return false;
+  if (!clerk?.src) return true;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetch(clerk.src, { method: "HEAD", signal: controller.signal });
+    if (res.status === 404 || res.status === 403) return false;
+    const isSmallPng =
+      res.headers.get("content-type")?.includes("image/png") &&
+      Number(res.headers.get("content-length")) < MONOGRAM_MAX_BYTES;
+    return !(clerk.src.includes("oauth_google") && isSmallPng);
+  } catch {
+    return true;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function checkAvatar(uri) {
+  if (!avatarChecks.has(uri)) avatarChecks.set(uri, isRealPhoto(uri));
+  return avatarChecks.get(uri);
+}
+
 // profiles.listPublicCreators returns the web app's creator-card shape. The
 // mobile cards were built against data/mockCreators, so real creators are
 // mapped onto that shape rather than rewriting every card, deck and modal
 // that reads it.
-function toCardShape(creator) {
+function toCardShape(creator, realPhotos) {
+  const avatarUri = creator.avatar && realPhotos?.get(creator.avatar) !== false ? creator.avatar : null;
   return {
+    hasPhoto: !!avatarUri,
     id: creator.id,
     name: creator.name,
     username: creator.username,
-    avatarUri: creator.avatar || null,
+    avatarUri,
     tier: creator.tier,
     followers: formatFollowers(creator.followers ?? 0),
     followerCount: creator.followers ?? 0,
@@ -45,6 +91,20 @@ function toCardShape(creator) {
 export function useHostCreators() {
   const realRaw = useQuery(api.profiles.listPublicCreators);
   const [hideSamples, setHideSamples] = useState(false);
+  const [realPhotos, setRealPhotos] = useState(null);
+
+  // Held behind isLoading so cards don't reshuffle after they've appeared.
+  useEffect(() => {
+    if (!realRaw) return;
+    let cancelled = false;
+    const uris = [...new Set(realRaw.map((c) => c.avatar).filter(Boolean))];
+    Promise.all(uris.map(checkAvatar)).then((results) => {
+      if (!cancelled) setRealPhotos(new Map(uris.map((uri, i) => [uri, results[i]])));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [realRaw]);
 
   useEffect(() => {
     AsyncStorage.getItem(HIDE_SAMPLES_KEY)
@@ -60,7 +120,19 @@ export function useHostCreators() {
     });
   }, []);
 
-  const realCreators = useMemo(() => (realRaw ?? []).map(toCardShape), [realRaw]);
+  // Most complete profiles first: a real photo, then reach, then collab history.
+  const realCreators = useMemo(
+    () =>
+      (realRaw ?? [])
+        .map((creator) => toCardShape(creator, realPhotos))
+        .sort(
+          (a, b) =>
+            Number(b.hasPhoto) - Number(a.hasPhoto) ||
+            b.followerCount - a.followerCount ||
+            b.completedCollabs - a.completedCollabs,
+        ),
+    [realRaw, realPhotos],
+  );
 
   const samples = useMemo(
     () => mockCreators.map((c) => ({ ...c, isSample: true })),
@@ -76,7 +148,7 @@ export function useHostCreators() {
     creators,
     realCreators,
     hasRealCreators: realCreators.length > 0,
-    isLoading: realRaw === undefined,
+    isLoading: realRaw === undefined || realPhotos === null,
     hideSamples,
     toggleHideSamples,
   };

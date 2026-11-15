@@ -16,7 +16,14 @@ export default function HostTabLayout() {
   return (
     <ThemedBackground style={{ flex: 1 }}>
       <Tabs
-        tabBar={(props) => <GlassTabBar {...props} />}
+        tabBar={(props) => (
+          <View
+            pointerEvents="box-none"
+            style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}
+          >
+            <GlassTabBar {...props} />
+          </View>
+        )}
         screenOptions={{ headerShown: false }}
       >
         <Tabs.Screen

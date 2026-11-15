@@ -17,13 +17,13 @@ import { isDark } from "@/utils/ColorModeStore";
 // Web renders an em-dash for an empty cell, never "0" and never blank —
 // `value` of null is deliberately distinct from a real zero.
 // `comingSoon` blurs a placeholder figure for stats we can't source yet.
-export function StatGrid({ items, columns = 2, footer, eyebrowLabels = false, style }) {
+export function StatGrid({ items, columns = 2, footer, eyebrowLabels = false, compact = false, style }) {
   const rows = [];
   for (let i = 0; i < items.length; i += columns) rows.push(items.slice(i, i + columns));
 
   return (
-    <Glass variant="card" style={style}>
-      <View style={{ paddingVertical: 4 }}>
+    <Glass variant={compact ? "regular" : "card"} style={style}>
+      <View style={{ paddingVertical: compact ? 0 : 4 }}>
         {rows.map((row, r) => (
           <View
             key={r}
@@ -39,9 +39,9 @@ export function StatGrid({ items, columns = 2, footer, eyebrowLabels = false, st
                 style={{
                   flex: 1,
                   alignItems: "center",
-                  paddingVertical: 20,
+                  paddingVertical: compact ? 12 : 20,
                   paddingHorizontal: columns >= 3 ? 6 : 12,
-                  borderLeftWidth: c === 0 ? 0 : 1,
+                  borderLeftWidth: c === 0 || compact ? 0 : 1,
                   borderLeftColor: colors.hairline,
                 }}
               >
@@ -72,9 +72,9 @@ export function StatGrid({ items, columns = 2, footer, eyebrowLabels = false, st
                         {item.placeholder ?? "4.8%"}
                       </Display>
                     ) : (
-                      <Display size={26}>{item.value ?? "—"}</Display>
+                      <Display size={compact ? 20 : 26}>{item.value ?? "—"}</Display>
                     )}
-                    <Body size={13} color={colors.sage} style={{ marginTop: 4 }}>
+                    <Body size={compact ? 12 : 13} color={colors.sage} style={{ marginTop: compact ? 2 : 4 }}>
                       {item.label}
                     </Body>
                   </>

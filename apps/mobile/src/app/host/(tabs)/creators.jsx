@@ -2,28 +2,25 @@ import {
   View,
   Text,
   ScrollView,
+  FlatList,
   TouchableOpacity,
+  Pressable,
+  TextInput,
   Modal,
   Dimensions,
+  ActivityIndicator,
+  Keyboard,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  runOnJS,
-  interpolate,
-  Extrapolate,
-} from "react-native-reanimated";
 import {
   Star,
   X,
@@ -32,78 +29,166 @@ import {
   Users,
   FileText,
   CheckCircle2,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
+  Heart,
+  Search,
+  LayoutGrid,
+  Layers,
+  MapPin,
 } from "lucide-react-native";
-import SavedCreatorsStore from "@/utils/SavedCreatorsStore";
-import ListingDraftStore from "@/utils/ListingDraftStore";
-import { addInvitedProposal } from "@/utils/ProposalsStore";
-import { mockReviews, mockPastCollaborations } from "@/data/mockCreators";
+import { formatFollowers } from "@/utils/profileHelpers";
 import useHostCreators from "@/hooks/useHostCreators";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
+import StatusBarBlur from "@/components/StatusBarBlur";
+import { BottomSheet } from "@/components/ui";
 import { colors, fonts, tracking, track } from "@/config/theme";
 import { api } from "@/convex/_generated/api";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const FEED_CARD_GAP = 12;
+
+const GRID_CARD_WIDTH = (SCREEN_WIDTH - 52) / 2;
+const MAX_CARD_TAGS = 3;
+
+const proposalText = (creator, listing) =>
+  `Hi ${creator.name} — I'd love to collaborate. Here's a proposal for you: ${listing.title}${listing.location ? ` in ${listing.location}` : ""}.`;
 
 export default function HostCreatorsScreen() {
-  const { creators, hasRealCreators, hideSamples, toggleHideSamples } = useHostCreators();
+  const { realCreators: creators, isLoading } = useHostCreators();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [savedCreatorIds, setSavedCreatorIds] = useState([]);
   const [showPastCollabsSheet, setShowPastCollabsSheet] = useState(false);
   const [selectedCreatorForCollabs, setSelectedCreatorForCollabs] =
     useState(null);
   const [showSavedCreators, setShowSavedCreators] = useState(false);
   const [selectedCreatorsForBulk, setSelectedCreatorsForBulk] = useState([]);
   const [showListingPicker, setShowListingPicker] = useState(false);
-  const [availableListings, setAvailableListings] = useState([]);
-  const [currentCreatorIndex, setCurrentCreatorIndex] = useState(0);
+  const [query, setQuery] = useState("");
+  const [viewMode, setViewMode] = useState("swipe");
+  const [detailCreator, setDetailCreator] = useState(null);
+  const [pitchPreview, setPitchPreview] = useState(null);
+  const [sendingPitch, setSendingPitch] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [workedWithOnly, setWorkedWithOnly] = useState(false);
+
 
   const { user } = useUser();
   const email = user?.primaryEmailAddress?.emailAddress;
   const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
   const createThreadCvx = useMutation(api.threads.create);
   const sendMessageCvx = useMutation(api.threadMessages.sendMessage);
+  const toggleSavedCvx = useMutation(api.profiles.toggleSavedCreator);
+  const createInviteCvx = useMutation(api.pitches.createInvite);
+  const hostId = profile?._id ? String(profile._id) : null;
+  const pitches = useQuery(api.pitches.getByHost, hostId ? { hostId } : "skip");
+  const collabs = useQuery(api.collaborations.getByHost, hostId ? { hostId } : "skip");
+  const listings = useQuery(api.listings.getByHost, hostId ? { host_id: hostId } : "skip");
 
-  useEffect(() => {
-    const init = async () => {
-      await SavedCreatorsStore.init();
-      setSavedCreatorIds(SavedCreatorsStore.getSavedCreatorIds());
+  const availableListings = useMemo(
+    () =>
+      (listings ?? [])
+        .filter((l) => l.status === "published" && l.is_sample !== true)
+        .map((l) => ({
+          id: String(l._id),
+          title: l.title,
+          location:
+            l.location || [l.location_city, l.location_country].filter(Boolean).join(", "),
+        })),
+    [listings],
+  );
 
-      const allListings = await ListingDraftStore.getPublishedListings();
-      setAvailableListings(allListings.filter((l) => l.status === "published"));
-    };
-    init();
+  // The account-wide shortlist shared with web. It can hold creators who are no
+  // longer public, so only count the ones this page can actually show.
+  const savedCreatorIds = useMemo(
+    () =>
+      (profile?.saved_creator_ids ?? []).filter((id) =>
+        creators.some((c) => c.id === id),
+      ),
+    [profile?.saved_creator_ids, creators],
+  );
 
-    const unsubSaved = SavedCreatorsStore.subscribe(() => {
-      setSavedCreatorIds(SavedCreatorsStore.getSavedCreatorIds());
-    });
+  // Creators this host has actually booked — approved pitches, one per creator.
+  const workedWith = useMemo(() => {
+    const seen = new Map();
+    (pitches ?? [])
+      .filter((p) => p.status === "approved" && p.creator_id)
+      .forEach((p) => {
+        if (!seen.has(p.creator_id)) {
+          seen.set(p.creator_id, {
+            id: p.creator_id,
+            name: p.creator_name || "Creator",
+            username: p.creator_username,
+            avatarUri: p.creator_avatar || null,
+            tier: p.creator_tier,
+            followers: formatFollowers(p.creator_followers ?? 0),
+            tags: [],
+            bio: "",
+          });
+        }
+      });
+    return [...seen.values()];
+  }, [pitches]);
 
-    return () => {
-      unsubSaved();
-    };
-  }, []);
+  // A booked creator can have left the public directory, so the pitch's own
+  // details stand in when there's no live profile to show.
+  const workedWithCreators = useMemo(
+    () => workedWith.map((w) => creators.find((c) => c.id === w.id) ?? w),
+    [workedWith, creators],
+  );
 
-  const handleSwipeRight = async (creator) => {
-    await SavedCreatorsStore.addCreator(creator.id);
+  const visibleCreators = useMemo(() => {
+    const pool = workedWithOnly ? workedWithCreators : creators;
+    const q = query.trim().toLowerCase();
+    if (!q) return pool;
+    return pool.filter((c) =>
+      [c.name, c.username, c.location, c.tier, ...c.tags].some((field) =>
+        field?.toLowerCase().includes(q),
+      ),
+    );
+  }, [creators, workedWithCreators, workedWithOnly, query]);
+
+  const updateQuery = (text) => {
+    setQuery(text);
   };
 
-  const handleSwipeLeft = (creator) => {
-    console.log("Skipped creator:", creator.name);
+  const setWorkedWithFilter = (on) => {
+    setWorkedWithOnly(on);
+    if (on) Keyboard.dismiss();
   };
 
-  const handleSwipeUp = async (creator) => {
+  const toggleSaved = async (creator) => {
+    if (!profile?._id) return;
+    await toggleSavedCvx({ profileId: profile._id, creatorId: creator.id });
+  };
+
+  const pitchTextFor = (creator, listing) =>
+    listing
+      ? proposalText(creator, listing)
+      : `Hi ${creator.name} — I'd love to collaborate with you. Let me know if you're interested!`;
+
+  const inviteArgs = (creator, listing, text, threadKey) => ({
+    listingId: listing.id,
+    creatorId: creator.id,
+    creatorName: creator.name,
+    creatorUsername: creator.username || undefined,
+    creatorAvatar: creator.avatarUri || undefined,
+    creatorTier: creator.tier || undefined,
+    creatorFollowers: creator.followerCount || undefined,
+    creatorEngagement: creator.engagement || undefined,
+    message: text,
+    threadKey,
+  });
+
+  const sendPitch = async (creator) => {
     if (!profile?._id) return;
     const listing = availableListings[0];
     const hostId = String(profile._id);
     const threadKey = `thread_host_${hostId}_${creator.id}`;
-    const text = listing
-      ? `Hi ${creator.name} — I'd love to collaborate. Here's a proposal for you: ${listing.title} in ${listing.location_city}, ${listing.location_country}.`
-      : `Hi ${creator.name} — I'd love to collaborate with you. Let me know if you're interested!`;
+    const text = pitchTextFor(creator, listing);
+
+    if (listing) {
+      await createInviteCvx(inviteArgs(creator, listing, text, threadKey));
+    }
 
     await createThreadCvx({
       listingTitle: listing?.title || `Chat with ${creator.name}`,
@@ -124,10 +209,6 @@ export default function HostCreatorsScreen() {
       text,
     });
 
-    if (listing) {
-      await addInvitedProposal({ creator, listing });
-    }
-
     router.push({
       pathname: `/messages/${threadKey}`,
       params: {
@@ -139,8 +220,8 @@ export default function HostCreatorsScreen() {
     });
   };
 
-  const handleReviewTap = (review) => {
-    setSelectedCreatorForCollabs(review.creatorId);
+  const openWorkedWith = (creatorId) => {
+    setSelectedCreatorForCollabs(creatorId);
     setShowPastCollabsSheet(true);
   };
 
@@ -156,7 +237,9 @@ export default function HostCreatorsScreen() {
 
     for (const creator of selectedCreators) {
       const threadKey = `thread_host_${hostId}_${creator.id}`;
-      const text = `Hi ${creator.name} — I'd love to collaborate. Here's a proposal for you: ${listing.title} in ${listing.location_city}, ${listing.location_country}.`;
+      const text = proposalText(creator, listing);
+
+      await createInviteCvx(inviteArgs(creator, listing, text, threadKey));
 
       await createThreadCvx({
         listingTitle: listing.title,
@@ -177,7 +260,6 @@ export default function HostCreatorsScreen() {
         text,
       });
 
-      await addInvitedProposal({ creator, listing });
     }
 
     setShowListingPicker(false);
@@ -191,251 +273,198 @@ export default function HostCreatorsScreen() {
   return (
     <AtmosphericBackground>
       <StatusBar style={statusBarStyle()} />
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          paddingTop: insets.top + 20,
-          paddingBottom: insets.bottom + 80,
-          paddingHorizontal: 20,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 24,
-          }}
-        >
-          <View>
-            <Text
-              style={{
-                fontFamily: fonts.display,
-                fontSize: 32,
-                color: colors.ink,
-                letterSpacing: track(32, tracking.display),
-                marginBottom: 4,
-              }}
-            >
-              Discover Creators
+      <View style={{ flex: 1, paddingTop: insets.top + 12, paddingHorizontal: 20 }}>
+        {/* Search + swipe/grid switch */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <Glass
+            variant="small"
+            style={{ flex: 1 }}
+            contentStyle={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, height: 44 }}
+          >
+            <Search color={colors.sage} size={18} />
+            {workedWithOnly ? (
+              <TouchableOpacity
+                onPress={() => setWorkedWithFilter(false)}
+                accessibilityLabel="Clear worked with filter"
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 4,
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 10,
+                  backgroundColor: colors.mint,
+                }}
+              >
+                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink }}>Worked with</Text>
+                <X color={colors.ink} size={12} />
+              </TouchableOpacity>
+            ) : null}
+            <TextInput
+              value={query}
+              onChangeText={updateQuery}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              placeholder={workedWithOnly ? "Search" : "Search name, niche or location"}
+              placeholderTextColor={colors.sage}
+              autoCorrect={false}
+              returnKeyType="search"
+              style={{ flex: 1, fontFamily: fonts.body, fontSize: 14, color: colors.ink }}
+            />
+            {query ? (
+              <TouchableOpacity onPress={() => updateQuery("")} hitSlop={8}>
+                <X color={colors.sage} size={16} />
+              </TouchableOpacity>
+            ) : null}
+          </Glass>
+          <Glass variant="small" contentStyle={{ flexDirection: "row", padding: 4, height: 44 }}>
+            {[
+              { mode: "swipe", Icon: Layers, label: "Swipe view" },
+              { mode: "grid", Icon: LayoutGrid, label: "Grid view" },
+            ].map(({ mode, Icon, label }) => (
+              <TouchableOpacity
+                key={mode}
+                onPress={() => setViewMode(mode)}
+                accessibilityRole="button"
+                accessibilityLabel={label}
+                style={{
+                  width: 36,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 12,
+                  backgroundColor: viewMode === mode ? colors.mint : "transparent",
+                }}
+              >
+                <Icon color={colors.ink} size={18} />
+              </TouchableOpacity>
+            ))}
+          </Glass>
+        </View>
+
+        {searchFocused && !workedWithOnly && workedWith.length > 0 ? (
+          <TouchableOpacity
+            onPress={() => setWorkedWithFilter(true)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              alignSelf: "flex-start",
+              gap: 6,
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 16,
+              backgroundColor: colors.mint,
+              marginBottom: 12,
+            }}
+          >
+            <Users color={colors.ink} size={14} />
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink }}>
+              Worked with ({workedWith.length})
             </Text>
-            <Text style={{ fontFamily: fonts.body, fontSize: 15, color: colors.slate }}>
-              Find your perfect collaboration match
-            </Text>
-          </View>
+          </TouchableOpacity>
+        ) : null}
+
+        {/* Top row — creator count + saved shortlist */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.sage }}>
+            {isLoading
+              ? "Loading creators"
+              : `${visibleCreators.length} creator${visibleCreators.length === 1 ? "" : "s"}${viewMode === "swipe" ? " · swipe up for next, tap for details" : ""}`}
+          </Text>
           {savedCreatorIds.length > 0 && (
             <TouchableOpacity
               onPress={() => setShowSavedCreators(true)}
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                gap: 6,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 20,
+                gap: 5,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 16,
                 backgroundColor: colors.mint,
               }}
             >
-              <Bookmark color={colors.ink} size={18} fill={colors.ink} />
-              <Text
-                style={{
-                  fontFamily: fonts.bodySemibold,
-                  fontSize: 14,
-                  color: colors.ink,
-                }}
-              >
-                Saved ({savedCreatorIds.length})
+              <Bookmark color={colors.ink} size={14} fill={colors.ink} />
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink }}>
+                {savedCreatorIds.length}
               </Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Only offered once there are real creators to fall back on, so the
-            directory can't be emptied to nothing. */}
-        {hasRealCreators && (
-          <TouchableOpacity
-            onPress={toggleHideSamples}
-            style={{
-              alignSelf: "flex-start",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              paddingHorizontal: 12,
-              paddingVertical: 7,
-              borderRadius: 20,
-              marginBottom: 20,
-              backgroundColor: hideSamples ? colors.ink : colors.surface,
-              borderWidth: 1,
-              borderColor: hideSamples ? colors.ink : colors.stone,
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: fonts.bodyMedium,
-                fontSize: 12,
-                color: hideSamples ? colors.surface : colors.slate,
-              }}
-            >
-              {hideSamples ? "Showing real creators only" : "Hide sample creators"}
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Recent Reviews Carousel */}
-        <View style={{ marginBottom: 28 }}>
-          <Text
-            style={{
-              fontFamily: fonts.display,
-              fontSize: 18,
-              color: colors.ink,
-              letterSpacing: track(18, tracking.display),
-              marginBottom: 14,
-            }}
-          >
-            Recent Reviews
-          </Text>
+        {viewMode === "swipe" ? (
+          <CreatorFeed
+            key={`${query}|${workedWithOnly}`}
+            isLoading={isLoading}
+            creators={visibleCreators}
+            savedCreatorIds={savedCreatorIds}
+            bottomInset={insets.bottom + 90}
+            emptyTitle={query || workedWithOnly ? "No creators match" : "No creators yet"}
+            emptyDetail={query || workedWithOnly ? "Try a different name, niche or location" : "Check back later for new matches"}
+            onToggleSave={toggleSaved}
+            onOpenCreator={setDetailCreator}
+          />
+        ) : (
           <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 12, paddingRight: 20 }}
+            style={{ marginHorizontal: -20 }}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 110 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
           >
-            {mockReviews.map((review) => (
-              <TouchableOpacity
-                key={review.id}
-                onPress={() => handleReviewTap(review)}
-                activeOpacity={0.8}
-                style={{ width: 290 }}
-              >
-                <Glass variant="card" contentStyle={{ padding: 18 }}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginBottom: 14,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 50,
-                        height: 50,
-                        borderRadius: 25,
-                        overflow: "hidden",
-                        borderWidth: 2,
-                        borderColor: colors.surface,
-                        zIndex: 2,
-                      }}
-                    >
-                      <Image
-                        source={{ uri: review.creatorAvatarUri }}
-                        style={{ width: "100%", height: "100%" }}
-                        contentFit="cover"
-                      />
-                    </View>
-                    <View
-                      style={{
-                        width: 50,
-                        height: 50,
-                        borderRadius: 25,
-                        overflow: "hidden",
-                        borderWidth: 2,
-                        borderColor: colors.surface,
-                        marginLeft: -18,
-                        zIndex: 1,
-                      }}
-                    >
-                      <Image
-                        source={{ uri: review.listingAvatarUri }}
-                        style={{ width: "100%", height: "100%" }}
-                        contentFit="cover"
-                      />
-                    </View>
-                    <View style={{ marginLeft: 14, flex: 1 }}>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 3,
-                          marginBottom: 3,
-                        }}
-                      >
-                        {Array.from({ length: review.rating }).map((_, i) => (
-                          <Star
-                            key={i}
-                            size={13}
-                            color="#F5D547" // no brand token — star-rating gold, flagged for design review
-                            fill="#F5D547"
-                          />
-                        ))}
-                      </View>
-                      <Text
-                        style={{
-                          fontFamily: fonts.bodySemibold,
-                          fontSize: 14,
-                          color: colors.ink,
-                        }}
-                        numberOfLines={1}
-                      >
-                        {review.creatorName}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text
-                    style={{
-                      fontFamily: fonts.body,
-                      fontSize: 14,
-                      color: colors.slate,
-                      lineHeight: 20,
-                      marginBottom: 10,
-                    }}
-                    numberOfLines={2}
-                  >
-                    {review.snippet}
-                  </Text>
-
-                  <Text
-                    style={{
-                      fontFamily: fonts.bodyMedium,
-                      fontSize: 12,
-                      color: colors.sage,
-                    }}
-                  >
-                    {review.listingName}
-                  </Text>
-                </Glass>
-              </TouchableOpacity>
-            ))}
+            <CreatorGrid
+              isLoading={isLoading}
+              creators={visibleCreators}
+              savedCreatorIds={savedCreatorIds}
+              emptyTitle={query || workedWithOnly ? "No creators match" : "No creators yet"}
+              onToggleSave={toggleSaved}
+              onOpenCreator={setDetailCreator}
+            />
           </ScrollView>
-        </View>
+        )}
+      </View>
 
-        {/* Swipe Deck */}
-        <Text
-          style={{
-            fontFamily: fonts.display,
-            fontSize: 18,
-            color: colors.ink,
-            letterSpacing: track(18, tracking.display),
-            marginBottom: 14,
-          }}
-        >
-          Swipe to Match
-        </Text>
-        <SwipeDeck
-          creators={creators}
-          currentIndex={currentCreatorIndex}
-          onIndexChange={setCurrentCreatorIndex}
-          onSwipeLeft={handleSwipeLeft}
-          onSwipeRight={handleSwipeRight}
-          onSwipeUp={handleSwipeUp}
-        />
-      </ScrollView>
+      <StatusBarBlur />
+
+      <CreatorDetailSheet
+        creator={detailCreator}
+        isSaved={!!detailCreator && savedCreatorIds.includes(detailCreator.id)}
+        hasWorkedWith={!!detailCreator && workedWith.some((c) => c.id === detailCreator.id)}
+        onViewPastCollabs={(creator) => {
+          setDetailCreator(null);
+          openWorkedWith(creator.id);
+        }}
+        onToggleSave={toggleSaved}
+        onPitch={(creator) => {
+          setDetailCreator(null);
+          setPitchPreview(creator);
+        }}
+        onClose={() => setDetailCreator(null)}
+      />
+
+      <PitchPreviewSheet
+        creator={pitchPreview}
+        listing={availableListings[0]}
+        text={pitchPreview ? pitchTextFor(pitchPreview, availableListings[0]) : ""}
+        sending={sendingPitch}
+        onCancel={() => !sendingPitch && setPitchPreview(null)}
+        onConfirm={async () => {
+          setSendingPitch(true);
+          try {
+            await sendPitch(pitchPreview);
+            setPitchPreview(null);
+          } catch (e) {
+            alert(e?.data || e?.message || "Couldn't send the pitch. Try again.");
+          } finally {
+            setSendingPitch(false);
+          }
+        }}
+      />
 
       {/* Past Collaborations Bottom Sheet */}
       <PastCollaborationsSheet
         visible={showPastCollabsSheet}
         creatorId={selectedCreatorForCollabs}
+        allCollabs={collabs}
         onClose={() => setShowPastCollabsSheet(false)}
         insets={insets}
       />
@@ -471,367 +500,412 @@ export default function HostCreatorsScreen() {
   );
 }
 
-// Swipe Deck Component
-function SwipeDeck({
-  creators,
-  currentIndex,
-  onIndexChange,
-  onSwipeLeft,
-  onSwipeRight,
-  onSwipeUp,
-}) {
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-
-  const currentCreator = creators[currentIndex];
-
-  const handleSwipeAction = (direction) => {
-    if (direction === "left") {
-      onSwipeLeft(currentCreator);
-    } else if (direction === "right") {
-      onSwipeRight(currentCreator);
-    } else if (direction === "up") {
-      onSwipeUp(currentCreator);
-    }
-
-    if (currentIndex < creators.length - 1) {
-      onIndexChange(currentIndex + 1);
-    }
-  };
-
-  const panGesture = Gesture.Pan()
-    .onUpdate((event) => {
-      translateX.value = event.translationX;
-      translateY.value = event.translationY;
-    })
-    .onEnd((event) => {
-      if (
-        translateY.value < -SWIPE_THRESHOLD &&
-        Math.abs(event.velocityY) > 200
-      ) {
-        translateY.value = withSpring(-1000, {}, () => {
-          translateX.value = 0;
-          translateY.value = 0;
-          runOnJS(handleSwipeAction)("up");
-        });
-      } else if (translateX.value > SWIPE_THRESHOLD || event.velocityX > 500) {
-        translateX.value = withSpring(1000, {}, () => {
-          translateX.value = 0;
-          translateY.value = 0;
-          runOnJS(handleSwipeAction)("right");
-        });
-      } else if (
-        translateX.value < -SWIPE_THRESHOLD ||
-        event.velocityX < -500
-      ) {
-        translateX.value = withSpring(-1000, {}, () => {
-          translateX.value = 0;
-          translateY.value = 0;
-          runOnJS(handleSwipeAction)("left");
-        });
-      } else {
-        translateX.value = withSpring(0);
-        translateY.value = withSpring(0);
-      }
-    });
-
-  const cardAnimatedStyle = useAnimatedStyle(() => {
-    const rotate = interpolate(
-      translateX.value,
-      [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
-      [-15, 0, 15],
-      Extrapolate.CLAMP,
-    );
-
-    const opacity = interpolate(
-      Math.abs(translateX.value) + Math.abs(translateY.value),
-      [0, SWIPE_THRESHOLD],
-      [1, 0.7],
-      Extrapolate.CLAMP,
-    );
-
-    return {
-      transform: [
-        { translateX: translateX.value },
-        { translateY: translateY.value },
-        { rotateZ: `${rotate}deg` },
-      ],
-      opacity,
-    };
-  });
-
-  const leftLabelStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      translateX.value,
-      [-SWIPE_THRESHOLD, 0],
-      [1, 0],
-      Extrapolate.CLAMP,
-    ),
-  }));
-
-  const rightLabelStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      translateX.value,
-      [0, SWIPE_THRESHOLD],
-      [0, 1],
-      Extrapolate.CLAMP,
-    ),
-  }));
-
-  const upLabelStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      translateY.value,
-      [-SWIPE_THRESHOLD, 0],
-      [1, 0],
-      Extrapolate.CLAMP,
-    ),
-  }));
-
-  if (!currentCreator) {
+// Falls back to the same branded initial on every card when there's no image
+// or it fails to load.
+function CreatorPhoto({ uri, name, initialSize }) {
+  const [failed, setFailed] = useState(false);
+  if (!uri || failed) {
     return (
-      <View
-        style={{
-          height: 480,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: colors.bone,
-          borderRadius: 24,
-          padding: 40,
-        }}
+      <LinearGradient
+        colors={[colors.mint, colors.bone]}
+        style={{ width: "100%", height: "100%", alignItems: "center", justifyContent: "center" }}
       >
-        <Users color={colors.sage} size={48} />
-        <Text
+        <View
           style={{
-            fontFamily: fonts.bodySemibold,
-            fontSize: 18,
-            color: colors.ink,
-            marginTop: 16,
-            textAlign: "center",
+            width: initialSize * 2,
+            height: initialSize * 2,
+            borderRadius: initialSize,
+            backgroundColor: colors.slate,
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          No more creators
-        </Text>
-        <Text
-          style={{
-            fontFamily: fonts.body,
-            fontSize: 14,
-            color: colors.slate,
-            marginTop: 8,
-            textAlign: "center",
-          }}
-        >
-          Check back later for new matches
-        </Text>
+          <Text style={{ fontFamily: fonts.display, fontSize: initialSize, color: colors.surface }}>
+            {name?.trim().charAt(0).toUpperCase()}
+          </Text>
+        </View>
+      </LinearGradient>
+    );
+  }
+  return (
+    <Image
+      key={uri}
+      source={{ uri }}
+      style={{ width: "100%", height: "100%" }}
+      contentFit="cover"
+      contentPosition="top"
+      transition={200}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
+function HeartButton({ saved, onPress, size = 16 }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={saved ? "Remove from saved" : "Save creator"}
+      style={{
+        position: "absolute",
+        top: 10,
+        right: 10,
+        width: size + 18,
+        height: size + 18,
+        borderRadius: (size + 18) / 2,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(255,255,255,0.9)",
+      }}
+    >
+      <Heart color={colors.ink} size={size} fill={saved ? colors.ink : "transparent"} />
+    </Pressable>
+  );
+}
+
+function CreatorGrid({ isLoading, creators, savedCreatorIds, emptyTitle, onToggleSave, onOpenCreator }) {
+  if (isLoading) {
+    return (
+      <View style={{ height: 240, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator color={colors.slate} />
       </View>
     );
   }
-
+  if (creators.length === 0) {
+    return (
+      <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.slate, textAlign: "center", marginTop: 48 }}>
+        {emptyTitle}
+      </Text>
+    );
+  }
   return (
-    <View style={{ height: 480, position: "relative" }}>
-      <GestureDetector gesture={panGesture}>
-        <Animated.View
-          style={[
-            { width: "100%", height: "100%", position: "absolute" },
-            cardAnimatedStyle,
-          ]}
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+      {creators.map((creator) => (
+        <Pressable
+          key={creator.id}
+          onPress={() => onOpenCreator(creator)}
+          style={({ pressed }) => ({ width: GRID_CARD_WIDTH, transform: [{ scale: pressed ? 0.98 : 1 }] })}
         >
-          {/* radius here (24) is a touch looser than glass.card's 20 (radii.lg) —
-              closest available token, kept for the deck's "hero" card. */}
-          <Glass variant="card" style={{ flex: 1, borderRadius: 24 }}>
+          <Glass variant="card">
             <View
               style={{
-                height: 280,
-                width: "100%",
+                height: GRID_CARD_WIDTH,
                 backgroundColor: colors.bone,
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
+                alignItems: "center",
+                justifyContent: "center",
                 overflow: "hidden",
               }}
             >
-              <Image
-                source={{ uri: currentCreator.avatarUri }}
-                style={{ width: "100%", height: "100%" }}
-                contentFit="cover"
-                transition={200}
-              />
+              <CreatorPhoto uri={creator.avatarUri} name={creator.name} initialSize={32} />
+              <HeartButton saved={savedCreatorIds.includes(creator.id)} onPress={() => onToggleSave(creator)} />
             </View>
-
-            <View style={{ padding: 20 }}>
-              <Text
-                style={{
-                  fontFamily: fonts.display,
-                  fontSize: 24,
-                  color: colors.ink,
-                  letterSpacing: track(24, tracking.display),
-                  marginBottom: 6,
-                }}
-              >
-                {currentCreator.name}
+            <View style={{ padding: 12, gap: 3 }}>
+              <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.ink }}>
+                {creator.name}
               </Text>
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                  marginBottom: 12,
-                }}
-              >
-                <View
-                  style={{
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
-                    borderRadius: 12,
-                    backgroundColor: colors.mint,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: fonts.bodySemibold,
-                      fontSize: 12,
-                      color: colors.ink,
-                    }}
-                  >
-                    {currentCreator.tier}
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
-                    borderRadius: 12,
-                    backgroundColor: colors.bone,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: fonts.bodySemibold,
-                      fontSize: 12,
-                      color: colors.ink,
-                    }}
-                  >
-                    {currentCreator.followers} followers
-                  </Text>
-                </View>
-              </View>
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: 6,
-                  marginBottom: 12,
-                }}
-              >
-                {currentCreator.tags.map((tag, idx) => (
-                  <View
-                    key={idx}
-                    style={{
-                      paddingHorizontal: 10,
-                      paddingVertical: 4,
-                      borderRadius: 10,
-                      backgroundColor: colors.bone,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: fonts.bodySemibold,
-                        fontSize: 11,
-                        color: colors.slate,
-                      }}
-                    >
-                      {tag}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-
-              <Text
-                style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, lineHeight: 18 }}
-                numberOfLines={3}
-              >
-                {currentCreator.bio}
+              <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 12, color: colors.slate }}>
+                {creator.followers} · {creator.tier}
               </Text>
             </View>
           </Glass>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
 
-          {/* Swipe Labels */}
-          <Animated.View
-            style={[
-              {
-                position: "absolute",
-                top: 40,
-                left: 40,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                paddingHorizontal: 16,
-                paddingVertical: 10,
-                borderRadius: 20,
-                backgroundColor: "rgba(255, 255, 255, 0.95)",
-                borderWidth: 2,
-                borderColor: colors.slate,
-              },
-              leftLabelStyle,
-            ]}
-          >
-            <ArrowLeft color={colors.slate} size={20} />
-            <Text style={{ fontFamily: fonts.display, fontSize: 15, color: colors.slate }}>
-              Skip
+function PitchPreviewSheet({ creator, listing, text, sending, onCancel, onConfirm }) {
+  if (!creator) return null;
+  return (
+    <Modal visible animationType="slide" transparent onRequestClose={onCancel}>
+      <View style={{ flex: 1, backgroundColor: "rgba(25, 37, 36, 0.7)", justifyContent: "flex-end" }}>
+        <TouchableOpacity activeOpacity={1} onPress={onCancel} style={{ flex: 1 }} />
+        <BottomSheet horizontal={false}>
+          <View style={{ gap: 12 }}>
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 18, color: colors.ink }}>
+              Send pitch to {creator.name}?
             </Text>
-          </Animated.View>
+            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate }}>
+              {listing ? `Invites them to ${listing.title}.` : "No published listing yet, so this sends a message only."}
+            </Text>
+            <View style={{ padding: 14, borderRadius: 12, backgroundColor: colors.surface }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.ink }}>{text}</Text>
+            </View>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <TouchableOpacity
+                onPress={onCancel}
+                disabled={sending}
+                style={{ flex: 1, alignItems: "center", paddingVertical: 14, borderRadius: 12, backgroundColor: colors.surface }}
+              >
+                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={onConfirm}
+                disabled={sending}
+                style={{ flex: 1, alignItems: "center", paddingVertical: 14, borderRadius: 12, backgroundColor: colors.slate, opacity: sending ? 0.6 : 1 }}
+              >
+                {sending ? (
+                  <ActivityIndicator color={colors.surface} />
+                ) : (
+                  <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.surface }}>Send</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </BottomSheet>
+      </View>
+    </Modal>
+  );
+}
 
-          <Animated.View
-            style={[
-              {
-                position: "absolute",
-                top: 40,
-                right: 40,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                paddingHorizontal: 16,
-                paddingVertical: 10,
-                borderRadius: 20,
-                backgroundColor: "rgba(255, 255, 255, 0.95)",
-                borderWidth: 2,
-                borderColor: colors.mint,
-              },
-              rightLabelStyle,
-            ]}
+function CreatorDetailSheet({ creator, isSaved, hasWorkedWith, onViewPastCollabs, onToggleSave, onPitch, onClose }) {
+  if (!creator) return null;
+  return (
+    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: "rgba(25, 37, 36, 0.7)", justifyContent: "flex-end" }}>
+        <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ flex: 1 }} />
+        <BottomSheet horizontal={false}>
+          <ScrollView
+            style={{ maxHeight: SCREEN_HEIGHT * 0.66 }}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ gap: 12 }}
           >
-            <Text style={{ fontFamily: fonts.display, fontSize: 15, color: colors.ink }}>
-              Save
+            <View
+              style={{
+                height: 260,
+                borderRadius: 20,
+                overflow: "hidden",
+                backgroundColor: colors.stone,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <CreatorPhoto uri={creator.avatarUri} name={creator.name} initialSize={48} />
+            </View>
+            <Text
+              style={{
+                fontFamily: fonts.display,
+                fontSize: 24,
+                color: colors.ink,
+                letterSpacing: track(24, tracking.display),
+              }}
+            >
+              {creator.name}
             </Text>
-            <ArrowRight color={colors.ink} size={20} />
-          </Animated.View>
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.slate }}>
+              {creator.tier} · {creator.followers} followers
+            </Text>
+            {creator.location ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <MapPin color={colors.sage} size={14} />
+                <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate }}>
+                  {creator.location}
+                </Text>
+              </View>
+            ) : null}
+            {creator.tags.length > 0 ? (
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                {creator.tags.map((tag) => (
+                  <View
+                    key={tag}
+                    style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, backgroundColor: colors.surface }}
+                  >
+                    <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 11, color: colors.slate }}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+            {creator.bio ? (
+              <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate, lineHeight: 20 }}>
+                {creator.bio}
+              </Text>
+            ) : null}
+            {hasWorkedWith ? (
+              <TouchableOpacity onPress={() => onViewPastCollabs(creator)} hitSlop={8}>
+                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.ink, textDecorationLine: "underline" }}>
+                  View past collabs
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </ScrollView>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <TouchableOpacity
+              onPress={() => onToggleSave(creator)}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 6,
+                paddingVertical: 14,
+                borderRadius: 12,
+                backgroundColor: isSaved ? colors.mint : colors.surface,
+              }}
+            >
+              <Bookmark color={colors.ink} size={16} fill={isSaved ? colors.ink : "transparent"} />
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}>
+                {isSaved ? "Saved" : "Save"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => onPitch(creator)}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 6,
+                paddingVertical: 14,
+                borderRadius: 12,
+                backgroundColor: colors.slate,
+              }}
+            >
+              <Send color={colors.surface} size={16} />
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.surface }}>Send pitch</Text>
+            </TouchableOpacity>
+          </View>
+        </BottomSheet>
+      </View>
+    </Modal>
+  );
+}
 
-          <Animated.View
-            style={[
-              {
-                position: "absolute",
-                top: 120,
-                alignSelf: "center",
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                paddingHorizontal: 16,
-                paddingVertical: 10,
-                borderRadius: 20,
-                backgroundColor: "rgba(255, 255, 255, 0.95)",
-                borderWidth: 2,
-                borderColor: colors.slate,
-              },
-              upLabelStyle,
-            ]}
+// Vertical full-card feed: native paging keeps the swipe tracking the finger
+// and settling on the next creator, like an Instagram feed.
+function CreatorFeed({
+  isLoading,
+  creators,
+  savedCreatorIds,
+  bottomInset,
+  emptyTitle,
+  emptyDetail,
+  onToggleSave,
+  onOpenCreator,
+}) {
+  const [pageHeight, setPageHeight] = useState(0);
+  const cardHeight = pageHeight - FEED_CARD_GAP;
+
+  const renderCard = ({ item: creator }) => (
+    <View style={{ height: pageHeight, paddingBottom: FEED_CARD_GAP }}>
+      <Pressable style={{ flex: 1 }} onPress={() => onOpenCreator(creator)}>
+        {/* radius here (24) is a touch looser than glass.card's 20 (radii.lg) —
+            closest available token, kept for the feed's "hero" card. */}
+        <Glass variant="card" style={{ height: cardHeight, borderRadius: 24 }}>
+          <View
+            style={{
+              height: cardHeight - (creator.bio ? 212 : 150),
+              width: "100%",
+              backgroundColor: colors.bone,
+              overflow: "hidden",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
           >
-            <ArrowUp color={colors.slate} size={20} />
-            <Text style={{ fontFamily: fonts.display, fontSize: 15, color: colors.slate }}>
-              Message Now
+            <CreatorPhoto uri={creator.avatarUri} name={creator.name} initialSize={48} />
+            <HeartButton saved={savedCreatorIds.includes(creator.id)} onPress={() => onToggleSave(creator)} size={20} />
+          </View>
+
+          <View style={{ padding: 20 }}>
+            <Text
+              numberOfLines={1}
+              style={{
+                fontFamily: fonts.display,
+                fontSize: 24,
+                color: colors.ink,
+                letterSpacing: track(24, tracking.display),
+                marginBottom: 6,
+              }}
+            >
+              {creator.name}
             </Text>
-          </Animated.View>
-        </Animated.View>
-      </GestureDetector>
+
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: colors.mint }}>
+                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink }}>
+                  {creator.tier}
+                </Text>
+              </View>
+              <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: colors.bone }}>
+                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink }}>
+                  {creator.followers} followers
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 6, marginBottom: 12 }}>
+              {[
+                ...creator.tags.slice(0, MAX_CARD_TAGS),
+                ...(creator.tags.length > MAX_CARD_TAGS
+                  ? [`+${creator.tags.length - MAX_CARD_TAGS}`]
+                  : []),
+              ].map((tag) => (
+                <View
+                  key={tag}
+                  style={{ flexShrink: 1, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, backgroundColor: colors.bone }}
+                >
+                  <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemibold, fontSize: 11, color: colors.slate }}>
+                    {tag}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            {creator.bio ? (
+              <>
+                <Text
+                  style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate, lineHeight: 18 }}
+                  numberOfLines={2}
+                >
+                  {creator.bio}
+                </Text>
+                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink, marginTop: 4 }}>
+                  Read more
+                </Text>
+              </>
+            ) : null}
+          </View>
+        </Glass>
+      </Pressable>
+    </View>
+  );
+
+  return (
+    <View
+      style={{ flex: 1, marginBottom: bottomInset }}
+      onLayout={(e) => setPageHeight(e.nativeEvent.layout.height)}
+    >
+      {isLoading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator color={colors.slate} />
+        </View>
+      ) : creators.length === 0 ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 40 }}>
+          <Users color={colors.sage} size={48} />
+          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 18, color: colors.ink, marginTop: 16, textAlign: "center" }}>
+            {emptyTitle}
+          </Text>
+          <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate, marginTop: 8, textAlign: "center" }}>
+            {emptyDetail}
+          </Text>
+        </View>
+      ) : pageHeight > 0 ? (
+        <FlatList
+          data={creators}
+          extraData={savedCreatorIds}
+          keyExtractor={(creator) => creator.id}
+          renderItem={renderCard}
+          pagingEnabled
+          disableIntervalMomentum
+          decelerationRate="fast"
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          initialNumToRender={2}
+          windowSize={5}
+          getItemLayout={(_, index) => ({ length: pageHeight, offset: pageHeight * index, index })}
+        />
+      ) : null}
     </View>
   );
 }
@@ -843,10 +917,12 @@ function SwipeDeck({
 // overridable per-corner without editing the locked Glass.jsx), so it can't
 // reproduce this shape — left as a raw BlurView per STYLE-GUIDE.md's "when
 // web and mobile genuinely can't match" guidance. Colors are still tokenized.
-function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
+function PastCollaborationsSheet({ visible, creatorId, allCollabs, onClose, insets }) {
   if (!visible || !creatorId) return null;
 
-  const collabs = mockPastCollaborations[creatorId] || [];
+  const collabs = (allCollabs ?? []).filter(
+    (c) => String(c.creator_id) === String(creatorId) && c.is_sample !== true,
+  );
 
   return (
     <Modal
@@ -954,9 +1030,9 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
               ) : (
                 collabs.map((collab) => (
                   <View
-                    key={collab.collaborationId}
+                    key={collab._id}
                     style={{
-                      marginBottom: 16,
+                      marginBottom: 12,
                       padding: 16,
                       backgroundColor: colors.bone,
                       borderRadius: 16,
@@ -964,111 +1040,25 @@ function PastCollaborationsSheet({ visible, creatorId, onClose, insets }) {
                       borderColor: colors.stone,
                     }}
                   >
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        marginBottom: 12,
-                      }}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={{
-                            fontFamily: fonts.display,
-                            fontSize: 16,
-                            color: colors.ink,
-                            letterSpacing: track(16, tracking.display),
-                            marginBottom: 4,
-                          }}
-                        >
-                          {collab.listingName}
-                        </Text>
-                        <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate }}>
-                          {collab.date}
-                        </Text>
-                      </View>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 4,
-                        }}
-                      >
-                        {Array.from({ length: collab.rating }).map((_, i) => (
-                          <Star
-                            key={i}
-                            size={14}
-                            color="#F5D547" // no brand token — star-rating gold, flagged for design review
-                            fill="#F5D547"
-                          />
-                        ))}
-                      </View>
-                    </View>
-
                     <Text
                       style={{
-                        fontFamily: fonts.body,
-                        fontSize: 14,
+                        fontFamily: fonts.display,
+                        fontSize: 16,
                         color: colors.ink,
-                        lineHeight: 20,
-                        marginBottom: 12,
+                        letterSpacing: track(16, tracking.display),
+                        marginBottom: 4,
                       }}
                     >
-                      {collab.longReview}
+                      {collab.property_name || "Collaboration"}
                     </Text>
-
-                    <View
-                      style={{
-                        padding: 12,
-                        backgroundColor: colors.surface,
-                        borderRadius: 12,
-                        marginBottom: 12,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: fonts.bodySemibold,
-                          fontSize: 13,
-                          color: colors.ink,
-                          marginBottom: 6,
-                        }}
-                      >
-                        Deliverables
-                      </Text>
+                    {!!collab.dates && (
                       <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate }}>
-                        {collab.deliverableSummary}
+                        {collab.dates}
                       </Text>
-                    </View>
-
-                    <View
-                      style={{
-                        padding: 12,
-                        backgroundColor: "rgba(209, 235, 219, 0.5)",
-                        borderRadius: 12,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: fonts.bodySemibold,
-                          fontSize: 13,
-                          color: colors.ink,
-                          marginBottom: 6,
-                        }}
-                      >
-                        Analytics (Coming soon)
-                      </Text>
-                      <Text
-                        style={{
-                          fontFamily: fonts.body,
-                          fontSize: 12,
-                          color: colors.slate,
-                          fontStyle: "italic",
-                        }}
-                      >
-                        Track impressions, engagement, and conversions
-                      </Text>
-                    </View>
+                    )}
+                    <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.sage, marginTop: 6 }}>
+                      {collab.status_text || collab.status}
+                    </Text>
                   </View>
                 ))
               )}
@@ -1201,11 +1191,7 @@ function SavedCreatorsModal({
                         marginRight: 12,
                       }}
                     >
-                      <Image
-                        source={{ uri: creator.avatarUri }}
-                        style={{ width: "100%", height: "100%" }}
-                        contentFit="cover"
-                      />
+                      <CreatorPhoto uri={creator.avatarUri} name={creator.name} initialSize={14} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text
@@ -1395,7 +1381,7 @@ function ListingPickerModal({
                     {listing.title}
                   </Text>
                   <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.slate }}>
-                    {listing.location_city}, {listing.location_country}
+                    {listing.location}
                   </Text>
                 </TouchableOpacity>
               ))
