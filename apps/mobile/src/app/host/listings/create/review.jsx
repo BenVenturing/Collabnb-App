@@ -1,9 +1,12 @@
 import { View, Text, TouchableOpacity, Alert } from "react-native";
 import { useState, useEffect } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useQuery, useMutation } from "convex/react";
+import { useUser } from "@clerk/clerk-expo";
 import { ChevronDown, ChevronUp, Eye, DollarSign } from "lucide-react-native";
 import ListingCreationShell from "@/components/ListingCreationShell";
 import ListingDraftStore from "@/utils/ListingDraftStore";
+import { api } from "@/convex/_generated/api";
 import { colors as theme, fonts, tracking, track } from "@/config/theme";
 
 
@@ -12,6 +15,13 @@ export default function CreateListingReview() {
   const params = useLocalSearchParams();
   const [draft, setDraft] = useState(ListingDraftStore.getDraft());
   const [showFees, setShowFees] = useState(false);
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  const createListing = useMutation(api.listings.create);
+  const updateListing = useMutation(api.listings.update);
+  const generateUploadUrl = useMutation(api.uploads.generateUploadUrl);
+  const finalizeUpload = useMutation(api.uploads.finalizeUpload);
 
   useEffect(() => {
     const init = async () => {
@@ -81,14 +91,72 @@ export default function CreateListingReview() {
 
   const handleSaveDraft = async () => {
     try {
-      if (params.editMode === "true" && params.id) {
-        await ListingDraftStore.updateExistingListing(params.id, {
-          ...draft,
-          status: "draft",
+      if (!profile?._id) throw new Error("Your host profile isn't loaded yet.");
+      const editingId = params.editMode === "true" && params.id ? String(params.id) : draft?._editingId;
+
+      const photos = [];
+      for (const uri of draft.images || []) {
+        if (/^https?:\/\//.test(uri)) {
+          photos.push(uri);
+          continue;
+        }
+        const blob = await (await fetch(uri)).blob();
+        const uploadUrl = await generateUploadUrl();
+        const res = await fetch(uploadUrl, {
+          method: "POST",
+          headers: { "Content-Type": blob.type || "image/jpeg" },
+          body: blob,
         });
-      } else {
-        await ListingDraftStore.saveDraftListing();
+        if (!res.ok) throw new Error("A photo failed to upload.");
+        const { storageId } = await res.json();
+        photos.push(await finalizeUpload({ storageId }));
       }
+
+      const cashy = draft.compensation_type === "paid" || draft.compensation_type === "hybrid";
+      const stays = draft.compensation_type === "free_stay" || draft.compensation_type === "hybrid";
+      const win = draft.collaboration_window || {};
+      const fields = {
+        title: draft.title || "Untitled listing",
+        location: [draft.location_city, draft.location_country].filter(Boolean).join(", "),
+        location_city: draft.location_city,
+        location_country: draft.location_country,
+        property_url: draft.airbnb_url || undefined,
+        collaboration_brief: draft.collaboration_brief,
+        compensation_type: draft.compensation_type,
+        cash_amount: cashy ? draft.cash_payout || 0 : undefined,
+        nights: stays ? draft.stay_nights : undefined,
+        stay_value: stays ? (draft.stay_nights || 0) * 200 : undefined,
+        creator_tier: draft.creator_tier_required,
+        deliverable_load: draft.deliverable_load,
+        image: photos[0],
+        gallery_images: photos,
+        perks: draft.perks || [],
+        vibe_tags: draft.vibe_tags || [],
+        affiliate_code: draft.affiliate_code || undefined,
+        collab_start: win.startDate || undefined,
+        collab_end: win.endDate || undefined,
+        turnaround_days: draft.turnaround_time_days,
+        deliverables_list: (draft.deliverables || []).map((d) => ({
+          type: d.type,
+          quantity: d.quantity,
+          description: d.description || "",
+        })),
+        deliverable_count: (draft.deliverables || []).reduce((sum, d) => sum + (d.quantity || 0), 0),
+        revision_policy: draft.revision_policy,
+        usage_rights: draft.usage_rights,
+      };
+
+      if (editingId) {
+        await updateListing({ id: editingId, ...fields, status: "draft" });
+      } else {
+        await createListing({
+          ...fields,
+          host_id: String(profile._id),
+          status: "draft",
+          payout_handling: "platform",
+        });
+      }
+      await ListingDraftStore.clearDraft();
       Alert.alert(
         "Draft Saved",
         "You can continue editing later from your dashboard.",
@@ -100,7 +168,7 @@ export default function CreateListingReview() {
         ],
       );
     } catch (error) {
-      Alert.alert("Error", "Failed to save draft. Please try again.");
+      Alert.alert("Error", error?.data || error?.message || "Failed to save draft. Please try again.");
     }
   };
 

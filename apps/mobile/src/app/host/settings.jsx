@@ -13,7 +13,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useAuth as useClerkAuth } from "@clerk/clerk-expo";
+import { useAuth as useClerkAuth, useUser } from "@clerk/clerk-expo";
+import { useQuery, useAction } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { X, ChevronRight } from "lucide-react-native";
 import ThemedBackground from "@/components/ThemedBackground";
 import PricingToolButton from "@/components/PricingToolButton";
@@ -78,6 +80,53 @@ export default function HostSettingsScreen() {
         },
       },
     ]);
+  };
+
+  const { user } = useUser();
+  const deleteEmail = user?.primaryEmailAddress?.emailAddress;
+  const deleteProfile = useQuery(api.profiles.getByEmail, deleteEmail ? { email: deleteEmail } : "skip");
+  const deleteAccount = useAction(api.profiles.deleteAccount);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = () => {
+    if (!deleteProfile?._id) {
+      Alert.alert("Error", "Your profile isn't loaded yet. Please try again in a moment.");
+      return;
+    }
+    Alert.alert(
+      "Delete account",
+      "This permanently deletes your account, listings, messages and collaborations. It can't be undone.\n\nDeleting your account does not cancel an App Store subscription. Manage it in iOS Settings > Apple ID > Subscriptions.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await deleteAccount({ profileId: deleteProfile._id });
+            } catch (error) {
+              console.error("Delete account error:", error);
+              setDeleting(false);
+              Alert.alert("Error", error?.message || "Couldn't delete your account. Please try again.");
+              return;
+            }
+            try {
+              await clerkSignOut();
+            } catch {}
+            await AsyncStorage.multiRemove([
+              "@role",
+              "@host_draft",
+              "@creator_draft",
+              "@profile_photo_uri",
+              "@notifications_settings",
+              "@verification_status",
+            ]);
+            router.replace("/role-select");
+          },
+        },
+      ],
+    );
   };
 
   const handleVerification = () => {
@@ -442,10 +491,9 @@ export default function HostSettingsScreen() {
               label: "Notifications",
               onPress: () => router.push("/settings/notifications"),
             },
-            {
-              label: "App Store Prep",
-              onPress: () => router.push("/settings/app-store-prep"),
-            },
+            ...(__DEV__
+              ? [{ label: "App Store Prep", onPress: () => router.push("/settings/app-store-prep") }]
+              : []),
             {
               label: "Verification",
               onPress: handleVerification,
@@ -585,6 +633,29 @@ export default function HostSettingsScreen() {
             }}
           >
             Log Out
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleDeleteAccount}
+          disabled={deleting}
+          style={{
+            marginHorizontal: 20,
+            marginTop: -24,
+            marginBottom: 40,
+            paddingVertical: 14,
+            alignItems: "center",
+            opacity: deleting ? 0.5 : 1,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: "Inter-Medium",
+              fontSize: 14,
+              color: "#C86868",
+            }}
+          >
+            {deleting ? "Deleting…" : "Delete account"}
           </Text>
         </TouchableOpacity>
       </ScrollView>

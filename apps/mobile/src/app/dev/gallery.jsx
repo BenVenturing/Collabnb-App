@@ -9,6 +9,7 @@
 
 import { ScrollView, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { Redirect } from "expo-router";
 import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -111,7 +112,7 @@ function DeliverablesDemo({ role }) {
   );
 }
 
-export default function GalleryScreen() {
+function GalleryScreen() {
   const insets = useSafeAreaInsets();
   const [toggle, setToggle] = useState("earnings");
   const [saved, setSaved] = useState(false);
@@ -347,4 +348,9 @@ export default function GalleryScreen() {
       </ScrollView>
     </AtmosphericBackground>
   );
+}
+
+export default function GalleryGate() {
+  if (!__DEV__) return <Redirect href="/" />;
+  return <GalleryScreen />;
 }

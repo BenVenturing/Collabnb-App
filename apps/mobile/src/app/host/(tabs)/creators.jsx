@@ -188,28 +188,31 @@ export default function HostCreatorsScreen() {
     const threadKey = `thread_host_${hostId}_${creator.id}`;
     const text = pitchTextFor(creator, listing);
 
-    if (listing) {
-      await createInviteCvx(inviteArgs(creator, listing, text, threadKey));
+    const invite = listing
+      ? await createInviteCvx(inviteArgs(creator, listing, text, threadKey))
+      : null;
+    const alreadyInvited = invite?.created === false;
+
+    if (!alreadyInvited) {
+      await createThreadCvx({
+        listingTitle: listing?.title || `Chat with ${creator.name}`,
+        hostName: creator.name,
+        hostAvatar: creator.avatarUri,
+        tag: "Pitch",
+        lastMessage: text.slice(0, 100),
+        participantId: creator.id,
+        threadKey,
+      });
+
+      await sendMessageCvx({
+        threadKey,
+        senderId: hostId,
+        senderName: profile.full_name || "Host",
+        senderAvatar: profile.avatar_url,
+        senderRole: "host",
+        text,
+      });
     }
-
-    await createThreadCvx({
-      listingTitle: listing?.title || `Chat with ${creator.name}`,
-      hostName: creator.name,
-      hostAvatar: creator.avatarUri,
-      tag: "Pitch",
-      lastMessage: text.slice(0, 100),
-      participantId: creator.id,
-      threadKey,
-    });
-
-    await sendMessageCvx({
-      threadKey,
-      senderId: hostId,
-      senderName: profile.full_name || "Host",
-      senderAvatar: profile.avatar_url,
-      senderRole: "host",
-      text,
-    });
 
     router.push({
       pathname: `/messages/${threadKey}`,
@@ -241,7 +244,8 @@ export default function HostCreatorsScreen() {
       const threadKey = `thread_host_${hostId}_${creator.id}`;
       const text = proposalText(creator, listing);
 
-      await createInviteCvx(inviteArgs(creator, listing, text, threadKey));
+      const invite = await createInviteCvx(inviteArgs(creator, listing, text, threadKey));
+      if (invite?.created === false) continue;
 
       await createThreadCvx({
         listingTitle: listing.title,

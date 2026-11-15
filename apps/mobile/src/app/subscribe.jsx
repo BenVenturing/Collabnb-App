@@ -10,10 +10,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
+import * as WebBrowser from "expo-web-browser";
 import { X, Check } from "lucide-react-native";
 import { colors, fonts, radii, shadows } from "@/config/theme";
 import { api } from "@/convex/_generated/api";
 import useInAppPurchase from "@/utils/iap/useInAppPurchase";
+
+// No Terms screen or URL existed in the mobile app; confirm this page is live before submitting.
+const TERMS_OF_USE_URL = "https://collabnb.com/terms";
+
+const PERIOD_WORDS = { D: "day", W: "week", M: "month", Y: "year" };
+
+function periodLabel(iso) {
+  const m = /^P(\d+)([DWMY])$/.exec(iso || "");
+  if (!m) return null;
+  const word = PERIOD_WORDS[m[2]];
+  return m[1] === "1" ? word : `${m[1]} ${word}s`;
+}
 
 export default function SubscribeScreen() {
   const insets = useSafeAreaInsets();
@@ -53,6 +66,8 @@ export default function SubscribeScreen() {
       Alert.alert("Purchase failed", "Something went wrong — please try again.");
     }
   };
+
+  const selectedPeriod = periodLabel(selected?.product?.subscriptionPeriod);
 
   const handleRestore = async () => {
     const result = await restorePurchases();
@@ -120,6 +135,7 @@ export default function SubscribeScreen() {
                   </View>
                   <Text style={{ fontFamily: fonts.displaySemibold, fontSize: 15, color: colors.ink, marginRight: active ? 8 : 0 }}>
                     {pkg.product.priceString}
+                    {periodLabel(pkg.product.subscriptionPeriod) ? ` / ${periodLabel(pkg.product.subscriptionPeriod)}` : ""}
                   </Text>
                   {active && (
                     <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center" }}>
@@ -152,6 +168,19 @@ export default function SubscribeScreen() {
         <TouchableOpacity onPress={handleRestore} disabled={isPurchasing} style={{ alignItems: "center" }}>
           <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.sage }}>Restore purchases</Text>
         </TouchableOpacity>
+        {selected ? (
+          <Text style={{ fontFamily: fonts.body, fontSize: 11, color: colors.sage, lineHeight: 16, textAlign: "center" }}>
+            {`${selected.product.priceString}${selectedPeriod ? ` per ${selectedPeriod}` : ""}. Payment is charged to your Apple ID at confirmation of purchase. The subscription renews automatically at the same price unless cancelled at least 24 hours before the end of the current period. Manage or cancel anytime in iOS Settings > Apple ID > Subscriptions.`}
+          </Text>
+        ) : null}
+        <View style={{ flexDirection: "row", justifyContent: "center", gap: 20 }}>
+          <TouchableOpacity onPress={() => WebBrowser.openBrowserAsync(TERMS_OF_USE_URL)}>
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.sage, textDecorationLine: "underline" }}>Terms of Use</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/privacy-policy")}>
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.sage, textDecorationLine: "underline" }}>Privacy Policy</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );

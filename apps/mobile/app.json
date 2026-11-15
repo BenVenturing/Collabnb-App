@@ -18,7 +18,12 @@
       "bundleIdentifier": "com.collabnb.app",
       "supportsTablet": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Collabnb uses your photo library so you can choose photos and videos for your profile, portfolio and listings.",
+        "NSCameraUsageDescription": "Collabnb uses your camera to take photos for your profile and listings.",
+        "NSMicrophoneUsageDescription": "Collabnb uses your microphone when you record a video for your portfolio.",
+        "NSPhotoLibraryAddUsageDescription": "Collabnb doesn't save photos to your library.",
+        "NSFaceIDUsageDescription": "Collabnb doesn't use Face ID."
       }
     },
     "android": {
@@ -59,7 +64,7 @@
       [
         "expo-video",
         {
-          "supportsBackgroundPlayback": true,
+          "supportsBackgroundPlayback": false,
           "supportsPictureInPicture": true
         }
       ],
