@@ -18,6 +18,8 @@ import { Eye, EyeOff, ArrowLeft } from "lucide-react-native";
 import { api } from "@/convex/_generated/api";
 import useRoleStore from "@/utils/RoleStore";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
+import { useAppleAuth } from "@/hooks/useAppleAuth";
+import AppleButton from "@/components/AppleButton";
 import { AtmosphericBackground } from "@/components/ui";
 import Glass from "@/components/Glass";
 import { colors, fonts, radii } from "@/config/theme";
@@ -28,6 +30,7 @@ export default function SignupScreen() {
   const { signUp, setActive, isLoaded } = useSignUp();
   const { setRole } = useRoleStore();
   const { signInWithGoogle } = useGoogleAuth();
+  const { signInWithApple } = useAppleAuth();
   const getOrCreateProfile = useMutation(api.profiles.getOrCreate);
 
   const [step, setStep] = useState("form"); // "form" | "verify"
@@ -38,16 +41,17 @@ export default function SignupScreen() {
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [error, setError] = useState("");
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const finalizeSession = async (createdSessionId, finalEmail, activate = setActive) => {
+  const finalizeSession = async (createdSessionId, finalEmail, activate = setActive, fullName) => {
     await activate({ session: createdSessionId });
     const profile = await getOrCreateProfile({
       email: finalEmail.trim(),
-      full_name: finalEmail.trim().split("@")[0],
+      full_name: fullName || finalEmail.trim().split("@")[0],
       role: selectedRole,
     });
     await setRole(profile?.role || selectedRole);
@@ -77,6 +81,29 @@ export default function SignupScreen() {
       setError(err?.errors?.[0]?.message || err?.message || "Google sign-up failed. Please try again.");
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  const handleAppleSignUp = async () => {
+    setError("");
+    setAppleLoading(true);
+    try {
+      const { createdSessionId, setActive: activateSSO, signUp: ssoSignUp } =
+        await signInWithApple();
+      if (createdSessionId && activateSSO) {
+        const appleEmail = ssoSignUp?.emailAddress;
+        if (!appleEmail) {
+          setError("Couldn't read your Apple email. Please try again.");
+          return;
+        }
+        const appleName = [ssoSignUp?.firstName, ssoSignUp?.lastName].filter(Boolean).join(" ");
+        await finalizeSession(createdSessionId, appleEmail, activateSSO, appleName);
+      }
+    } catch (err) {
+      console.error("[AppleAuth] sign-up failed:", err?.message, JSON.stringify(err?.errors || err));
+      setError(err?.errors?.[0]?.message || err?.message || "Apple sign-up failed. Please try again.");
+    } finally {
+      setAppleLoading(false);
     }
   };
 
@@ -199,6 +226,10 @@ export default function SignupScreen() {
             {step === "form" ? (
               <>
                 <RoleToggle selectedRole={selectedRole} onChange={setSelectedRole} />
+
+                {Platform.OS === "ios" && (
+                  <AppleButton onPress={handleAppleSignUp} loading={appleLoading} />
+                )}
 
                 <TouchableOpacity
                   onPress={handleGoogleSignUp}

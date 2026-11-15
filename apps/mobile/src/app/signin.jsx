@@ -13,8 +13,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { useSignIn } from "@clerk/clerk-expo";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import useRoleStore from "@/utils/RoleStore";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react-native";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
+import { useAppleAuth } from "@/hooks/useAppleAuth";
+import AppleButton from "@/components/AppleButton";
 import { AtmosphericBackground } from "@/components/ui";
 import Glass from "@/components/Glass";
 import { colors, fonts, radii } from "@/config/theme";
@@ -24,6 +29,9 @@ export default function SigninScreen() {
   const router = useRouter();
   const { signIn, setActive, isLoaded } = useSignIn();
   const { signInWithGoogle } = useGoogleAuth();
+  const { signInWithApple } = useAppleAuth();
+  const { setRole } = useRoleStore();
+  const getOrCreateProfile = useMutation(api.profiles.getOrCreate);
 
   // "signin" | "forgot" | "reset" — forgot/reset use Clerk's own
   // reset_password_email_code strategy via the same signIn resource, not a
@@ -35,7 +43,10 @@ export default function SigninScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [error, setError] = useState("");
+  const [pendingNewUser, setPendingNewUser] = useState(null);
+  const [newUserRole, setNewUserRole] = useState("creator");
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
@@ -45,20 +56,66 @@ export default function SigninScreen() {
   const [newPassword, setNewPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
 
+  const finishSso = async ({ createdSessionId, setActive: activateSSO, signUp: ssoSignUp, isNewUser }) => {
+    if (!createdSessionId || !activateSSO) return;
+    if (isNewUser) {
+      if (!ssoSignUp?.emailAddress) {
+        setError("Couldn't read your email. Please try again.");
+        return;
+      }
+      const name = [ssoSignUp.firstName, ssoSignUp.lastName].filter(Boolean).join(" ");
+      setPendingNewUser({ createdSessionId, activate: activateSSO, email: ssoSignUp.emailAddress, name });
+      setMode("role");
+      return;
+    }
+    await activateSSO({ session: createdSessionId });
+    router.replace("/explore");
+  };
+
+  const handleCreateNewUser = async () => {
+    if (!pendingNewUser) return;
+    setError("");
+    setLoading(true);
+    try {
+      await pendingNewUser.activate({ session: pendingNewUser.createdSessionId });
+      const profile = await getOrCreateProfile({
+        email: pendingNewUser.email.trim(),
+        full_name: pendingNewUser.name || pendingNewUser.email.trim().split("@")[0],
+        role: newUserRole,
+      });
+      const finalRole = profile?.role || newUserRole;
+      await setRole(finalRole);
+      router.replace(finalRole === "host" ? "/host-onboarding/property" : "/creator-onboarding/basic-info");
+    } catch (err) {
+      setError(err?.errors?.[0]?.message || err?.message || "Couldn't finish setting up your account. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setError("");
     setGoogleLoading(true);
     try {
-      const { createdSessionId, setActive: activateSSO } = await signInWithGoogle();
-      if (createdSessionId && activateSSO) {
-        await activateSSO({ session: createdSessionId });
-        router.replace("/explore");
-      }
+      await finishSso(await signInWithGoogle());
     } catch (err) {
       console.error("[GoogleAuth] sign-in failed:", err?.message, JSON.stringify(err?.errors || err));
       setError(err?.errors?.[0]?.message || err?.message || "Google sign-in failed. Please try again.");
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setError("");
+    setAppleLoading(true);
+    try {
+      await finishSso(await signInWithApple());
+    } catch (err) {
+      console.error("[AppleAuth] sign-in failed:", err?.message, JSON.stringify(err?.errors || err));
+      setError(err?.errors?.[0]?.message || err?.message || "Apple sign-in failed. Please try again.");
+    } finally {
+      setAppleLoading(false);
     }
   };
 
@@ -207,7 +264,9 @@ export default function SigninScreen() {
   };
 
   const heading =
-    mode === "forgot"
+    mode === "role"
+      ? "Welcome to Collabnb"
+      : mode === "forgot"
       ? "Reset your password"
       : mode === "reset"
         ? "Check your email"
@@ -215,7 +274,9 @@ export default function SigninScreen() {
           ? "Two-factor authentication"
           : "Welcome back";
   const subheading =
-    mode === "forgot"
+    mode === "role"
+      ? "How will you use Collabnb?"
+      : mode === "forgot"
       ? "We'll email you a code to reset it"
       : mode === "reset"
         ? `We sent a code to ${email.trim()}`
@@ -272,6 +333,10 @@ export default function SigninScreen() {
           <Glass variant="card" contentStyle={{ padding: 24 }}>
             {mode === "signin" && (
               <>
+                {Platform.OS === "ios" && (
+                  <AppleButton onPress={handleAppleSignIn} loading={appleLoading} />
+                )}
+
                 <TouchableOpacity
                   onPress={handleGoogleSignIn}
                   disabled={googleLoading}
@@ -350,6 +415,46 @@ export default function SigninScreen() {
                 <TouchableOpacity onPress={() => { setMode("signin"); setError(""); }} style={{ alignItems: "center", marginTop: 16 }}>
                   <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.slate }}>Back to sign in</Text>
                 </TouchableOpacity>
+              </>
+            )}
+
+            {mode === "role" && (
+              <>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    backgroundColor: colors.bone,
+                    borderRadius: radii.lg,
+                    padding: 4,
+                    borderWidth: 1,
+                    borderColor: colors.stone,
+                    marginBottom: 12,
+                  }}
+                >
+                  {["creator", "host"].map((role) => (
+                    <TouchableOpacity
+                      key={role}
+                      onPress={() => setNewUserRole(role)}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 12,
+                        alignItems: "center",
+                        borderRadius: radii.md,
+                        backgroundColor: newUserRole === role ? colors.mint : "transparent",
+                      }}
+                    >
+                      <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}>
+                        {role === "creator" ? "Creator" : "Host"}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {error ? <ErrorText>{error}</ErrorText> : null}
+                <PrimaryButton
+                  label={loading ? "Setting up…" : "Continue"}
+                  onPress={handleCreateNewUser}
+                  disabled={loading}
+                />
               </>
             )}
 

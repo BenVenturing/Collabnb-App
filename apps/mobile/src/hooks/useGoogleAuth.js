@@ -58,7 +58,7 @@ export function useGoogleAuth() {
     // hand it to signUp to create the account rather than failing the sign-in.
     if (reloaded?.firstFactorVerification?.status === "transferable") {
       const transferred = await signUp.create({ transfer: true });
-      return { createdSessionId: transferred?.createdSessionId ?? null, setActive, signUp: transferred };
+      return { createdSessionId: transferred?.createdSessionId ?? null, setActive, signUp: transferred, isNewUser: true };
     }
 
     return { createdSessionId: reloaded?.createdSessionId ?? null, setActive, signUp };
