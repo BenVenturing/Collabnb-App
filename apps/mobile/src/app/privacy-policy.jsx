@@ -169,7 +169,7 @@ export default function PrivacyPolicyScreen() {
         </Text>
         <Text style={[body, { marginBottom: 4 }]}>Email: privacy@collabnb.com</Text>
         <Text style={body}>
-          Address: Collabnb Inc., 123 Main Street, San Francisco, CA 94102
+          Address: Collabnb, 3302 N. 159th Ave., Goodyear, AZ 85395
         </Text>
       </ScrollView>
     </AtmosphericBackground>
