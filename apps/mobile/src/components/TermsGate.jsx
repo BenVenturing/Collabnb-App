@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { View, Text, TouchableOpacity, Modal, Linking, ActivityIndicator } from "react-native";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
@@ -14,15 +15,27 @@ export default function TermsGate() {
   const acceptTerms = useMutation(api.profiles.acceptTerms);
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [localOk, setLocalOk] = useState(null);
+  const pid = profile?._id ? String(profile._id) : null;
+  const key = pid ? `@collabnb:terms:${pid}` : null;
+  const needs = !!pid && !profile.terms_accepted_at;
 
-  if (!profile?._id || profile.terms_accepted_at) return null;
+  useEffect(() => {
+    if (!key || !needs) return;
+    AsyncStorage.getItem(key).then((v) => setLocalOk(v === TERMS_VERSION)).catch(() => setLocalOk(false));
+  }, [key, needs]);
+
+  useEffect(() => {
+    if (needs && localOk) acceptTerms({ profileId: pid, version: TERMS_VERSION }).catch(() => {});
+  }, [needs, localOk, pid]);
+
+  if (!needs || localOk !== false) return null;
 
   const accept = async () => {
     if (!checked || busy) return;
     setBusy(true);
-    try {
-      await acceptTerms({ profileId: String(profile._id), version: TERMS_VERSION });
-    } catch {}
+    try { await AsyncStorage.setItem(key, TERMS_VERSION); } catch {}
+    setLocalOk(true);
     setBusy(false);
   };
 
