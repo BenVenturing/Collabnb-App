@@ -36,9 +36,11 @@ import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
+import FloatingArt from "@/components/FloatingArt";
 import CollabCrmOverview, { useCrmChart } from "@/components/collabs/CollabCrmOverview";
 import { useCollabReminders } from "@/hooks/useCollabReminders";
 import { CollabCardSkeleton } from "@/components/ui/Skeleton";
+import DemoCollabWalkthrough, { useDemoCollabDismissed } from "@/components/collabs/DemoCollabWalkthrough";
 import { Reveal } from "@/components/ui/Reveal";
 import StatusBarBlur from "@/components/StatusBarBlur";
 import Glass from "@/components/Glass";
@@ -144,6 +146,7 @@ export default function CreatorCollaborationsScreen() {
     profile?._id ? { userId: String(profile._id) } : "skip",
   );
 
+  const [demoDismissed, dismissDemo] = useDemoCollabDismissed();
   const toast = usePullToast();
   const [archivedOpen, setArchivedOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -334,7 +337,7 @@ export default function CreatorCollaborationsScreen() {
       <AtmosphericBackground>
         <StatusBar style={statusBarStyle()} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40 }}>
-          <Text style={{ fontSize: 80, marginBottom: 16, opacity: 0.2 }}>✦</Text>
+          <FloatingArt source={require("../../../assets/images/empty-collabs.png")} />
           <Text
             style={{
               fontFamily: fonts.displaySemibold,
@@ -363,7 +366,8 @@ export default function CreatorCollaborationsScreen() {
     );
   }
 
-  const isLoading = collabsRaw === undefined;
+  const isLoading = email ? profile === undefined || (!!profile && collabsRaw === undefined) : false;
+  const showDemo = !isLoading && collabs.length === 0 && demoDismissed === false;
   const barOpacity = scrollY.interpolate({ inputRange: [24, 52], outputRange: [0, 1], extrapolate: "clamp" });
   const titleScale = scrollY.interpolate({ inputRange: [-80, 0], outputRange: [1.12, 1], extrapolate: "clamp" });
 
@@ -612,6 +616,8 @@ export default function CreatorCollaborationsScreen() {
               <CollabCardSkeleton />
               <CollabCardSkeleton />
             </View>
+          ) : showDemo ? (
+            <DemoCollabWalkthrough role="creator" onDismiss={dismissDemo} />
           ) : (
             <>
               <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>

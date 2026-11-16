@@ -29,6 +29,7 @@ import * as Sharing from "expo-sharing";
 import useHostProposals from "@/hooks/useHostProposals";
 import CollabCrmOverview from "@/components/collabs/CollabCrmOverview";
 import { filterProposals, listingOptions } from "@/utils/proposalFilters";
+import DemoCollabWalkthrough, { useDemoCollabDismissed } from "@/components/collabs/DemoCollabWalkthrough";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
@@ -762,6 +763,7 @@ function DetailModal({
 // ─── MAIN SCREEN ─────────────────────────────────────────────
 export default function ProposalsScreen() {
   const router = useRouter();
+  const [demoDismissed, dismissDemo] = useDemoCollabDismissed();
   const {
     proposals: convexProposals,
     isLoading,
@@ -1123,7 +1125,9 @@ export default function ProposalsScreen() {
         <>
 
             <View style={styles.stageList}>
-              {stageCards.length === 0 ? (
+              {stageCards.length === 0 && proposals.length === 0 && demoDismissed === false ? (
+                <DemoCollabWalkthrough role="host" onDismiss={dismissDemo} />
+              ) : stageCards.length === 0 ? (
                 <View style={styles.emptyStage}>
                   <Text style={styles.emptyStageTitle}>
                     {proposals.length === 0

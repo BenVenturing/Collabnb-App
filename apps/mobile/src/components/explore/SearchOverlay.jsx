@@ -132,6 +132,7 @@ export default function SearchOverlay({ visible, onClose, listings = [], initial
     setWhat(null);
     setWhereFull(false);
     setOpen("where");
+    onApply?.({ where: "", when: "", what: null });
   };
 
   const apply = () => {
