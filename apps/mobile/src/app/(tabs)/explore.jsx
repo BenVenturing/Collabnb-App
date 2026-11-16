@@ -15,6 +15,7 @@ import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { List, Search, SlidersHorizontal } from "lucide-react-native";
+import FloatingArt from "@/components/FloatingArt";
 import ReAnimated, { ZoomIn, ZoomOut } from "react-native-reanimated";
 import Glass from "@/components/Glass";
 import { useMemo, useState, useEffect, useRef } from "react";
@@ -440,7 +441,8 @@ export default function ExploreScreen() {
           ListHeaderComponentStyle={{ marginHorizontal: -20, marginBottom: 4 }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={{ alignItems: "center", paddingVertical: 48, paddingHorizontal: 20 }}>
+            <View style={{ alignItems: "center", paddingTop: 72, paddingBottom: 48, paddingHorizontal: 32 }}>
+              <FloatingArt source={require("../../../assets/images/empty-explore.png")} />
               <Display size={18} style={{ textAlign: "center", marginBottom: 8 }}>
                 No collaborations here yet
               </Display>
