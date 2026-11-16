@@ -94,7 +94,7 @@ export function PullToast({ text }) {
       style={{
         position: "absolute",
         alignSelf: "center",
-        bottom: Math.max(insets.bottom, 8) + 84,
+        bottom: Math.max(insets.bottom, 8) + 64,
         opacity: t,
         transform: [
           { translateY: t.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) },
@@ -103,8 +103,8 @@ export function PullToast({ text }) {
         ...shadows.md,
       }}
     >
-      <Glass variant="small" style={{ borderRadius: 999 }} contentStyle={{ paddingHorizontal: 16, paddingVertical: 10 }}>
-        <Body size={13} weight="medium" color={colors.ink}>
+      <Glass variant="small" style={{ borderRadius: 999 }} contentStyle={{ paddingHorizontal: 22, paddingVertical: 13 }}>
+        <Body size={12} weight="medium" color={colors.ink}>
           {shown}
         </Body>
       </Glass>

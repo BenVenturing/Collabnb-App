@@ -169,13 +169,14 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
       const idx = clamp(Math.floor(c / tw), 0, n - 1);
       if (idx !== lastIdx.value) {
         lastIdx.value = idx;
-        runOnJS(go)(idx, true);
+        runOnJS(haptic.select)();
       }
     })
     .onFinalize(() => {
       if (!dragging.value) return;
       dragging.value = false;
       runOnJS(haptic.settle)();
+      runOnJS(go)(lastIdx.value, false);
       lens.value = withSpring(0, { damping: 16, stiffness: 200 });
       const L = lastIdx.value * tabW.value;
       left.value = withSpring(L, FAST);

@@ -33,7 +33,6 @@ import {
   AtmosphericBackground,
   Glass,
   ProfileHeader,
-  StatGrid,
   SectionHeading,
   PillButton,
   Body,
@@ -48,6 +47,7 @@ import SettingsModal from "@/components/Profile/SettingsModal";
 import RoleSwitchModal from "@/components/Profile/RoleSwitchModal";
 import ShareProfileSheet from "@/components/Profile/ShareProfileSheet";
 import StatusBarBlur from "@/components/StatusBarBlur";
+import FloatingArt from "@/components/FloatingArt";
 import CommunityGlobe from "@/components/CommunityGlobe";
 import { useBottomPull, PulledSection, usePullToast, PullToast } from "@/components/PullReveal";
 
@@ -67,7 +67,7 @@ const MIN_SPIN_MS = 900;
 
 // Re-syncs every linked social account. Live linking is still dark on prod,
 // so most taps end in a toast explaining why nothing changed.
-function RefreshStats({ sources = [], updatedAt, onMessage }) {
+function RefreshStats({ sources = [], updatedAt, onMessage, iconOnly = false }) {
   const convex = useConvex();
   const syncMine = useAction(api.creatorSocial.syncMine);
   const spin = useRef(new Animated.Value(0)).current;
@@ -116,15 +116,17 @@ function RefreshStats({ sources = [], updatedAt, onMessage }) {
       style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 6, opacity: pressed ? 0.6 : 1 })}
     >
       <Animated.View style={{ transform: [{ rotate }] }}>
-        <RefreshCw size={12} color={colors.sage} />
+        <RefreshCw size={iconOnly ? 15 : 12} color={colors.sage} />
       </Animated.View>
-      <Body size={12} color={colors.sage}>
-        {busy
-          ? "Updating…"
-          : sources.length
-            ? `Stats from ${sources.join(", ")} · ${updatedLabel(updatedAt).toLowerCase()}`
-            : updatedLabel(updatedAt)}
-      </Body>
+      {iconOnly ? null : (
+        <Body size={12} color={colors.sage}>
+          {busy
+            ? "Updating…"
+            : sources.length
+              ? `Stats from ${sources.join(", ")} · ${updatedLabel(updatedAt).toLowerCase()}`
+              : updatedLabel(updatedAt)}
+        </Body>
+      )}
     </Pressable>
   );
 }
@@ -224,7 +226,7 @@ export default function CreatorProfileScreen() {
             paddingHorizontal: 40,
           }}
         >
-          <UserRound size={44} color={colors.stone} style={{ marginBottom: 18 }} />
+          <FloatingArt source={require("../../../assets/images/empty-profile.png")} />
           <Display size={20} style={{ textAlign: "center", marginBottom: 8 }}>
             Sign in to see your profile
           </Display>
@@ -321,23 +323,24 @@ export default function CreatorProfileScreen() {
         />
 
         <View style={{ paddingHorizontal: 20 }}>
-          <StatGrid
-            compact
-            columns={2}
-            items={stats}
-            footer={
-              <View
-                style={{ alignSelf: "stretch", alignItems: "center", paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.hairline }}
-              >
-                <RefreshStats
-                  sources={statSources}
-                  updatedAt={profile?.metrics_synced_at ?? profile?.metrics_updated_at}
-                  onMessage={toast.show}
-                />
+          <Glass variant="regular" style={{ marginBottom: 20 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, paddingHorizontal: 16, gap: 14 }}>
+              <View style={{ flex: 1, flexDirection: "row", alignItems: "baseline", justifyContent: "space-around" }}>
+                {stats.map((item) => (
+                  <View key={item.label} style={{ flexDirection: "row", alignItems: "baseline", gap: 5 }}>
+                    <Display size={16}>{item.value ?? "—"}</Display>
+                    <Body size={12} color={colors.sage}>{item.label}</Body>
+                  </View>
+                ))}
               </View>
-            }
-            style={{ marginBottom: 20 }}
-          />
+              <RefreshStats
+                iconOnly
+                sources={statSources}
+                updatedAt={profile?.metrics_synced_at ?? profile?.metrics_updated_at}
+                onMessage={toast.show}
+              />
+            </View>
+          </Glass>
 
           {bio ? (
             <View style={{ marginBottom: 28 }}>
