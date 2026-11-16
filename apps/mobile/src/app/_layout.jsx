@@ -21,6 +21,7 @@ import { api } from "@/convex/_generated/api";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { LoadingScreen } from "@/components/ui";
 import SaveToast from "@/components/SaveToast";
+import TermsGate from "@/components/TermsGate";
 import { initColorMode, useColorMode } from "@/utils/ColorModeStore";
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
@@ -125,6 +126,7 @@ export default function RootLayout() {
         {convexClient ? (
           <ConvexProviderWithClerk client={convexClient} useAuth={useClerkAuth}>
             <PushNotificationsBridge />
+            <TermsGate />
             <AppShell />
           </ConvexProviderWithClerk>
         ) : (

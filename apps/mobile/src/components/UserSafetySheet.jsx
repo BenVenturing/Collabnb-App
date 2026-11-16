@@ -8,6 +8,7 @@ import { colors } from "@/config/theme";
 
 export const REPORT_REASONS = [
   { id: "inaccurate_information", label: "Inaccurate or misleading information" },
+  { id: "objectionable_content", label: "Objectionable or inappropriate content" },
   { id: "spam", label: "Spam" },
   { id: "harassment", label: "Harassment or abusive behavior" },
   { id: "poor_communication", label: "Poor communication" },

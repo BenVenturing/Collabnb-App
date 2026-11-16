@@ -1,10 +1,10 @@
 export const appStoreDraft = {
   appName: "Collabnb",
   subtitle: "Creator x host collaboration marketplace",
-  supportEmail: "support@collabnb.com",
+  supportEmail: "hellocollabnb@gmail.com",
   privacyEmail: "privacy@collabnb.com",
-  supportUrl: "https://your-domain.com/support",
-  privacyPolicyUrl: "https://your-domain.com/privacy",
+  supportUrl: "https://collabnb.com/faq.html",
+  privacyPolicyUrl: "https://collabnb.com/privacy",
   appDescription:
     "Collabnb connects creators with hospitality hosts for content collaborations. Browse listings, apply to stays, chat in-app, manage deliverables, and keep every collaboration organized from first outreach to final content handoff.",
   keywords:
@@ -42,18 +42,9 @@ export const appStoreDraft = {
       title: "Identifiers",
       items: [
         "Account ID",
-        "Device-linked auth/session state",
+        "Push notification token",
       ],
-      purpose: "Account management, login persistence, and abuse prevention.",
-    },
-    {
-      title: "Usage Data",
-      items: [
-        "Search activity",
-        "Preferences",
-        "Feature interactions",
-      ],
-      purpose: "Product improvement, personalization, and operations.",
+      purpose: "Account management and push notifications.",
     },
     {
       title: "Purchases",
@@ -63,19 +54,11 @@ export const appStoreDraft = {
       purpose: "Unlocking paid features and restoring entitlements.",
     },
     {
-      title: "Diagnostics",
+      title: "Payment Info",
       items: [
-        "Crash or error reports",
-        "Basic logs",
+        "Host payment method on file (card brand, last 4, Stripe IDs; full card or bank details are entered on Stripe and never reach Collabnb)",
       ],
-      purpose: "App stability, debugging, and support.",
-    },
-    {
-      title: "Location",
-      items: [
-        "Approximate or entered location",
-      ],
-      purpose: "Search relevance, nearby discovery, and profile/listing context.",
+      purpose: "Charging host listing fees and collaboration payments.",
     },
   ],
   submissionNotes: [

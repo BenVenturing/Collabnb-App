@@ -6,6 +6,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { statusBarStyle } from "@/utils/ColorModeStore";
@@ -114,7 +115,7 @@ export default function SignupScreen() {
       return;
     }
     if (!privacyConsent) {
-      setError("Please agree to the Privacy Policy to continue.");
+      setError("Please agree to the Terms of Service and Privacy Policy to continue.");
       return;
     }
 
@@ -320,6 +321,13 @@ export default function SignupScreen() {
                   </View>
                   <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.ink, flex: 1 }}>
                     I agree to the{" "}
+                    <Text
+                      style={{ fontFamily: fonts.bodySemibold, color: colors.slate }}
+                      onPress={() => Linking.openURL("https://collabnb.com/terms.html")}
+                    >
+                      Terms of Service
+                    </Text>
+                    {" "}and{" "}
                     <Text
                       style={{ fontFamily: fonts.bodySemibold, color: colors.slate }}
                       onPress={() => router.push("/privacy-policy")}

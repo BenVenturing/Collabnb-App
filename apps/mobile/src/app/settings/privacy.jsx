@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   TextInput,
   Switch,
+  Linking,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { statusBarStyle } from "@/utils/ColorModeStore";
@@ -427,6 +428,7 @@ export default function PrivacySecurityScreen() {
         >
           <View style={{ padding: 16 }}>
             <Text
+              onPress={() => Linking.openURL("mailto:hellocollabnb@gmail.com")}
               style={{
                 fontFamily: fonts.bodyMedium,
                 fontSize: 14,
@@ -435,7 +437,7 @@ export default function PrivacySecurityScreen() {
                 textAlign: "center",
               }}
             >
-              💡 Questions about privacy? Contact us at support@collabnb.com
+              💡 Questions, or need to report abuse? We review reports within 24 hours. Email hellocollabnb@gmail.com
             </Text>
           </View>
         </Glass>
