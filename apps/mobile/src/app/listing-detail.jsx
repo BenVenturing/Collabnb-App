@@ -29,7 +29,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import MapView, { Marker } from "react-native-maps";
 import { Share2, Heart, Quote, Star, Check, Plus, ArrowRight, ChevronLeft, Pencil, Flag } from "lucide-react-native";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import ListingDraftStore from "@/utils/ListingDraftStore";
@@ -353,7 +353,11 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
 
   const handleSubmit = async () => {
     if (!creatorProfile?._id) {
-      setError("Your profile is still loading — try again in a moment.");
+      setError(
+        creatorProfile === null
+          ? "We couldn't find a Collabnb profile for this account — sign out and back in, then try again."
+          : "Your profile is still loading — try again in a moment."
+      );
       return;
     }
     setSubmitting(true);
@@ -1207,7 +1211,8 @@ export default function ListingDetailScreen() {
 
   const { user } = useUser();
   const email = user?.primaryEmailAddress?.emailAddress;
-  const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  const { isAuthenticated: convexAuthed } = useConvexAuth();
+  const profile = useQuery(api.profiles.getByEmail, email && convexAuthed ? { email } : "skip");
 
   const convexListing = useQuery(api.listings.getById, {
     id: listingId,
@@ -1646,11 +1651,6 @@ export default function ListingDetailScreen() {
                   }}
                 >
                   <Text
-                    style={{ fontSize: 12, color: colors.slate, marginTop: 2 }}
-                  >
-                    ✦
-                  </Text>
-                  <Text
                     style={{
                       fontFamily: fonts.body,
                       fontSize: 15,
@@ -1724,7 +1724,7 @@ export default function ListingDetailScreen() {
 
           <View style={{ gap: 16 }}>
             <View style={{ flexDirection: "row", gap: 12 }}>
-              <Text style={{ fontSize: 20 }}>📋</Text>
+              <Image source={require("../../assets/images/ttk-guidelines.png")} style={{ width: 22, height: 22, marginTop: 1 }} resizeMode="contain" />
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
@@ -1745,7 +1745,7 @@ export default function ListingDetailScreen() {
             </View>
 
             <View style={{ flexDirection: "row", gap: 12 }}>
-              <Text style={{ fontSize: 20 }}>✉️</Text>
+              <Image source={require("../../assets/images/ttk-process.png")} style={{ width: 22, height: 22, marginTop: 1 }} resizeMode="contain" />
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
@@ -1766,7 +1766,7 @@ export default function ListingDetailScreen() {
             </View>
 
             <View style={{ flexDirection: "row", gap: 12 }}>
-              <Text style={{ fontSize: 20 }}>⭐</Text>
+              <Image source={require("../../assets/images/ttk-stay.png")} style={{ width: 22, height: 22, marginTop: 1 }} resizeMode="contain" />
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
