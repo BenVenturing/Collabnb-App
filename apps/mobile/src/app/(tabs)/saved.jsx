@@ -16,10 +16,11 @@ import { StatusBar } from "expo-status-bar";
 import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Plus, MoreVertical } from "lucide-react-native";
+import { Plus, MoreVertical, Search } from "lucide-react-native";
 import { useSavedCollections } from "@/hooks/useSavedCollections";
 import StatusBarBlur from "@/components/StatusBarBlur";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
+import FloatingArt from "@/components/FloatingArt";
 import SavedInspirationCard from "@/components/SavedInspirationCard";
 import { colors, fonts, tracking, track, lineHeights } from "@/config/theme";
 
@@ -158,7 +159,7 @@ export default function CreatorSavedScreen() {
             paddingHorizontal: 40,
           }}
         >
-          <Text style={{ fontSize: 80, marginBottom: 16, opacity: 0.2 }}>♡</Text>
+          <FloatingArt source={require("../../../assets/images/empty-saved.png")} />
           <Text
             style={{
               fontFamily: fonts.displaySemibold,
@@ -247,9 +248,6 @@ export default function CreatorSavedScreen() {
               }}
             >
               Wishlists
-            </Text>
-            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage }}>
-              {getTotalSavedCount()} saved
             </Text>
           </View>
           <TouchableOpacity
@@ -377,7 +375,13 @@ export default function CreatorSavedScreen() {
                 >
                   {(() => {
                     const imgs = getListPreviewImages(list);
-                    if (imgs.length === 0) return null;
+                    if (imgs.length === 0) {
+                      return (
+                        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                          <Search color={colors.sage} size={32} />
+                        </View>
+                      );
+                    }
                     if (imgs.length < 3) {
                       return imgs.map((img, idx) => (
                         <Image key={idx} source={{ uri: img }} style={{ flex: 1 }} resizeMode="cover" />

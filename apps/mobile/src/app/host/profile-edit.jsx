@@ -37,8 +37,6 @@ const DEFAULT_PROFILE = {
   youtube: "@thegrove",
 };
 
-const PHOTO_URI =
-  "https://ucarecdn.com/6d425040-e4c3-46f0-a774-91ac597ebe24/-/format/auto/";
 
 const PROPERTY_FIELDS = [
   { key: "name", label: "Host name", multiline: false },
@@ -331,7 +329,7 @@ export default function HostProfileEditScreen() {
             }}
           >
             <Image
-              source={{ uri: profile.avatarUri || PHOTO_URI }}
+              source={{ uri: profile.avatarUri || convexProfile?.avatar_url || user?.imageUrl }}
               style={{ width: "100%", height: "100%" }}
               resizeMode="cover"
             />

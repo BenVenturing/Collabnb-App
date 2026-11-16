@@ -219,7 +219,7 @@ export function ListingTile({
             <Heart
               size={22}
               color={colors.surface}
-              fill={saved ? colors.ink : isDark() ? "rgba(255,255,255,0.22)" : "rgba(25,37,36,0.35)"}
+              fill={saved ? "#E63946" : isDark() ? "rgba(255,255,255,0.22)" : "rgba(25,37,36,0.35)"}
               strokeWidth={2}
             />
           </Pressable>
@@ -346,7 +346,7 @@ export function ListingCard({
         ) : null}
 
         <RoundButton onPress={onToggleSave} size={36} style={{ position: "absolute", top: 12, right: 12 }}>
-          <Heart size={18} color="#192524" fill={saved ? "#192524" : "transparent"} />
+          <Heart size={18} color={saved ? "#E63946" : "#192524"} fill={saved ? "#E63946" : "transparent"} />
         </RoundButton>
       </View>
 

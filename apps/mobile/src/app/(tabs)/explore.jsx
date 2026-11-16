@@ -11,6 +11,7 @@
 
 import { View, FlatList, Dimensions, Pressable, Animated } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import * as haptic from "@/utils/haptics";
 import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -114,8 +115,13 @@ export default function ExploreScreen() {
   // Same gate the website checks (api.gates.getMyAccess) — a trial-ended
   // creator still browses, but every listing (card + map dock) is redacted.
   const access = useAccessGate(profile);
-  const isLimited =
+  const isTrialEnded =
     access.state === "limited" && access.role === "creator" && !access.isAdmin && !access.isFounder;
+  // Unapproved sign-ups (is_verified false) browse redacted, like the web's /welcome preview.
+  const isPending =
+    isSignedIn && !!profile && !access.loading && access.state === "pending" && profile.is_admin !== true;
+  const isLimited = !isSignedIn || isTrialEnded || isPending;
+  const limitedRoute = !isSignedIn ? "/signup" : isPending ? "/application-status" : "/subscribe";
 
   const isLoading = convexRaw === undefined || samplesRaw === undefined;
 
@@ -244,13 +250,14 @@ export default function ExploreScreen() {
       router.push("/signin");
       return;
     }
+    haptic.tap();
     await toggleSaved(listing.id);
   };
 
   const [peek, setPeek] = useState(null);
 
   const openListing = (item) =>
-    router.push({
+    !isSignedIn || isPending ? router.push(limitedRoute) : router.push({
       pathname: "/listing-detail",
       params: { id: item.id, title: item.title, location: item.location, photoUri: item.image },
     });
@@ -397,10 +404,9 @@ export default function ExploreScreen() {
         </View>
       )}
 
-      {/* Trial-ended upsell */}
       {isLimited && (
         <Pressable
-          onPress={() => router.push("/subscribe")}
+          onPress={() => router.push(limitedRoute)}
           style={{
             backgroundColor: colors.ink,
             paddingTop: insets.top + 12,
@@ -414,9 +420,9 @@ export default function ExploreScreen() {
           }}
         >
           <Body size={13} weight="semibold" color={colors.surface}>
-            Your trial has ended
+            {!isSignedIn ? "Sign up to see collaborations" : isPending ? "You're on the list · review in progress" : "Your trial has ended"}
           </Body>
-          <Chip label="Subscribe" style={{ backgroundColor: colors.mint }} />
+          <Chip label={!isSignedIn ? "Sign up" : isPending ? "Status" : "Details"} style={{ backgroundColor: colors.mint }} />
         </Pressable>
       )}
 

@@ -181,8 +181,8 @@ export default function SettingsModal({
                   }}
                 >
                   {currentMode === "creator"
-                    ? "🎬 Creator Mode"
-                    : "🏡 Host Mode"}
+                    ? "Creator Mode"
+                    : "Host Mode"}
                 </Text>
                 <Text
                   style={{

@@ -4,7 +4,7 @@
 //  * A glass "bubble" sits behind the active tab. Changing tabs slides it: the
 //    leading edge races ahead on a fast spring while the trailing edge lags on
 //    a slow one, so the bubble stretches mid-move then condenses on arrival.
-//  * Press and hold, then slide across the bar: the bubble grows into a lens
+//  * Slide a finger across the bar (or press and slide): the bubble grows into a lens
 //    that follows your finger, icons under it swell, and the tab changes as
 //    the lens crosses each one (with a light haptic). Lift to settle.
 //  * Reduced-motion users get short fades instead of springs, and no lens.
@@ -153,7 +153,9 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
 
   const pan = Gesture.Pan()
     .enabled(!reduced)
-    .activateAfterLongPress(220)
+    .activeOffsetX([-6, 6])
+    .failOffsetY([-30, 30])
+    .minPointers(1)
     .onStart(() => {
       dragging.value = true;
       lens.value = withSpring(1, { damping: 14, stiffness: 220 });

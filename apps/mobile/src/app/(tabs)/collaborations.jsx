@@ -29,7 +29,11 @@ import {
   Pin,
   PinOff,
   StickyNote,
+  Calendar,
+  Clock,
+  User,
 } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "expo-router";
 import { useQuery, useMutation } from "convex/react";
@@ -76,6 +80,8 @@ function normalizeCollab(c) {
     currentStage: c.current_stage || "pending",
     status: c.status,
     deliverables: c.deliverables,
+    dates: c.dates,
+    payment: c.payment,
     daysLeft: c.days_left,
     // isActive is the creator's view: ended collabs and ones they archived both
     // drop out. `ended` keeps the difference, since only live ones can be restored.
@@ -97,6 +103,15 @@ function normalizeCollab(c) {
 // Linear pipeline for the card's progress bar; 'updated' sits with 'accepted'.
 const PIPELINE = ["pending", "accepted", "uploaded_tagged", "closed"];
 const pipelineIndex = (stage) => (stage === "updated" ? 1 : Math.max(0, PIPELINE.indexOf(stage)));
+
+function HeroBadge({ label, bg, icon: Icon }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 9, paddingVertical: 3, borderRadius: radii.pill, backgroundColor: bg }}>
+      {Icon ? <Icon size={10} color="#fff" fill="#fff" /> : null}
+      <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 10, letterSpacing: 1, textTransform: "uppercase", color: "#fff" }}>{label}</Text>
+    </View>
+  );
+}
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -461,120 +476,112 @@ export default function CreatorCollaborationsScreen() {
           onLongPress={() => openMenu(collab)}
           activeOpacity={0.85}
         >
-          <Glass variant="card" contentStyle={{ padding: 12 }}>
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <Image
-                source={{ uri: collab.image }}
-                style={{ width: 72, height: 72, borderRadius: radii.sm }}
-                contentFit="cover"
-                transition={200}
+          <Glass variant="card" contentStyle={{ padding: 0 }}>
+            <View style={{ height: 172, backgroundColor: colors.mint }}>
+              <Image source={{ uri: collab.image }} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" transition={200} />
+              <LinearGradient
+                colors={["transparent", "rgba(20,30,28,0.18)", "rgba(20,30,28,0.7)"]}
+                locations={[0, 0.45, 1]}
+                style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
               />
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text
-                    style={{
-                      flex: 1,
-                      fontFamily: fonts.displaySemibold,
-                      fontSize: 16,
-                      color: colors.ink,
-                      letterSpacing: track(16, tracking.display),
-                    }}
-                    numberOfLines={1}
-                  >
-                    {collab.propertyName}
-                  </Text>
-                  {collab.pinned ? <Pin size={13} color={colors.slate} fill={colors.slate} style={{ marginRight: 4 }} /> : null}
-                  <ChevronRight color={colors.sage} size={18} />
+              {collab.isSample || collab.isDemo || !collab.isActive || collab.pinned ? (
+                <View style={{ position: "absolute", top: 10, left: 12, flexDirection: "row", gap: 6 }}>
+                  {collab.isSample || collab.isDemo ? <HeroBadge label={collab.isDemo ? "Demo" : "Sample"} bg="rgba(184,146,42,0.9)" /> : null}
+                  {!collab.isActive ? <HeroBadge label="Archived" bg="rgba(25,37,36,0.6)" /> : null}
+                  {collab.pinned ? <HeroBadge label="Pinned" bg="rgba(25,37,36,0.6)" icon={Pin} /> : null}
                 </View>
-                <View style={{ flexDirection: "row", alignItems: "center", marginTop: 3 }}>
-                  <MapPin color={colors.sage} size={11} />
-                  <Text
-                    numberOfLines={1}
-                    style={{ flex: 1, fontFamily: fonts.body, fontSize: 12, color: colors.sage, marginLeft: 4 }}
-                  >
-                    {[collab.location, collab.hostName].filter(Boolean).join(" · ")}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, gap: 6 }}>
-                  <View
-                    style={{
-                      paddingHorizontal: 8,
-                      paddingVertical: 3,
-                      borderRadius: radii.pill,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      backgroundColor: isTerminated ? colors.dangerTint : colors.mint,
-                    }}
-                  >
-                    <StageIcon color={isTerminated ? colors.danger : colors.ink} size={11} />
-                    <Text
-                      style={{
-                        fontFamily: fonts.bodySemibold,
-                        fontSize: 11,
-                        marginLeft: 4,
-                        color: isTerminated ? colors.danger : colors.ink,
-                      }}
-                    >
-                      {isTerminated ? "Terminated" : meta.label}
-                    </Text>
-                  </View>
-                  {!collab.isActive ? (
-                    <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: radii.pill, backgroundColor: colors.hairline }}>
-                      <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 11, color: colors.slate }}>Archived</Text>
+              ) : null}
+              <View style={{ position: "absolute", left: 14, right: 14, bottom: 12 }}>
+                <Text
+                  numberOfLines={1}
+                  style={{ fontFamily: fonts.displaySemibold, fontSize: 18, color: "#fff", letterSpacing: track(18, tracking.display), textShadowColor: "rgba(0,0,0,0.35)", textShadowRadius: 6 }}
+                >
+                  {collab.propertyName}
+                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 3 }}>
+                  {collab.location ? (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1 }}>
+                      <MapPin color="rgba(255,255,255,0.88)" size={11} />
+                      <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 12, color: "rgba(255,255,255,0.9)" }}>{collab.location}</Text>
+                    </View>
+                  ) : null}
+                  {collab.dates ? (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Calendar color="rgba(255,255,255,0.88)" size={11} />
+                      <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 12, color: "rgba(255,255,255,0.9)" }}>{collab.dates}</Text>
                     </View>
                   ) : null}
                 </View>
               </View>
             </View>
 
-            {collab.isActive && !isTerminated ? (
-              <View style={{ flexDirection: "row", gap: 4, marginTop: 12 }}>
-                {PIPELINE.map((s, i) => (
-                  <View
-                    key={s}
-                    style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: i <= step ? colors.ink : colors.stone }}
-                  />
-                ))}
-              </View>
-            ) : null}
+            <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14 }}>
+              {collab.hostName ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                  <User color={colors.sage} size={12} />
+                  <Text numberOfLines={1} style={{ flex: 1, fontFamily: fonts.body, fontSize: 12.5, color: colors.slate }}>
+                    <Text style={{ color: colors.sage }}>Host </Text>{collab.hostName}
+                  </Text>
+                </View>
+              ) : null}
 
-            {collab.note ? (
-              <Pressable onPress={() => editNote(collab)} style={{ flexDirection: "row", gap: 6, marginTop: 10 }}>
-                <StickyNote size={12} color={colors.sage} style={{ marginTop: 2 }} />
-                <Text numberOfLines={2} style={{ flex: 1, fontFamily: fonts.body, fontSize: 12, color: colors.slate }}>
-                  {collab.note}
-                </Text>
-              </Pressable>
-            ) : null}
-
-            {action.text && collab.isActive ? (
-              <View style={{ flexDirection: "row", alignItems: "center", marginTop: 10, gap: 6 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <View
                   style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: 3,
-                    backgroundColor: action.urgent ? "#B4403A" : colors.sage,
-                  }}
-                />
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    flex: 1,
-                    fontFamily: action.urgent ? fonts.bodySemibold : fonts.body,
-                    fontSize: 13,
-                    color: action.urgent ? colors.ink : colors.slate,
+                    paddingHorizontal: 10, paddingVertical: 4, borderRadius: radii.pill, flexDirection: "row", alignItems: "center",
+                    backgroundColor: isTerminated ? colors.dangerTint : colors.mint,
                   }}
                 >
-                  {action.text}
-                </Text>
-                {collab.deliverables ? (
-                  <Text numberOfLines={1} style={{ maxWidth: "45%", fontFamily: fonts.body, fontSize: 11, color: colors.sage }}>
-                    {collab.deliverables}
+                  <StageIcon color={isTerminated ? colors.danger : colors.ink} size={12} />
+                  <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, marginLeft: 5, color: isTerminated ? colors.danger : colors.ink }}>
+                    {isTerminated ? "Terminated" : meta.label}
                   </Text>
+                </View>
+                {collab.daysLeft != null && collab.isActive && !isTerminated ? (
+                  <View style={{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: radii.pill, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(212,168,67,0.14)" }}>
+                    <Clock color="#8a6d1f" size={11} />
+                    <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 11, color: "#8a6d1f" }}>{plural(collab.daysLeft, "day")}</Text>
+                  </View>
                 ) : null}
+                <View style={{ flex: 1 }} />
+                <ChevronRight color={colors.sage} size={18} />
               </View>
-            ) : null}
+
+              {collab.isActive && !isTerminated ? (
+                <View style={{ flexDirection: "row", gap: 4, marginTop: 12 }}>
+                  {PIPELINE.map((st, i) => (
+                    <View key={st} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: i <= step ? colors.ink : colors.stone }} />
+                  ))}
+                </View>
+              ) : null}
+
+              {action.text && collab.isActive ? (
+                <View style={{ flexDirection: "row", alignItems: "center", marginTop: 10, gap: 6 }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: action.urgent ? "#B4403A" : colors.sage }} />
+                  <Text numberOfLines={1} style={{ flex: 1, fontFamily: action.urgent ? fonts.bodySemibold : fonts.body, fontSize: 13, color: action.urgent ? colors.ink : colors.slate }}>
+                    {action.text}
+                  </Text>
+                </View>
+              ) : null}
+
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.hairline }}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 10, letterSpacing: 0.8, textTransform: "uppercase", color: colors.sage, marginBottom: 3 }}>Deliverables</Text>
+                  <Text numberOfLines={2} style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.ink }}>{collab.deliverables || "To be agreed"}</Text>
+                </View>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 10, letterSpacing: 0.8, textTransform: "uppercase", color: colors.sage, marginBottom: 3 }}>Payout</Text>
+                  <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.slate }}>{collab.payment || "Complimentary stay"}</Text>
+                </View>
+              </View>
+
+              {collab.note ? (
+                <Pressable onPress={() => editNote(collab)} style={{ flexDirection: "row", gap: 6, marginTop: 10 }}>
+                  <StickyNote size={12} color={colors.sage} style={{ marginTop: 2 }} />
+                  <Text numberOfLines={2} style={{ flex: 1, fontFamily: fonts.body, fontSize: 12, color: colors.slate }}>{collab.note}</Text>
+                </Pressable>
+              ) : null}
+            </View>
           </Glass>
         </TouchableOpacity>
         </Swipeable>

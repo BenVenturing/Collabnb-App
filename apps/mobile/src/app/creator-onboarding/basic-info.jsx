@@ -6,6 +6,7 @@ import { Image } from "expo-image";
 import { Camera, ChevronLeft } from "lucide-react-native";
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
+import { useUser } from "@clerk/clerk-expo";
 import * as ImagePicker from "expo-image-picker";
 import { useUpload } from "@/utils/useUpload";
 import useCreatorOnboardingStore from "@/utils/CreatorOnboardingStore";
@@ -17,6 +18,8 @@ export default function CreatorBasicInfoScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [upload, { loading: uploadLoading }] = useUpload();
+  const { user } = useUser();
+  const emailHandle = (user?.primaryEmailAddress?.emailAddress || "").split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "");
   const {
     profilePhoto,
     displayName,
@@ -45,8 +48,8 @@ export default function CreatorBasicInfoScreen() {
   useEffect(() => {
     setLocalPhoto(profilePhoto || null);
     setLocalName(displayName || "");
-    setLocalUsername(username || "");
-  }, [profilePhoto, displayName, username]);
+    setLocalUsername(username || emailHandle);
+  }, [profilePhoto, displayName, username, emailHandle]);
 
   const handlePickImage = async () => {
     const permissionResult =

@@ -23,6 +23,16 @@ import { useAppleAuth } from "@/hooks/useAppleAuth";
 import AppleButton from "@/components/AppleButton";
 import { AtmosphericBackground } from "@/components/ui";
 import Glass from "@/components/Glass";
+import CodeBoxes from "@/components/CodeBoxes";
+
+// Clerk requires a username on this instance; the form only asks for email.
+function makeUsername(email, withSuffix = false) {
+  const base = (email.trim().split("@")[0] || "user").toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 60);
+  const name = base.length >= 4 ? base : `${base}user`;
+  return withSuffix ? `${name}_${Math.floor(1000 + Math.random() * 9000)}` : name;
+}
+const isUsernameTaken = (err) =>
+  err?.errors?.some((e) => e.code === "form_identifier_exists" && e.meta?.paramName === "username");
 import { colors, fonts, radii } from "@/config/theme";
 
 export default function SignupScreen() {
@@ -39,6 +49,7 @@ export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
+  const [verifyStatus, setVerifyStatus] = useState("idle");
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -48,14 +59,26 @@ export default function SignupScreen() {
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const finalizeSession = async (createdSessionId, finalEmail, activate = setActive, fullName) => {
+  const finalizeSession = async (createdSessionId, finalEmail, activate = setActive, fullName, waitFor) => {
     await activate({ session: createdSessionId });
-    const profile = await getOrCreateProfile({
-      email: finalEmail.trim(),
-      full_name: fullName || finalEmail.trim().split("@")[0],
-      role: selectedRole,
-    });
+    // Convex receives the new Clerk token a beat after setActive resolves,
+    // so the first call can fail with "Sign in required."
+    let profile;
+    for (let i = 0; ; i++) {
+      try {
+        profile = await getOrCreateProfile({
+          email: finalEmail.trim(),
+          full_name: fullName || finalEmail.trim().split("@")[0],
+          role: selectedRole,
+        });
+        break;
+      } catch (err) {
+        if (i >= 9 || !String(err?.message || err).includes("Sign in required")) throw err;
+        await new Promise((r) => setTimeout(r, 500));
+      }
+    }
     await setRole(profile?.role || selectedRole);
+    if (waitFor) await waitFor;
     router.replace(
       (profile?.role || selectedRole) === "host"
         ? "/host-onboarding/property"
@@ -122,11 +145,20 @@ export default function SignupScreen() {
     setError("");
     setLoading(true);
     try {
-      const result = await signUp.create({
+      const fields = {
         emailAddress: email.trim(),
         password,
+        username: makeUsername(email),
+        legalAccepted: privacyConsent,
         unsafeMetadata: { role: selectedRole },
-      });
+      };
+      let result;
+      try {
+        result = await signUp.create(fields);
+      } catch (err) {
+        if (!isUsernameTaken(err)) throw err;
+        result = await signUp.create({ ...fields, username: makeUsername(email, true) });
+      }
 
       if (result.status === "complete") {
         await finalizeSession(result.createdSessionId, email);
@@ -142,20 +174,62 @@ export default function SignupScreen() {
     }
   };
 
-  const handleVerify = async () => {
-    if (!isLoaded || !code.trim()) return;
+  const onCodeChange = (next) => {
+    setCode(next);
+    if (verifyStatus === "error") setVerifyStatus("idle");
+    if (next.length === 6) handleVerify(next);
+  };
+
+  const handleVerify = async (code) => {
+    if (!isLoaded || !code.trim() || loading) return;
     setError("");
     setLoading(true);
+    setVerifyStatus("verifying");
+    // A retry after a half-finished attempt returns "already verified", so
+    // fall back to the sign-up's current state instead of a dead end.
+    const finishOrExplain = async (attempt) => {
+      // Sign-ups started before the username was sent at create() stall on it.
+      if (attempt?.status === "missing_requirements" && attempt.missingFields?.includes("username")) {
+        attempt = await signUp.update({ username: makeUsername(email) });
+      }
+      if (attempt?.status === "complete" && attempt.createdSessionId) {
+        setVerifyStatus("success");
+        // Profile setup runs during the check-mark animation; navigation waits for it.
+        const animation = new Promise((r) => setTimeout(r, 1500));
+        try {
+          await finalizeSession(attempt.createdSessionId, email, setActive, undefined, animation);
+        } catch (err) {
+          console.warn("[SignUp] verified but finalize failed:", err?.message);
+          setError("You're verified. Sign in to finish setting up.");
+          router.replace("/signin");
+        }
+        return;
+      }
+      setVerifyStatus("error");
+      const missing = attempt?.missingFields ?? [];
+      console.warn("[SignUp] not complete:", attempt?.status, missing, attempt?.unverifiedFields);
+      if (missing.length > 0) {
+        setError(`Your email is verified, but sign-up still needs: ${missing.join(", ")}. Please contact support.`);
+      } else {
+        setError("That code didn't work. Please try again.");
+      }
+    };
     try {
       const result = await signUp.attemptEmailAddressVerification({
         code: code.trim(),
       });
-      if (result.status === "complete") {
-        await finalizeSession(result.createdSessionId, email);
-      } else {
-        setError("That code didn't work. Please try again.");
-      }
+      await finishOrExplain(result);
     } catch (err) {
+      const errCode = err?.errors?.[0]?.code;
+      if (errCode === "verification_already_verified" || errCode === "form_identifier_exists") {
+        try {
+          await finishOrExplain(signUp);
+          return;
+        } catch {}
+      }
+      console.warn("[SignUp] verify failed:", errCode, JSON.stringify(err?.errors || err?.message));
+      setVerifyStatus("error");
+      setCode("");
       setError(err?.errors?.[0]?.message || "Verification failed. Please try again.");
     } finally {
       setLoading(false);
@@ -198,6 +272,27 @@ export default function SignupScreen() {
           }}
           showsVerticalScrollIndicator={false}
         >
+          {step === "verify" ? (
+            <>
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink, textAlign: "center", marginBottom: 4 }}>
+                Check your email
+              </Text>
+              <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.sage, textAlign: "center", marginBottom: 28 }}>
+                We sent a code to {email.trim()}
+              </Text>
+              <CodeBoxes value={code} onChange={onCodeChange} status={verifyStatus} />
+              {error ? <View style={{ marginTop: 16 }}><ErrorText>{error}</ErrorText></View> : null}
+              <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 28 }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.sage }}>
+                  Already have an account?{" "}
+                </Text>
+                <TouchableOpacity onPress={() => router.push("/signin")}>
+                  <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.slate }}>Sign in</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+          <>
           <Text
             style={{
               fontFamily: fonts.display,
@@ -207,7 +302,7 @@ export default function SignupScreen() {
               marginBottom: 8,
             }}
           >
-            {step === "form" ? "Create your account" : "Check your email"}
+            Create your account
           </Text>
           <Text
             style={{
@@ -218,13 +313,11 @@ export default function SignupScreen() {
               marginBottom: 32,
             }}
           >
-            {step === "form"
-              ? "Join Collabnb as a creator or a host"
-              : `We sent a code to ${email.trim()}`}
+            Join Collabnb as a creator or a host
           </Text>
 
           <Glass variant="card" contentStyle={{ padding: 24 }}>
-            {step === "form" ? (
+            {(
               <>
                 <RoleToggle selectedRole={selectedRole} onChange={setSelectedRole} />
 
@@ -345,23 +438,6 @@ export default function SignupScreen() {
                   label={loading ? "Creating account…" : "Sign Up"}
                 />
               </>
-            ) : (
-              <>
-                <Field
-                  label="Verification code"
-                  value={code}
-                  onChangeText={setCode}
-                  placeholder="123456"
-                  keyboardType="number-pad"
-                  autoFocus
-                />
-                {error ? <ErrorText>{error}</ErrorText> : null}
-                <PrimaryButton
-                  onPress={handleVerify}
-                  disabled={loading || !isLoaded}
-                  label={loading ? "Verifying…" : "Verify"}
-                />
-              </>
             )}
           </Glass>
 
@@ -375,6 +451,8 @@ export default function SignupScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+          </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </AtmosphericBackground>

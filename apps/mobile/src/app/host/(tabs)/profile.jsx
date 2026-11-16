@@ -28,9 +28,6 @@ import StatusBarBlur from "@/components/StatusBarBlur";
 import CommunityGlobe from "@/components/CommunityGlobe";
 import { useBottomPull, PulledSection, usePullToast, PullToast } from "@/components/PullReveal";
 
-const DEFAULT_PHOTO = {
-  uri: "https://ucarecdn.com/6d425040-e4c3-46f0-a774-91ac597ebe24/-/format/auto/",
-};
 const BIO_LIMIT = 155;
 
 export default function HostProfileScreen() {
@@ -144,7 +141,7 @@ export default function HostProfileScreen() {
         )}
       >
         <ProfileHeader
-          avatar={profile?.avatar_url ? { uri: profile.avatar_url } : DEFAULT_PHOTO}
+          avatar={{ uri: profile?.avatar_url || user?.imageUrl }}
           name={profile?.full_name || "Your profile"}
           badgeTone={profile?.is_founder ? "gold" : undefined}
           badgeLabel={

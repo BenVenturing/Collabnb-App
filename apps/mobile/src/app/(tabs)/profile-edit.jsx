@@ -16,6 +16,12 @@ import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQuery, useMutation } from "convex/react";
+import { useUser } from "@clerk/clerk-expo";
+import { api } from "@/convex/_generated/api";
+import { useUpload } from "@/utils/useUpload";
+import * as ImagePicker from "expo-image-picker";
+import { ChevronRight } from "lucide-react-native";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
 import { colors, fonts, shadows, tracking, track } from "@/config/theme";
@@ -23,25 +29,38 @@ import { colors, fonts, shadows, tracking, track } from "@/config/theme";
 const PROFILE_KEY = "@collabnb_creator_profile_v1";
 
 const DEFAULT_PROFILE = {
-  name: "Benjamin",
-  handle: "@ben.venturing",
-  email: "b***9@gmail.com",
+  name: "",
+  handle: "",
+  email: "",
   phone: "",
-  location: "Asheville, NC",
-  bio: "Travel & lifestyle creator documenting unique stays and hidden gems around the world. Passionate about authentic content that inspires people to explore.",
-  bioLink: "beacons.ai/benventuring",
-  instagram: "@ben.venturing",
-  tiktok: "@ben.venturing",
-  youtube: "@ben.venturing",
+  location: "",
+  bio: "",
+  bioLink: "",
+  instagram: "",
+  tiktok: "",
+  youtube: "",
+  avatarUri: "",
 };
 
-const PHOTO_URI =
-  "https://ucarecdn.com/6d425040-e4c3-46f0-a774-91ac597ebe24/-/format/auto/";
+// Fields that live on the Convex profile (what web and other users see).
+// Phone has no column yet, so it stays on this device.
+const CONVEX_FIELD = {
+  name: "full_name",
+  handle: "username",
+  location: "city",
+  bio: "bio",
+  bioLink: "portfolio",
+  instagram: "instagram_handle",
+  tiktok: "tiktok_handle",
+  youtube: "youtube_handle",
+};
+const stripAt = (v) => (v || "").trim().replace(/^@/, "");
+
 
 const PERSONAL_FIELDS = [
   { key: "name", label: "Display name", multiline: false },
   { key: "handle", label: "Handle", multiline: false },
-  { key: "email", label: "Email", multiline: false },
+  { key: "email", label: "Email", multiline: false, readOnly: true },
   {
     key: "phone",
     label: "Phone number",
@@ -64,6 +83,12 @@ export default function CreatorProfileEditScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const convexProfile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  const updateProfile = useMutation(api.profiles.updateProfile);
+  const [upload, { loading: uploading }] = useUpload();
+
   const [profile, setProfile] = useState(DEFAULT_PROFILE);
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState("");
@@ -71,9 +96,64 @@ export default function CreatorProfileEditScreen() {
 
   useEffect(() => {
     AsyncStorage.getItem(PROFILE_KEY).then((s) => {
-      if (s) setProfile((prev) => ({ ...prev, ...JSON.parse(s) }));
+      // Only phone is device-local; everything else comes from Convex.
+      if (s) setProfile((prev) => ({ ...prev, phone: JSON.parse(s).phone || "" }));
     });
   }, []);
+
+  useEffect(() => {
+    if (!convexProfile) return;
+    const at = (h) => (h ? `@${stripAt(h)}` : "");
+    setProfile((prev) => ({
+      ...prev,
+      name: convexProfile.full_name || "",
+      handle: at(convexProfile.username),
+      email: convexProfile.email || email || "",
+      location: [convexProfile.city, convexProfile.region || convexProfile.country].filter(Boolean).join(", "),
+      bio: convexProfile.bio || "",
+      bioLink: convexProfile.portfolio || "",
+      instagram: at(convexProfile.instagram_handle),
+      tiktok: at(convexProfile.tiktok_handle),
+      youtube: at(convexProfile.youtube_handle),
+      avatarUri: convexProfile.avatar_url || user?.imageUrl || "",
+    }));
+  }, [convexProfile]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const saveToConvex = async (updates) => {
+    if (!convexProfile?._id) return true;
+    try {
+      await updateProfile({ profileId: String(convexProfile._id), updates });
+      return true;
+    } catch (error) {
+      Alert.alert("Couldn't save", error?.message || "Please try again.");
+      return false;
+    }
+  };
+
+  const changePhoto = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Photo access needed", "Allow photo access in Settings to change your profile photo.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    const asset = result.canceled ? null : result.assets?.[0];
+    if (!asset?.uri) return;
+    const uploaded = await upload({
+      reactNativeAsset: { uri: asset.uri, name: asset.fileName || "profile-photo.jpg", mimeType: asset.mimeType || "image/jpeg" },
+    });
+    if (uploaded?.error || !uploaded?.url) {
+      Alert.alert("Upload failed", uploaded?.error || "Please try again.");
+      return;
+    }
+    setProfile((p) => ({ ...p, avatarUri: uploaded.url }));
+    if (await saveToConvex({ avatar_url: uploaded.url })) triggerConfetti();
+  };
 
   const openEdit = (field) => {
     setEditingField(field);
@@ -82,9 +162,14 @@ export default function CreatorProfileEditScreen() {
 
   const saveEdit = async () => {
     const updated = { ...profile, [editingField]: editValue };
+    const column = CONVEX_FIELD[editingField];
     setProfile(updated);
     setEditingField(null);
     await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(updated));
+    if (column) {
+      const isHandle = ["handle", "instagram", "tiktok", "youtube"].includes(editingField);
+      if (!(await saveToConvex({ [column]: isHandle ? stripAt(editValue) : editValue.trim() }))) return;
+    }
     triggerConfetti();
   };
 
@@ -102,12 +187,12 @@ export default function CreatorProfileEditScreen() {
     const value = profile[field.key];
     const isEmpty = !value;
     const displayValue = isEmpty ? field.emptyLabel || "Not provided" : value;
-    const action = isEmpty ? field.emptyAction || "Add" : "Edit";
 
     return (
       <TouchableOpacity
         key={field.key}
-        onPress={() => openEdit(field.key)}
+        onPress={() => !field.readOnly && openEdit(field.key)}
+        disabled={field.readOnly}
         activeOpacity={0.7}
         style={{ marginHorizontal: 20, marginBottom: 8, ...shadows.sm }}
       >
@@ -143,17 +228,7 @@ export default function CreatorProfileEditScreen() {
               {displayValue}
             </Text>
           </View>
-          <Text
-            style={{
-              fontFamily: fonts.bodyMedium,
-              fontSize: 14,
-              color: colors.slate,
-              textDecorationLine: "underline",
-              marginLeft: 12,
-            }}
-          >
-            {action} ›
-          </Text>
+          {field.readOnly ? null : <ChevronRight color={colors.sage} size={18} style={{ marginLeft: 12 }} />}
         </Glass>
       </TouchableOpacity>
     );
@@ -221,25 +296,23 @@ export default function CreatorProfileEditScreen() {
             }}
           >
             <Image
-              source={{ uri: PHOTO_URI }}
+              source={profile.avatarUri ? { uri: profile.avatarUri } : undefined}
               style={{ width: "100%", height: "100%" }}
               resizeMode="cover"
             />
           </View>
           <TouchableOpacity
-            onPress={() =>
-              Alert.alert("Update Photo", "Photo picker coming soon.")
-            }
+            onPress={changePhoto}
+            disabled={uploading}
           >
             <Text
               style={{
                 fontFamily: fonts.bodyMedium,
                 fontSize: 15,
                 color: colors.slate,
-                textDecorationLine: "underline",
               }}
             >
-              Change photo
+              {uploading ? "Uploading…" : "Change photo"}
             </Text>
           </TouchableOpacity>
         </View>

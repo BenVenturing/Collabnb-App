@@ -28,7 +28,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import MapView, { Marker } from "react-native-maps";
-import { Share2, Heart, Quote, Star, Check, Plus, ArrowRight, ChevronLeft, Pencil, Flag } from "lucide-react-native";
+import { Share2, Heart, Quote, Star, Check, Plus, ArrowRight, ChevronLeft, Pencil, Flag, House, MapPin, Wallet, Package } from "lucide-react-native";
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
@@ -195,7 +195,7 @@ const LISTING_PHOTOS = {
   3: [
     {
       type: "image",
-      uri: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
+      uri: "https://images.unsplash.com/photo-1784552562846-9584b2afdcde?w=800",
       isSample: true,
     },
     { type: "gradient", colors: ["#CCC0A8", "#BEB09C"] },
@@ -320,7 +320,7 @@ const SAMPLE_LISTING_DATA = {
 // pitches.create + threads.create) instead of the app-upload version's
 // fictional "counter proposal" toggle, which has no web equivalent.
 function defaultPitch(listing, creatorProfile) {
-  const handle = creatorProfile?.instagram_handle || creatorProfile?.tiktok_handle || creatorProfile?.username;
+  const handle = (creatorProfile?.instagram_handle || creatorProfile?.tiktok_handle || creatorProfile?.username || "").replace(/^@+/, "");
   const followers = creatorProfile?.follower_count;
   const followerStr = followers >= 1000 ? ` with ${Math.round(followers / 1000)}K followers` : "";
   const tierStr = creatorProfile?.tier || "travel creator";
@@ -616,7 +616,7 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
                   marginBottom: 8,
                 }}
               >
-                <Text style={{ fontSize: 18, marginRight: 8 }}>🏡</Text>
+                <House color={colors.ink} size={18} strokeWidth={1.5} style={{ marginRight: 10 }} />
                 <Text
                   style={{
                     fontFamily: fonts.bodySemibold,
@@ -635,7 +635,7 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
                   marginBottom: 6,
                 }}
               >
-                <Text style={{ fontSize: 16, marginRight: 8 }}>📍</Text>
+                <MapPin color={colors.sage} size={18} strokeWidth={1.5} style={{ marginRight: 10 }} />
                 <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate }}>
                   {listing.location}
                 </Text>
@@ -647,15 +647,15 @@ function ApplyModal({ visible, onClose, listing, listingId, creatorProfile }) {
                   marginBottom: 6,
                 }}
               >
-                <Text style={{ fontSize: 16, marginRight: 8 }}>💰</Text>
+                <Wallet color={colors.sage} size={18} strokeWidth={1.5} style={{ marginRight: 10 }} />
                 <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate }}>
                   {listing.compensation}
                 </Text>
               </View>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text style={{ fontSize: 16, marginRight: 8 }}>📦</Text>
+                <Package color={colors.sage} size={18} strokeWidth={1.5} style={{ marginRight: 10 }} />
                 <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate }}>
-                  {listing.deliverablesLoad} deliverables load
+                  {listing.deliverablesLoad} deliverables
                 </Text>
               </View>
               </Glass>
@@ -858,7 +858,7 @@ function DetailTopBar({ scrollY, title, onBack, onShare, onSave, saved, isHost, 
               <Share2 color={colors.ink} size={17} />
             </Round>
             <Round onPress={onSave} label={saved ? "Saved" : "Save"}>
-              <Heart color={colors.ink} fill={saved ? colors.ink : "none"} size={17} />
+              <Heart color={saved ? "#E63946" : colors.ink} fill={saved ? "#E63946" : "none"} size={17} />
             </Round>
           </>
         )}
@@ -1980,9 +1980,10 @@ export default function ListingDetailScreen() {
         onClose={() => setSaveModalVisible(false)}
         listingId={listingId}
         collections={myCollections || []}
-        onToggle={(collectionId) => toggleSaveCvx({ collectionId, listingId }).catch(() => {})}
+        onToggle={(collectionId) => { haptic.tap(); toggleSaveCvx({ collectionId, listingId }).catch(() => {}); }}
         onCreateAndSave={async (name) => {
           if (!profile?._id) return;
+          haptic.tap();
           const collectionId = await createCollectionCvx({ name, creatorId: String(profile._id) });
           toggleSaveCvx({ collectionId: String(collectionId), listingId }).catch(() => {});
         }}

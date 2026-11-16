@@ -47,14 +47,12 @@ import SettingsModal from "@/components/Profile/SettingsModal";
 import RoleSwitchModal from "@/components/Profile/RoleSwitchModal";
 import ShareProfileSheet from "@/components/Profile/ShareProfileSheet";
 import StatusBarBlur from "@/components/StatusBarBlur";
-import FloatingArt from "@/components/FloatingArt";
+import SignedOutState from "@/components/SignedOutState";
+import ProfileChecklist from "@/components/ProfileChecklist";
 import CommunityGlobe from "@/components/CommunityGlobe";
 import { useBottomPull, PulledSection, usePullToast, PullToast } from "@/components/PullReveal";
 
 const LOCATION_PREF_KEY = "@collabnb_creator_location_prefs_v1";
-const DEFAULT_PHOTO = {
-  uri: "https://ucarecdn.com/6d425040-e4c3-46f0-a774-91ac597ebe24/-/format/auto/",
-};
 const BIO_LIMIT = 155;
 
 function updatedLabel(ts) {
@@ -216,26 +214,11 @@ export default function CreatorProfileScreen() {
   // Saved tab's gate.
   if (!isSignedIn) {
     return (
-      <AtmosphericBackground style={{ flex: 1 }}>
-        <StatusBar style={statusBarStyle()} />
-        <View
-          style={{
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-            paddingHorizontal: 40,
-          }}
-        >
-          <FloatingArt source={require("../../../assets/images/empty-profile.png")} />
-          <Display size={20} style={{ textAlign: "center", marginBottom: 8 }}>
-            Sign in to see your profile
-          </Display>
-          <Body size={15} color={colors.slate} style={{ textAlign: "center", marginBottom: 24 }}>
-            Your stats, links, and past collabs live on your account.
-          </Body>
-          <PillButton label="Sign in" onPress={() => router.push("/signin")} />
-        </View>
-      </AtmosphericBackground>
+      <SignedOutState
+        art={require("../../../assets/images/empty-profile.png")}
+        title="Sign in to see your profile"
+        body="Your stats, links, and past collabs live on your account."
+      />
     );
   }
 
@@ -292,7 +275,7 @@ export default function CreatorProfileScreen() {
         )}
       >
         <ProfileHeader
-          avatar={profile?.avatar_url ? { uri: profile.avatar_url } : DEFAULT_PHOTO}
+          avatar={{ uri: profile?.avatar_url || user?.imageUrl }}
           name={profile?.full_name || "Your profile"}
           badgeTone={profile?.is_founder ? "gold" : undefined}
           badgeLabel={
@@ -323,6 +306,7 @@ export default function CreatorProfileScreen() {
         />
 
         <View style={{ paddingHorizontal: 20 }}>
+          <ProfileChecklist profile={profile} />
           <Glass variant="regular" style={{ marginBottom: 20 }}>
             <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, paddingHorizontal: 16, gap: 14 }}>
               <View style={{ flex: 1, flexDirection: "row", alignItems: "baseline", justifyContent: "space-around" }}>

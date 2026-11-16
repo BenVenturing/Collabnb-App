@@ -3,7 +3,7 @@ import { Instagram, Camera, Youtube, Globe } from "lucide-react-native";
 export const portfolioItems = [
   {
     id: 1,
-    uri: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400",
+    uri: "https://images.unsplash.com/photo-1784552562846-9584b2afdcde?w=400",
     type: "image",
   },
   {

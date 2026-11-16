@@ -62,7 +62,7 @@ function NightSky({ width, height }) {
         x,
         y,
         r: bright ? 1.2 + seeded(i, 3) * 0.6 : 0.3 + seeded(i, 3) * 0.7,
-        o: bright ? 0.9 : 0.15 + seeded(i, 4) * 0.55,
+        o: bright ? 0.6 : 0.08 + seeded(i, 4) * 0.35,
         tint: seeded(i, 8) > 0.8 ? "#FFE9D0" : seeded(i, 8) < 0.2 ? "#CFE0FF" : "#FFFFFF",
       };
     }),
@@ -85,7 +85,7 @@ function NightSky({ width, height }) {
       twinkles.forEach((t) => {
         const leg = (to, ms) =>
           Animated.timing(t.v, { toValue: to, duration: ms, easing: Easing.inOut(Easing.sin), useNativeDriver: true });
-        const loop = Animated.loop(Animated.sequence([Animated.delay(t.delay), leg(1, 1600), leg(0.15, 1800)]));
+        const loop = Animated.loop(Animated.sequence([Animated.delay(t.delay), leg(0.65, 1600), leg(0.1, 1800)]));
         loops.push(loop);
         loop.start();
       });
@@ -152,8 +152,8 @@ function NightSky({ width, height }) {
             backgroundColor: "#FFFFFF",
             opacity: t.v,
             shadowColor: "#BFD8FF",
-            shadowOpacity: 0.9,
-            shadowRadius: 4,
+            shadowOpacity: 0.6,
+            shadowRadius: 3,
             shadowOffset: { width: 0, height: 0 },
           }}
         />

@@ -69,7 +69,7 @@ export default function ListingPeek({ listing, saved, onToggleSave, onOpen, onCl
               hitSlop={10}
               style={{ position: "absolute", top: 12, right: 12 }}
             >
-              <Heart size={24} color="#FFFFFF" fill={saved ? colors.ink : "rgba(25,37,36,0.35)"} strokeWidth={2} />
+              <Heart size={24} color="#FFFFFF" fill={saved ? "#E63946" : "rgba(25,37,36,0.35)"} strokeWidth={2} />
             </Pressable>
           </View>
 

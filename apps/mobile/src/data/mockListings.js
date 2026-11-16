@@ -8,7 +8,7 @@ export const MOCK_LISTINGS = [
     images: [
       "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=800",
       "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
+      "https://images.unsplash.com/photo-1784552562846-9584b2afdcde?w=800",
     ],
     compensation_type: "paid",
     stay_nights: null,

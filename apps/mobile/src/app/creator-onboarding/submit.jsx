@@ -89,6 +89,11 @@ export default function CreatorSubmitApplicationScreen() {
           portfolio_images: (portfolioItems || []).map((item) => item.uri),
         },
       });
+      // Keep the Clerk username in step with the one chosen here; sign-up
+      // only had an email-derived placeholder.
+      if (username && user?.username !== username) {
+        await user.update({ username }).catch((e) => console.warn("[Onboarding] Clerk username:", e?.errors?.[0]?.message));
+      }
       updateField("creatorApprovalStatus", "pending");
       setIsSubmitted(true);
     } catch (err) {

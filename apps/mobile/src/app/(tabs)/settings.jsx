@@ -32,9 +32,6 @@ import { useVerification } from "@/hooks/useVerification";
 const SAMPLE_CREATOR = {
   name: "Benjamin",
   handle: "@ben.venturing",
-  photo: {
-    uri: "https://ucarecdn.com/6d425040-e4c3-46f0-a774-91ac597ebe24/-/format/auto/",
-  },
 };
 
 export default function CreatorSettingsScreen() {
@@ -245,7 +242,7 @@ export default function CreatorSettingsScreen() {
               }}
             >
               <Image
-                source={SAMPLE_CREATOR.photo}
+                source={{ uri: deleteProfile?.avatar_url || user?.imageUrl }}
                 style={{ width: "100%", height: "100%" }}
                 resizeMode="cover"
               />
@@ -259,7 +256,7 @@ export default function CreatorSettingsScreen() {
                   letterSpacing: track(16, tracking.display),
                 }}
               >
-                {SAMPLE_CREATOR.name}
+                {deleteProfile?.full_name || user?.fullName || user?.firstName || "Your profile"}
               </Text>
               <Text
                 style={{
@@ -269,7 +266,7 @@ export default function CreatorSettingsScreen() {
                   marginTop: 2,
                 }}
               >
-                {SAMPLE_CREATOR.handle}
+                {deleteProfile?.username ? `@${deleteProfile.username}` : deleteProfile?.instagram_handle ? `@${deleteProfile.instagram_handle.replace(/^@/, "")}` : ""}
               </Text>
               <Text
                 style={{
@@ -543,7 +540,7 @@ export default function CreatorSettingsScreen() {
                   letterSpacing: track(15, tracking.display),
                 }}
               >
-                🏡 Host Mode
+                Host Mode
               </Text>
               <Text
                 style={{

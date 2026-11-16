@@ -30,9 +30,6 @@ import { useVerification } from "@/hooks/useVerification";
 const SAMPLE_HOST = {
   name: "Ben",
   handle: "@ben.hosting",
-  photo: {
-    uri: "https://ucarecdn.com/6d425040-e4c3-46f0-a774-91ac597ebe24/-/format/auto/",
-  },
 };
 
 export default function HostSettingsScreen() {
@@ -263,7 +260,7 @@ export default function HostSettingsScreen() {
             }}
           >
             <Image
-              source={SAMPLE_HOST.photo}
+              source={{ uri: deleteProfile?.avatar_url || user?.imageUrl }}
               style={{ width: "100%", height: "100%" }}
               resizeMode="cover"
             />
@@ -276,7 +273,7 @@ export default function HostSettingsScreen() {
                 color: "#192524",
               }}
             >
-              {SAMPLE_HOST.name}
+              {deleteProfile?.full_name || user?.fullName}
             </Text>
             <Text
               style={{
@@ -286,7 +283,7 @@ export default function HostSettingsScreen() {
                 marginTop: 2,
               }}
             >
-              {SAMPLE_HOST.handle}
+              {deleteProfile?.username ? `@${deleteProfile.username}` : ""}
             </Text>
             <Text
               style={{
