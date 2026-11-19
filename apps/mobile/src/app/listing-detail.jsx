@@ -20,6 +20,8 @@ import {
   Share,
   Alert,
   Animated as RNAnimated,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { statusBarStyle } from "@/utils/ColorModeStore";
@@ -28,7 +30,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import MapView, { Marker } from "react-native-maps";
-import { Share2, Heart, Quote, Star, Check, Plus, ArrowRight, ChevronLeft, Pencil, Flag, House, MapPin, Wallet, Package } from "lucide-react-native";
+import { Share2, Heart, Quote, Star, Check, Plus, ArrowRight, ChevronLeft, Pencil, Flag, House, MapPin, Wallet, Package, X, Bookmark } from "lucide-react-native";
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
@@ -1078,6 +1080,7 @@ function RedactedListingDetail({ listing, onBack, onSubscribe }) {
 
 // ─── SAVE TO COLLECTION MODAL ───────────────────────────────
 function SaveCollectionModal({ visible, onClose, listingId, collections, onToggle, onCreateAndSave }) {
+  const insets = useSafeAreaInsets();
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
 
@@ -1089,113 +1092,165 @@ function SaveCollectionModal({ visible, onClose, listingId, collections, onToggl
     setCreating(false);
   };
 
+  const close = () => {
+    setCreating(false);
+    setNewName("");
+    onClose();
+  };
+
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={onClose}
-        style={{ flex: 1, backgroundColor: "rgba(25,37,36,0.45)", justifyContent: "flex-end" }}
-      >
-        <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-          <View
-            style={{
-              backgroundColor: colors.surface,
-              borderTopLeftRadius: 28,
-              borderTopRightRadius: 28,
-              padding: 20,
-              paddingBottom: 32,
-              maxHeight: "70%",
-            }}
-          >
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <Text style={{ fontFamily: fonts.display, fontSize: 17, color: colors.ink, letterSpacing: track(17, tracking.display) }}>Save to collection</Text>
-              <TouchableOpacity
-                onPress={onClose}
-                style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: colors.hairline, alignItems: "center", justifyContent: "center" }}
-              >
-                <Text style={{ fontSize: 14, color: colors.slate }}>✕</Text>
-              </TouchableOpacity>
-            </View>
+    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent navigationBarTranslucent onRequestClose={close}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={close}
+          style={{ flex: 1, backgroundColor: "rgba(25,37,36,0.45)", justifyContent: "flex-end" }}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+            <View
+              style={{
+                backgroundColor: colors.surface,
+                borderTopLeftRadius: 28,
+                borderTopRightRadius: 28,
+                paddingHorizontal: 20,
+                paddingTop: 10,
+                paddingBottom: Math.max(insets.bottom, 16) + 12,
+              }}
+            >
+              <View style={{ alignSelf: "center", width: 38, height: 5, borderRadius: 3, backgroundColor: colors.hairline, marginBottom: 14 }} />
 
-            <ScrollView style={{ maxHeight: 320 }}>
-              {collections.map((col) => {
-                const isIn = col.listing_ids.includes(listingId);
-                return (
-                  <TouchableOpacity
-                    key={String(col._id)}
-                    onPress={() => onToggle(String(col._id))}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      paddingVertical: 14,
-                      paddingHorizontal: 14,
-                      borderRadius: 16,
-                      backgroundColor: isIn ? "rgba(209,235,219,0.4)" : "transparent",
-                      marginBottom: 4,
-                    }}
-                  >
-                    <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}>{col.name}</Text>
-                    {isIn && <Check size={18} color="#2d6a4f" strokeWidth={2.5} />}
-                  </TouchableOpacity>
-                );
-              })}
-              {collections.length === 0 && (
-                <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage, paddingVertical: 8 }}>
-                  No collections yet — create one below.
-                </Text>
-              )}
-            </ScrollView>
-
-            {creating ? (
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
-                <TextInput
-                  value={newName}
-                  onChangeText={setNewName}
-                  placeholder="Collection name"
-                  autoFocus
-                  style={{
-                    flex: 1,
-                    borderWidth: 1,
-                    borderColor: colors.stone,
-                    borderRadius: 14,
-                    paddingHorizontal: 14,
-                    paddingVertical: 10,
-                    fontFamily: fonts.body,
-                    fontSize: 15,
-                    color: colors.ink,
-                  }}
-                />
+              <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={{ fontFamily: fonts.display, fontSize: 20, color: colors.ink, letterSpacing: track(20, tracking.display) }}>Save to collection</Text>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage, marginTop: 3 }}>
+                    Tap a collection to add or remove this stay.
+                  </Text>
+                </View>
                 <TouchableOpacity
-                  onPress={handleCreate}
-                  style={{ backgroundColor: colors.ink, borderRadius: 14, paddingHorizontal: 18, alignItems: "center", justifyContent: "center" }}
+                  onPress={close}
+                  hitSlop={10}
+                  style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.hairline, alignItems: "center", justifyContent: "center" }}
                 >
-                  <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface, fontSize: 14 }}>Save</Text>
+                  <X size={16} color={colors.slate} strokeWidth={2} />
                 </TouchableOpacity>
               </View>
-            ) : (
+
+              <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={collections.length > 5} keyboardShouldPersistTaps="handled">
+                {collections.map((col) => {
+                  const isIn = col.listing_ids.includes(listingId);
+                  const count = col.listing_ids.length;
+                  return (
+                    <TouchableOpacity
+                      key={String(col._id)}
+                      activeOpacity={0.7}
+                      onPress={() => onToggle(String(col._id))}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 12,
+                        paddingVertical: 10,
+                        paddingHorizontal: 12,
+                        borderRadius: 18,
+                        borderWidth: 1,
+                        borderColor: isIn ? "rgba(45,106,79,0.35)" : colors.hairline,
+                        backgroundColor: isIn ? "rgba(209,235,219,0.45)" : "transparent",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: isIn ? "rgba(45,106,79,0.12)" : colors.hairline, alignItems: "center", justifyContent: "center" }}>
+                        <Bookmark size={19} color={isIn ? "#2d6a4f" : colors.slate} strokeWidth={1.75} fill={isIn ? "#2d6a4f" : "none"} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}>{col.name}</Text>
+                        <Text style={{ fontFamily: fonts.body, fontSize: 12.5, color: colors.sage, marginTop: 2 }}>
+                          {count === 1 ? "1 stay" : `${count} stays`}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          width: 26,
+                          height: 26,
+                          borderRadius: 13,
+                          borderWidth: isIn ? 0 : 1.5,
+                          borderColor: colors.stone,
+                          backgroundColor: isIn ? "#2d6a4f" : "transparent",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {isIn && <Check size={15} color="#fff" strokeWidth={3} />}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+                {collections.length === 0 && !creating && (
+                  <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.sage, paddingVertical: 8 }}>
+                    No collections yet. Create your first one below.
+                  </Text>
+                )}
+              </ScrollView>
+
+              {creating ? (
+                <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
+                  <TextInput
+                    value={newName}
+                    onChangeText={setNewName}
+                    placeholder="e.g. Bali, Dream cabins"
+                    placeholderTextColor={colors.sage}
+                    autoFocus
+                    returnKeyType="done"
+                    onSubmitEditing={handleCreate}
+                    style={{
+                      flex: 1,
+                      borderWidth: 1,
+                      borderColor: colors.stone,
+                      borderRadius: 14,
+                      paddingHorizontal: 14,
+                      paddingVertical: 12,
+                      fontFamily: fonts.body,
+                      fontSize: 15,
+                      color: colors.ink,
+                    }}
+                  />
+                  <TouchableOpacity
+                    onPress={handleCreate}
+                    disabled={!newName.trim()}
+                    style={{ backgroundColor: colors.ink, opacity: newName.trim() ? 1 : 0.4, borderRadius: 14, paddingHorizontal: 18, alignItems: "center", justifyContent: "center" }}
+                  >
+                    <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface, fontSize: 14 }}>Create</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => setCreating(true)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    marginTop: 6,
+                    paddingVertical: 13,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: colors.stone,
+                    borderStyle: "dashed",
+                  }}
+                >
+                  <Plus size={16} color={colors.slate} />
+                  <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.slate }}>New collection</Text>
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity
-                onPress={() => setCreating(true)}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
-                  marginTop: 12,
-                  paddingVertical: 12,
-                  borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: colors.stone,
-                  borderStyle: "dashed",
-                }}
+                onPress={close}
+                style={{ marginTop: 12, backgroundColor: colors.ink, borderRadius: 999, paddingVertical: 15, alignItems: "center" }}
               >
-                <Plus size={16} color={colors.slate} />
-                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.slate }}>New collection</Text>
+                <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.surface }}>Done</Text>
               </TouchableOpacity>
-            )}
-          </View>
+            </View>
+          </TouchableOpacity>
         </TouchableOpacity>
-      </TouchableOpacity>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

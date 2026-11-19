@@ -18,7 +18,10 @@ import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolate, Extrapolation, runOnJS } from "react-native-reanimated";
+import * as haptic from "@/utils/haptics";
 import { useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import {
@@ -50,6 +53,82 @@ const FEED_CARD_GAP = 12;
 
 const GRID_CARD_WIDTH = (SCREEN_WIDTH - 52) / 2;
 const MAX_CARD_TAGS = 3;
+const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
+
+// Horizontal swipe on a feed card: left passes, right hearts. Vertical motion
+// fails the pan so the FlatList keeps its paging.
+function SwipeableFeedCard({ children, onSwipeLeft, onSwipeRight, swipedRef }) {
+  const x = useSharedValue(0);
+  const pan = Gesture.Pan()
+    .activeOffsetX([-14, 14])
+    .failOffsetY([-14, 14])
+    .onStart(() => {
+      runOnJS(haptic.select)();
+    })
+    .onUpdate((e) => {
+      x.value = e.translationX;
+    })
+    .onEnd((e) => {
+      const fling = Math.abs(e.velocityX) > 900;
+      if (x.value > SWIPE_THRESHOLD || (fling && e.velocityX > 0)) {
+        x.value = withTiming(SCREEN_WIDTH * 1.4, { duration: 220 }, () => runOnJS(onSwipeRight)());
+      } else if (x.value < -SWIPE_THRESHOLD || (fling && e.velocityX < 0)) {
+        x.value = withTiming(-SCREEN_WIDTH * 1.4, { duration: 220 }, () => runOnJS(onSwipeLeft)());
+      } else {
+        x.value = withSpring(0, { damping: 18, stiffness: 220 });
+      }
+    })
+    .onFinalize(() => {
+      runOnJS(markSwiped)(swipedRef);
+    });
+
+  const cardStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: x.value },
+      { rotate: `${interpolate(x.value, [-SCREEN_WIDTH, SCREEN_WIDTH], [-10, 10])}deg` },
+    ],
+  }));
+  const likeStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(x.value, [20, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP),
+  }));
+  const passStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(x.value, [-SWIPE_THRESHOLD, -20], [1, 0], Extrapolation.CLAMP),
+  }));
+
+  return (
+    <GestureDetector gesture={pan}>
+      <Animated.View style={[{ flex: 1 }, cardStyle]}>
+        {children}
+        <Animated.View pointerEvents="none" style={[swipeBadge, { left: 18, borderColor: "#E63946" }, likeStyle]}>
+          <Heart size={22} color="#E63946" fill="#E63946" />
+          <Text style={[swipeBadgeText, { color: "#E63946" }]}>SAVE</Text>
+        </Animated.View>
+        <Animated.View pointerEvents="none" style={[swipeBadge, { right: 18, borderColor: colors.slate }, passStyle]}>
+          <X size={22} color={colors.slate} strokeWidth={2.5} />
+          <Text style={[swipeBadgeText, { color: colors.slate }]}>PASS</Text>
+        </Animated.View>
+      </Animated.View>
+    </GestureDetector>
+  );
+}
+
+function markSwiped(ref) {
+  ref.current = Date.now();
+}
+
+const swipeBadge = {
+  position: "absolute",
+  top: 22,
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 6,
+  paddingHorizontal: 12,
+  paddingVertical: 7,
+  borderRadius: 14,
+  borderWidth: 2,
+  backgroundColor: "rgba(255,255,255,0.92)",
+};
+const swipeBadgeText = { fontFamily: fonts.bodySemibold, fontSize: 14, letterSpacing: 1.5 };
 
 const proposalText = (creator, listing) =>
   `Hi ${creator.name} — I'd love to collaborate. Here's a proposal for you: ${listing.title}${listing.location ? ` in ${listing.location}` : ""}.`;
@@ -807,11 +886,36 @@ function CreatorFeed({
   onOpenCreator,
 }) {
   const [pageHeight, setPageHeight] = useState(0);
+  const [dismissedIds, setDismissedIds] = useState([]);
+  const swipedRef = useRef(0);
   const cardHeight = pageHeight - FEED_CARD_GAP;
+  const feedCreators = creators.filter((c) => !dismissedIds.includes(c.id));
+
+  const dismiss = (creator) => setDismissedIds((ids) => [...ids, creator.id]);
+  const swipeRight = (creator) => {
+    haptic.success();
+    if (!savedCreatorIds.includes(creator.id)) onToggleSave(creator);
+    dismiss(creator);
+  };
+  const swipeLeft = (creator) => {
+    haptic.tap();
+    dismiss(creator);
+  };
 
   const renderCard = ({ item: creator }) => (
     <View style={{ height: pageHeight, paddingBottom: FEED_CARD_GAP }}>
-      <Pressable style={{ flex: 1 }} onPress={() => onOpenCreator(creator)}>
+      <SwipeableFeedCard
+        swipedRef={swipedRef}
+        onSwipeRight={() => swipeRight(creator)}
+        onSwipeLeft={() => swipeLeft(creator)}
+      >
+      <Pressable
+        style={{ flex: 1 }}
+        onPress={() => {
+          if (Date.now() - swipedRef.current < 350) return;
+          onOpenCreator(creator);
+        }}
+      >
         {/* radius here (24) is a touch looser than glass.card's 20 (radii.lg) —
             closest available token, kept for the feed's "hero" card. */}
         <Glass variant="card" style={{ height: cardHeight, borderRadius: 24 }}>
@@ -890,6 +994,7 @@ function CreatorFeed({
           </View>
         </Glass>
       </Pressable>
+      </SwipeableFeedCard>
     </View>
   );
 
@@ -902,7 +1007,7 @@ function CreatorFeed({
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator color={colors.slate} />
         </View>
-      ) : creators.length === 0 ? (
+      ) : feedCreators.length === 0 ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 40 }}>
           <Users color={colors.sage} size={48} />
           <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 18, color: colors.ink, marginTop: 16, textAlign: "center" }}>
@@ -914,7 +1019,7 @@ function CreatorFeed({
         </View>
       ) : pageHeight > 0 ? (
         <FlatList
-          data={creators}
+          data={feedCreators}
           extraData={savedCreatorIds}
           keyExtractor={(creator) => creator.id}
           renderItem={renderCard}

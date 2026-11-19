@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { useQuery } from "convex/react";
+import { useQuery, useConvexAuth } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import useRoleStore from "@/utils/RoleStore";
@@ -18,7 +18,8 @@ export function useRoleSwitch() {
   // simulator. Convex is the source of truth for approval.
   const { user } = useUser();
   const email = user?.primaryEmailAddress?.emailAddress;
-  const profile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  const { isAuthenticated: convexAuthed } = useConvexAuth();
+  const profile = useQuery(api.profiles.getByEmail, email && convexAuthed ? { email } : "skip");
 
   const [showRoleSwitchModal, setShowRoleSwitchModal] = useState(false);
   const [pendingTargetRole, setPendingTargetRole] = useState(null);

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Pressable, Animated, Modal, TextInput } from "react-native";
+import { View, Pressable, Animated, Modal, TextInput, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Heart, Plus, Check } from "lucide-react-native";
 import { colors, radii, shadows } from "@/config/theme";
@@ -102,16 +102,19 @@ export default function SaveToast() {
         visible={!!pickerListingId}
         animationType="slide"
         transparent
+        statusBarTranslucent
         onRequestClose={closePicker}
       >
-        <Pressable
-          style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(25,37,36,0.45)" }}
-          onPress={closePicker}
-        >
-          <Pressable onPress={() => {}}>
-            <ListPicker listingId={pickerListingId} onDone={closePicker} />
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+          <Pressable
+            style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(25,37,36,0.45)" }}
+            onPress={closePicker}
+          >
+            <Pressable onPress={() => {}}>
+              <ListPicker listingId={pickerListingId} onDone={closePicker} />
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </>
   );

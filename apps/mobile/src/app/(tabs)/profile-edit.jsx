@@ -16,7 +16,7 @@ import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import { useUpload } from "@/utils/useUpload";
@@ -85,7 +85,8 @@ export default function CreatorProfileEditScreen() {
 
   const { user } = useUser();
   const email = user?.primaryEmailAddress?.emailAddress;
-  const convexProfile = useQuery(api.profiles.getByEmail, email ? { email } : "skip");
+  const { isAuthenticated: convexAuthed } = useConvexAuth();
+  const convexProfile = useQuery(api.profiles.getByEmail, email && convexAuthed ? { email } : "skip");
   const updateProfile = useMutation(api.profiles.updateProfile);
   const [upload, { loading: uploading }] = useUpload();
 
@@ -102,11 +103,21 @@ export default function CreatorProfileEditScreen() {
   }, []);
 
   useEffect(() => {
+    if (!user) return;
+    setProfile((prev) => ({
+      ...prev,
+      name: prev.name || user.fullName || "",
+      email: prev.email || email || "",
+      avatarUri: prev.avatarUri || user.imageUrl || "",
+    }));
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     if (!convexProfile) return;
     const at = (h) => (h ? `@${stripAt(h)}` : "");
     setProfile((prev) => ({
       ...prev,
-      name: convexProfile.full_name || "",
+      name: convexProfile.full_name || user?.fullName || "",
       handle: at(convexProfile.username),
       email: convexProfile.email || email || "",
       location: [convexProfile.city, convexProfile.region || convexProfile.country].filter(Boolean).join(", "),

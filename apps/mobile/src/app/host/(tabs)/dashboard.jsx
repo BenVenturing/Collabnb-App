@@ -26,7 +26,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useHostDashboard from "@/hooks/useHostDashboard";
 import { useRouter, useFocusEffect } from "expo-router";
-import { Compass, Plus } from "lucide-react-native";
+import { Compass, Plus, Sparkles, House, CheckCircle2, MapPin, X } from "lucide-react-native";
 import { useConversations } from "@/hooks/useConversations";
 import ListingDraftStore from "@/utils/ListingDraftStore";
 import { LinearGradient } from "expo-linear-gradient";
@@ -52,9 +52,9 @@ function greeting() {
 
 // ─── SAMPLE DATA ─────────────────────────────────────────────
 const ACTIVITY_KINDS = {
-  applied: { icon: "✦", iconBg: "rgba(60,87,89,0.10)", cta: "Review" },
-  collab: { icon: "🏡", iconBg: "rgba(74,155,127,0.10)", cta: "Details" },
-  completed: { icon: "✓", iconBg: "rgba(212,168,67,0.10)", cta: "Details" },
+  applied: { Icon: Sparkles, iconBg: "rgba(60,87,89,0.10)", cta: "Review" },
+  collab: { Icon: House, iconBg: "rgba(74,155,127,0.10)", cta: "Details" },
+  completed: { Icon: CheckCircle2, iconBg: "rgba(212,168,67,0.10)", cta: "Details" },
 };
 
 function timeAgo(ms) {
@@ -166,6 +166,11 @@ function ListingCard({
     if (viewableItems.length > 0) setCurrentIndex(viewableItems[0].index || 0);
   });
 
+  const openListing = () =>
+    isLocalDraft
+      ? onEdit(listing)
+      : router.push({ pathname: "/listing-detail", params: { id: listing.id, isHost: "true" } });
+
   const confirmDelete = () => {
     setMenuOpen(false);
     Alert.alert(
@@ -184,18 +189,9 @@ function ListingCard({
 
   return (
     <View style={styles.listingCardWrap}>
-      <TouchableOpacity
-        style={styles.listingCardShadow}
-        activeOpacity={0.88}
-        onPress={() =>
-          isLocalDraft
-            ? onEdit(listing)
-            : router.push({
-                pathname: "/listing-detail",
-                params: { id: listing.id, isHost: "true" },
-              })
-        }
-      >
+      {/* Plain View, not a touchable: a wrapping TouchableOpacity steals the
+          horizontal pan, so the photo swiper couldn't page. Each photo opens it. */}
+      <View style={styles.listingCardShadow}>
       <Glass variant="card" style={styles.listingCardGlass} contentStyle={styles.listingCardContent}>
       {/* Photo Swiper */}
       <View style={styles.photoContainer}>
@@ -208,7 +204,7 @@ function ListingCard({
           viewabilityConfig={viewabilityConfig.current}
           keyExtractor={(_, i) => `photo-${i}`}
           renderItem={({ item }) => (
-            <View style={{ width: CARD_WIDTH, height: LISTING_CARD_HEIGHT }}>
+            <Pressable style={{ width: CARD_WIDTH, height: LISTING_CARD_HEIGHT }} onPress={openListing}>
               {item.type === "image" ? (
                 <Image
                   source={{ uri: item.uri }}
@@ -219,7 +215,7 @@ function ListingCard({
               ) : (
                 <LinearGradient colors={item.colors} style={{ flex: 1 }} />
               )}
-            </View>
+            </Pressable>
           )}
         />
         {/* Dot indicators */}
@@ -251,7 +247,10 @@ function ListingCard({
             {status.label}
           </Text>
         </View>
-        <Text style={styles.listingLocation}>📍 {listing.location}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <MapPin size={12} color={colors.bone} strokeWidth={2} />
+          <Text style={styles.listingLocation}>{listing.location}</Text>
+        </View>
       </View>
 
       <Text style={styles.listingTitle} numberOfLines={2}>
@@ -285,7 +284,7 @@ function ListingCard({
       </View>
       </LinearGradient>
       </Glass>
-      </TouchableOpacity>
+      </View>
 
       {/* 3-dot menu — outside the card's overflow:hidden so the dropdown isn't clipped */}
       <View style={styles.cardMenuWrap}>
@@ -351,7 +350,7 @@ function ActivityItem({ item, isLast, router }) {
     <>
       <View style={styles.activityItem}>
         <View style={[styles.activityIcon, { backgroundColor: item.iconBg }]}>
-          <Text style={{ fontSize: 14 }}>{item.icon}</Text>
+          {item.Icon ? <item.Icon size={18} color={colors.ink} strokeWidth={1.6} /> : null}
         </View>
         <View style={styles.activityContent}>
           <Text style={styles.activityText} numberOfLines={2}>
@@ -393,7 +392,7 @@ function ImpactChartModal({ stat, visible, onClose }) {
               <Text style={chartModalStyles.subtitle}>{stat.label} · all time</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={chartModalStyles.closeBtn}>
-              <Text style={chartModalStyles.closeText}>✕</Text>
+              <X size={16} color={colors.slate} strokeWidth={2} />
             </TouchableOpacity>
           </View>
 
