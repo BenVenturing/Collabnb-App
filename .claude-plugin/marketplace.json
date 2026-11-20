@@ -1,0 +1,1 @@
+{ "name": "ben-skills", "owner": { "name": "BenVenturing" }, "plugins": [ { "name": "animation-toolkit", "source": "./animation-skills/plugin", "description": "Animation, motion-design, Remotion and Blender skills" } ] }

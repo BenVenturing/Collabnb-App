@@ -1,1 +1,0 @@
-export { koiAlive } from "./koi";

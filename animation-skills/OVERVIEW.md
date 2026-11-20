@@ -1,6 +1,6 @@
 # Animation Toolkit: Copy → Style → Move → Sound → Ship
 
-18 resources. **8 are real agent skills** (copied in `skills/`, 49 SKILL.md files in total). **9 are libraries/tools** (README copied in `libraries/`; install them with npm/pip/cargo/apt when needed). **1 is an API** (Openverse).
+18 resources. **8 are real agent skills** (copied in `plugin/skills/`, 50 skills in total). **9 are libraries/tools** (README copied in `libraries/`; install them with npm/pip/cargo/apt when needed). **1 is an API** (Openverse).
 
 Large media (mp4/gif/webp/mp3) was left out of the copies to keep size down. Re-clone the upstream repo if you need demo videos. mg-styles-15 alone is 1.2 GB upstream, so only its prompts, rubric and template were kept.
 
@@ -47,3 +47,12 @@ Large media (mp4/gif/webp/mp3) was left out of the copies to keep size down. Re-
 - This folder is the durable copy. Restore the skills with `cp -r skills/<repo>/<path-to-skill-dir> ~/.claude/skills/<skill-name>` (the 50 installed names are the `name:` field of each SKILL.md).
 - Cloud containers are ephemeral, so `~/.claude/skills` disappears with the container. Commit this folder (about 100 MB) to a repo you own, or install the skills at user level on your own machine.
 - Upstream URLs: github.com/{NiazMorshed2007/reanimate, LottieFiles/motion-design-skill, Vincentwei1021/mg-styles-15, alchaincyf/huashu-art-motion, alexgreensh/anidoodle, Leonxlnx/cinetic, Tejashmakwana/motionmaxxing, ManimCommunity/manim, EL4CTEO/blender-skills, Alchemist0823/three.quarks, pmndrs/react-postprocessing, cocopon/tweakpane, storytold/effectcraft, librosa/librosa, m-bain/whisperX, remotion-dev/skills, FFmpeg/FFmpeg}
+
+## Install anywhere (as / commands)
+
+This repo is a Claude Code plugin marketplace. On any machine or in any session:
+
+    /plugin marketplace add BenVenturing/Collabnb-App
+    /plugin install animation-toolkit@ben-skills
+
+Skills then appear as `/animation-toolkit:reanimate`, `/animation-toolkit:remotion-create` etc. (marketplace file is on branch `claude/keen-euler-i1nxat` until merged to the default branch).
