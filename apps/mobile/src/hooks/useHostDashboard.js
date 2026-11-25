@@ -99,7 +99,14 @@ export function useHostDashboard() {
   const isOpen = (c) =>
     c.current_stage !== "closed" &&
     !["completed", "cancelled", "declined"].includes(c.status);
-  const activeCollabs = realCollabs.filter(isOpen).length;
+  // A draft or deleted listing can't have a live collab, so only count collabs
+  // tied to the host's published listings.
+  const liveListingIds = new Set(
+    (sourceListings ?? []).filter((l) => l.status === "published").map((l) => String(l._id)),
+  );
+  const activeCollabs = realCollabs.filter(
+    (c) => isOpen(c) && liveListingIds.has(String(c.listing_id)),
+  ).length;
 
   const activity = useMemo(() => {
     const items = [

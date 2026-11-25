@@ -4,7 +4,7 @@
 // Mapbox zoom when sizing cluster cells.
 
 import { forwardRef, useMemo, useState, useCallback } from "react";
-import { View, Text, Platform } from "react-native";
+import { View, Text, Platform, Dimensions } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { colors, fonts, radii, shadows } from "@/config/theme";
 import * as haptic from "@/utils/haptics";
@@ -94,14 +94,17 @@ const ExploreMap = forwardRef(function ExploreMap(
     haptic.tap();
     ref?.current?.fitToCoordinates(
       cluster.points.map((p) => ({ latitude: p.lat, longitude: p.lng })),
-      { edgePadding: { top: 80, right: 80, bottom: 80, left: 80 }, animated: true }
+      { edgePadding: { top: 120, right: 80, bottom: Dimensions.get("window").height / 2 + 40, left: 80 }, animated: true }
     );
   };
 
   const handlePointPress = (point) => {
     onPinPress?.(point.id);
+    // The results sheet rests at half height, so land the pin in the middle of
+    // the visible top half (a quarter-span above the map's true center).
+    const delta = Math.min(latitudeDelta, 4);
     ref?.current?.animateToRegion(
-      { latitude: point.lat, longitude: point.lng, latitudeDelta: Math.min(latitudeDelta, 4), longitudeDelta: Math.min(latitudeDelta, 4) },
+      { latitude: point.lat - delta / 4, longitude: point.lng, latitudeDelta: delta, longitudeDelta: delta },
       450
     );
   };

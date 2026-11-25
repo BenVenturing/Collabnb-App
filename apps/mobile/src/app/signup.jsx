@@ -12,7 +12,9 @@ import { StatusBar } from "expo-status-bar";
 import { statusBarStyle } from "@/utils/ColorModeStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState } from "react";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { Image } from "expo-image";
+import Animated, { FadeIn, FadeInDown, ZoomIn } from "react-native-reanimated";
 import { useSignUp } from "@clerk/clerk-expo";
 import { useMutation } from "convex/react";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react-native";
@@ -21,6 +23,7 @@ import useRoleStore from "@/utils/RoleStore";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { useAppleAuth } from "@/hooks/useAppleAuth";
 import AppleButton from "@/components/AppleButton";
+import { Ionicons } from "@expo/vector-icons";
 import { AtmosphericBackground } from "@/components/ui";
 import Glass from "@/components/Glass";
 import CodeBoxes from "@/components/CodeBoxes";
@@ -43,9 +46,12 @@ export default function SignupScreen() {
   const { signInWithGoogle } = useGoogleAuth();
   const { signInWithApple } = useAppleAuth();
   const getOrCreateProfile = useMutation(api.profiles.getOrCreate);
+  const params = useLocalSearchParams();
+  const fromWelcome = params.welcome === "1";
+  const [emailMode, setEmailMode] = useState(!fromWelcome);
 
   const [step, setStep] = useState("form"); // "form" | "verify"
-  const [selectedRole, setSelectedRole] = useState("creator");
+  const [selectedRole, setSelectedRole] = useState(params.role === "host" ? "host" : "creator");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -90,8 +96,15 @@ export default function SignupScreen() {
     setError("");
     setGoogleLoading(true);
     try {
-      const { createdSessionId, setActive: activateSSO, signUp: ssoSignUp } =
+      const { createdSessionId, setActive: activateSSO, signUp: ssoSignUp, isNewUser } =
         await signInWithGoogle();
+      // An existing Google account signs straight in; only new accounts carry
+      // an email on the transferred signUp and need a profile created.
+      if (createdSessionId && activateSSO && !isNewUser) {
+        await activateSSO({ session: createdSessionId });
+        router.replace("/explore");
+        return;
+      }
       if (createdSessionId && activateSSO) {
         const googleEmail = ssoSignUp?.emailAddress;
         if (!googleEmail) {
@@ -112,8 +125,15 @@ export default function SignupScreen() {
     setError("");
     setAppleLoading(true);
     try {
-      const { createdSessionId, setActive: activateSSO, signUp: ssoSignUp } =
+      const { createdSessionId, setActive: activateSSO, signUp: ssoSignUp, isNewUser } =
         await signInWithApple();
+      // An existing Apple account signs straight in; only new accounts carry
+      // an email on the transferred signUp and need a profile created.
+      if (createdSessionId && activateSSO && !isNewUser) {
+        await activateSSO({ session: createdSessionId });
+        router.replace("/explore");
+        return;
+      }
       if (createdSessionId && activateSSO) {
         const appleEmail = ssoSignUp?.emailAddress;
         if (!appleEmail) {
@@ -235,6 +255,24 @@ export default function SignupScreen() {
       setLoading(false);
     }
   };
+
+  if (fromWelcome && !emailMode && step === "form") {
+    return (
+      <SaveAccount
+        role={selectedRole}
+        insets={insets}
+        error={error}
+        appleLoading={appleLoading}
+        googleLoading={googleLoading}
+        onApple={handleAppleSignUp}
+        onGoogle={handleGoogleSignUp}
+        onEmail={() => setEmailMode(true)}
+        onBack={() => router.back()}
+        onTerms={() => Linking.openURL("https://collabnb.com/terms.html")}
+        onPrivacy={() => router.push("/privacy-policy")}
+      />
+    );
+  }
 
   return (
     <AtmosphericBackground style={{ flex: 1 }}>
@@ -456,6 +494,101 @@ export default function SignupScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </AtmosphericBackground>
+  );
+}
+
+function SaveAccount({ role, insets, error, appleLoading, googleLoading, onApple, onGoogle, onEmail, onBack, onTerms, onPrivacy }) {
+  const pill = { borderRadius: 999, paddingVertical: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 };
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bone, paddingTop: insets.top, paddingBottom: insets.bottom + 12 }}>
+      <StatusBar style="dark" />
+      <TouchableOpacity onPress={onBack} hitSlop={10} style={{ marginLeft: 20, marginTop: 8, width: 40, height: 40, justifyContent: "center" }}>
+        <ArrowLeft color={colors.ink} size={22} />
+      </TouchableOpacity>
+
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <Animated.View entering={FadeInDown.springify().damping(14)}>
+          <View
+            style={{
+              width: 210,
+              height: 250,
+              borderRadius: 30,
+              backgroundColor: "#E4DED3",
+              overflow: "hidden",
+              transform: [{ rotate: "-4deg" }],
+              shadowColor: "#000",
+              shadowOpacity: 0.12,
+              shadowRadius: 20,
+              shadowOffset: { width: 0, height: 12 },
+            }}
+          >
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+              <Image
+                source={role === "host" ? require("../../assets/images/empty-collabs.png") : require("../../assets/images/empty-explore.png")}
+                style={{ width: 150, height: 150 }}
+                contentFit="contain"
+              />
+            </View>
+            <View style={{ backgroundColor: colors.slate, paddingHorizontal: 20, paddingVertical: 16 }}>
+              <Text style={{ fontFamily: fonts.display, fontSize: 20, color: colors.bone }}>You</Text>
+            </View>
+          </View>
+          <Animated.View
+            entering={ZoomIn.delay(450).springify().damping(10)}
+            style={{
+              position: "absolute",
+              right: -34,
+              bottom: 26,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              backgroundColor: colors.surface,
+              borderRadius: 999,
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              shadowColor: "#000",
+              shadowOpacity: 0.1,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 6 },
+            }}
+          >
+            <Text style={{ fontSize: 16 }}>🔥</Text>
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: colors.ink }}>Day 1 of 30</Text>
+          </Animated.View>
+        </Animated.View>
+      </View>
+
+      <Animated.View entering={FadeIn.delay(200)} style={{ paddingHorizontal: 24 }}>
+        <Text style={{ fontFamily: fonts.display, fontSize: 36, color: colors.ink, textAlign: "center", letterSpacing: -0.9 }}>
+          Save your account
+        </Text>
+        <Text style={{ fontFamily: fonts.body, fontSize: 16, color: colors.sage, textAlign: "center", marginTop: 8, marginBottom: 32 }}>
+          {role === "host" ? "So creators can find your stay." : "So your free month follows you to any phone."}
+        </Text>
+
+        {error ? <ErrorText>{error}</ErrorText> : null}
+
+        {Platform.OS === "ios" ? (
+          <TouchableOpacity onPress={onApple} disabled={appleLoading} activeOpacity={0.85} style={[pill, { backgroundColor: "#1C1B1A", marginBottom: 12, opacity: appleLoading ? 0.7 : 1 }]}>
+            <Ionicons name="logo-apple" size={20} color="#fff" style={{ marginTop: -2 }} />
+            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 17, color: "#fff" }}>{appleLoading ? "Opening Apple…" : "Continue with Apple"}</Text>
+          </TouchableOpacity>
+        ) : null}
+        <TouchableOpacity onPress={onGoogle} disabled={googleLoading} activeOpacity={0.85} style={[pill, { backgroundColor: colors.surface, opacity: googleLoading ? 0.7 : 1 }]}>
+          <Ionicons name="logo-google" size={18} color="#4285F4" />
+          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 17, color: colors.ink }}>{googleLoading ? "Opening Google…" : "Continue with Google"}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onEmail} hitSlop={8} style={{ paddingVertical: 18 }}>
+          <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 17, color: colors.ink, textAlign: "center" }}>Continue with email</Text>
+        </TouchableOpacity>
+        <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.sage, textAlign: "center" }}>
+          By continuing you agree to our{" "}
+          <Text onPress={onTerms} style={{ fontFamily: fonts.bodySemibold, color: colors.slate }}>Terms</Text>
+          {" & "}
+          <Text onPress={onPrivacy} style={{ fontFamily: fonts.bodySemibold, color: colors.slate }}>Privacy Policy</Text>
+        </Text>
+      </Animated.View>
+    </View>
   );
 }
 

@@ -35,6 +35,7 @@ import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import ListingDraftStore from "@/utils/ListingDraftStore";
+import useRoleStore from "@/utils/RoleStore";
 import { AmenityIcon } from "@/lib/amenityIcons";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
@@ -1263,6 +1264,7 @@ export default function ListingDetailScreen() {
 
   const listingId = params.listingId || params.id || "l1";
   const isHost = params.isHost === "true";
+  const viewerIsHost = useRoleStore((s) => s.role) === "host";
 
   const { user } = useUser();
   const email = user?.primaryEmailAddress?.emailAddress;
@@ -1511,7 +1513,7 @@ export default function ListingDetailScreen() {
       {/* Photo Gallery */}
       <RNAnimated.ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
         scrollEventThrottle={16}
@@ -1528,11 +1530,15 @@ export default function ListingDetailScreen() {
         <View
           style={{
             marginTop: -24,
+            flexGrow: 1,
             backgroundColor: colors.surface,
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
+            paddingBottom: !isHost && !viewerIsHost ? insets.bottom + 100 : insets.bottom + 24,
           }}
         >
+        {/* Fills the overscroll bounce below the sheet so the background never peeks through */}
+        <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: "100%", height: 1000, backgroundColor: colors.surface }} />
         {/* SECTION 1 — Title Block */}
         <View style={{ padding: 20, paddingBottom: 16 }}>
           <Display size={26} style={{ marginBottom: 6, textAlign: "center" }}>
@@ -1545,16 +1551,18 @@ export default function ListingDetailScreen() {
           {/* Status + required tier. Both are stat pills, so eyebrow tracking
               (COMPONENT-SPEC.md §2) rather than sentence case. */}
           <View style={{ flexDirection: "row", gap: 8, justifyContent: "center" }}>
-            <Chip
-              eyebrow
-              label={
-                listing.status === "active"
-                  ? "Active"
-                  : listing.status === "paused"
-                    ? "Paused"
-                    : "Draft"
-              }
-            />
+            {process.env.EXPO_PUBLIC_SCREENSHOT_MODE !== "1" ? (
+              <Chip
+                eyebrow
+                label={
+                  listing.status === "active"
+                    ? "Active"
+                    : listing.status === "paused"
+                      ? "Paused"
+                      : "Draft"
+                }
+              />
+            ) : null}
             {listing.tierRequired ? <Chip eyebrow label={listing.tierRequired} /> : null}
           </View>
 
@@ -1794,7 +1802,7 @@ export default function ListingDetailScreen() {
                 <Text
                   style={{ fontFamily: fonts.body, fontSize: 14, color: colors.slate, lineHeight: 20 }}
                 >
-                  Review brand guidelines before applying
+                  {viewerIsHost ? "Brand guidelines for this stay" : "Review brand guidelines before applying"}
                 </Text>
               </View>
             </View>
@@ -1985,7 +1993,7 @@ export default function ListingDetailScreen() {
       {/* BOTTOM ACTION BAR — COMPONENT-SPEC.md §12. Price over a sage
           deliverables sub-line, wide dark pill CTA. Collapses to a single
           full-width action on the host's own listing. */}
-      {!isHost && (
+      {!isHost && !viewerIsHost && (
       <StickyActionBar
         style={{
           position: "absolute",
@@ -2022,7 +2030,7 @@ export default function ListingDetailScreen() {
 
       {/* Apply Modal */}
       <ApplyModal
-        visible={applyVisible}
+        visible={applyVisible && !viewerIsHost}
         onClose={() => setApplyVisible(false)}
         listing={listing}
         listingId={listingId}

@@ -274,7 +274,7 @@ export default function ExploreScreen() {
       price={item.compensation}
       deliverables={item.deliverables}
       featured={item.is_featured}
-      badge={item.isSample ? "Sample" : undefined}
+      badge={item.isSample && process.env.EXPO_PUBLIC_SCREENSHOT_MODE !== "1" ? "Sample" : undefined}
       saved={savedIds.has(item.id)}
       redacted={item._redacted === true}
       onToggleSave={() => toggleSave(item)}

@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  Linking,
 } from "react-native";
 import { useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
@@ -14,7 +15,7 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth as useClerkAuth, useUser } from "@clerk/clerk-expo";
-import { useQuery, useAction } from "convex/react";
+import { useQuery, useAction, useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { X, ChevronRight } from "lucide-react-native";
 import ThemedBackground from "@/components/ThemedBackground";
@@ -81,7 +82,8 @@ export default function HostSettingsScreen() {
 
   const { user } = useUser();
   const deleteEmail = user?.primaryEmailAddress?.emailAddress;
-  const deleteProfile = useQuery(api.profiles.getByEmail, deleteEmail ? { email: deleteEmail } : "skip");
+  const { isAuthenticated: convexAuthed } = useConvexAuth();
+  const deleteProfile = useQuery(api.profiles.getByEmail, deleteEmail && convexAuthed ? { email: deleteEmail } : "skip");
   const deleteAccount = useAction(api.profiles.deleteAccount);
   const [deleting, setDeleting] = useState(false);
 
@@ -92,7 +94,7 @@ export default function HostSettingsScreen() {
     }
     Alert.alert(
       "Delete account",
-      "This permanently deletes your account, listings, messages and collaborations. It can't be undone.\n\nDeleting your account does not cancel an App Store subscription. Manage it in iOS Settings > Apple ID > Subscriptions.",
+      "This permanently deletes your account, listings, messages and collaborations. It can't be undone.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -485,11 +487,22 @@ export default function HostSettingsScreen() {
               onPress: () => router.push("/settings/support"),
             },
             {
+              label: "Privacy Policy",
+              onPress: () => router.push("/privacy-policy"),
+            },
+            {
+              label: "Terms of Service",
+              onPress: () => Linking.openURL("https://collabnb.com/terms.html"),
+            },
+            {
               label: "Notifications",
               onPress: () => router.push("/settings/notifications"),
             },
             ...(__DEV__
-              ? [{ label: "App Store Prep", onPress: () => router.push("/settings/app-store-prep") }]
+              ? [
+                  { label: "App Store Prep", onPress: () => router.push("/settings/app-store-prep") },
+                  { label: "Replay welcome", onPress: () => router.push("/welcome") },
+                ]
               : []),
             {
               label: "Verification",

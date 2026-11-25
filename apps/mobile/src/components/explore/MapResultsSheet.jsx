@@ -80,7 +80,7 @@ const MapResultsSheet = forwardRef(function MapResultsSheet(
               price={item.compensation}
               deliverables={item.deliverables}
               featured={item.is_featured}
-              badge={item.isSample ? "Sample" : undefined}
+              badge={item.isSample && process.env.EXPO_PUBLIC_SCREENSHOT_MODE !== "1" ? "Sample" : undefined}
               saved={savedIds.has(item.id)}
               redacted={item._redacted === true}
               onToggleSave={() => onToggleSave(item)}
@@ -103,7 +103,7 @@ const MapResultsSheet = forwardRef(function MapResultsSheet(
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: colors.ink, borderRadius: radii.pill, paddingHorizontal: 18, paddingVertical: 12, overflow: "hidden" }}>
             <Body size={14} weight="semibold" color={colors.surface}>
-              Map
+              Browse
             </Body>
             <MapIcon color={colors.surface} size={16} />
             <AnimatedBlur animatedProps={veilProps} tint="light" pointerEvents="none" style={{ position: "absolute", inset: 0 }} />

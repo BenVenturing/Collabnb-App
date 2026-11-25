@@ -641,13 +641,13 @@ export default function DashboardScreen() {
               },
               {
                 num: unreadCount || 0,
-                label: "Unread Messages",
+                label: "Inbox",
                 onPress: () => router.push("/host/(tabs)/inbox"),
               },
             ].map((s, i, arr) => (
               <React.Fragment key={s.label}>
                 <TouchableOpacity style={styles.quickStat} onPress={s.onPress}>
-                  <Text style={styles.quickStatNum}>{s.num}</Text>
+                  <Text style={styles.quickStatNum} numberOfLines={1}>{s.num}</Text>
                   <Text style={styles.quickStatLabel} numberOfLines={2}>
                     {s.label}
                   </Text>
@@ -754,7 +754,7 @@ export default function DashboardScreen() {
                       activeOpacity={0.7}
                       onPress={() => setExpandedStat(s)}
                     >
-                      <Text style={styles.statRowNum}>{s.num}</Text>
+                      <Text style={styles.statRowNum} numberOfLines={1}>{s.num}</Text>
                       <Text style={styles.statRowLabel} numberOfLines={1}>
                         {s.short}
                       </Text>
@@ -831,6 +831,7 @@ const styles = StyleSheet.create({
   },
   quickStat: {
     flex: 1,
+    alignSelf: "stretch",
     paddingVertical: 14,
     paddingHorizontal: 4,
     alignItems: "center",
@@ -838,8 +839,11 @@ const styles = StyleSheet.create({
   quickStatNum: {
     fontFamily: fonts.displayExtrabold,
     fontSize: 20,
+    lineHeight: 24,
     color: colors.ink,
     letterSpacing: track(20, tracking.display),
+    fontVariant: ["tabular-nums"],
+    includeFontPadding: false,
   },
   quickStatLabel: {
     fontFamily: fonts.body,
@@ -852,8 +856,8 @@ const styles = StyleSheet.create({
   statRowShadow: { ...shadows.md, borderRadius: radii.lg },
   statRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14 },
   statRowItem: { flex: 1, alignItems: "center" },
-  statRowNum: { fontFamily: fonts.bodySemibold, fontSize: 17, color: colors.ink },
-  statRowLabel: { fontFamily: fonts.body, fontSize: 11, color: colors.sage, marginTop: 2 },
+  statRowNum: { fontFamily: fonts.bodySemibold, fontSize: 17, lineHeight: 22, color: colors.ink, textAlign: "center", fontVariant: ["tabular-nums"], includeFontPadding: false },
+  statRowLabel: { fontFamily: fonts.body, fontSize: 11, lineHeight: 14, color: colors.sage, marginTop: 2, textAlign: "center" },
   statRowDivider: { width: 1, height: 26, backgroundColor: colors.hairline },
   statDividerV: { width: 1, height: 28, backgroundColor: "rgba(60,87,89,0.1)" },
 

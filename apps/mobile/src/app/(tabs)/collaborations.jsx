@@ -486,7 +486,7 @@ export default function CreatorCollaborationsScreen() {
               />
               {collab.isSample || collab.isDemo || !collab.isActive || collab.pinned ? (
                 <View style={{ position: "absolute", top: 10, left: 12, flexDirection: "row", gap: 6 }}>
-                  {collab.isSample || collab.isDemo ? <HeroBadge label={collab.isDemo ? "Demo" : "Sample"} bg="rgba(184,146,42,0.9)" /> : null}
+                  {(collab.isSample || collab.isDemo) && process.env.EXPO_PUBLIC_SCREENSHOT_MODE !== "1" ? <HeroBadge label={collab.isDemo ? "Demo" : "Sample"} bg="rgba(184,146,42,0.9)" /> : null}
                   {!collab.isActive ? <HeroBadge label="Archived" bg="rgba(25,37,36,0.6)" /> : null}
                   {collab.pinned ? <HeroBadge label="Pinned" bg="rgba(25,37,36,0.6)" icon={Pin} /> : null}
                 </View>
