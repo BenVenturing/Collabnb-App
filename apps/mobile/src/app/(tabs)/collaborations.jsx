@@ -435,6 +435,16 @@ export default function CreatorCollaborationsScreen() {
     const StageIcon = meta.icon;
     const action = nextAction(collab);
     const step = pipelineIndex(collab.currentStage);
+    const contract =
+      (contracts || []).find((k) => k.linked_collaboration_id === collab.id) ||
+      (contracts || []).find((k) => k.property_name && k.property_name === collab.propertyName);
+    const contractChip = !contract
+      ? null
+      : contract.creator_signed && contract.host_signed
+        ? { label: "Contract signed", bg: "rgba(47,111,84,0.9)" }
+        : contract.creator_signed
+          ? { label: "Awaiting host signature", bg: "rgba(25,37,36,0.6)" }
+          : { label: "Contract to sign", bg: "rgba(184,92,42,0.92)" };
     return (
       <Reveal key={collab.id} index={index}>
         <View style={{ marginHorizontal: 20, marginBottom: 12 }}>
@@ -484,11 +494,12 @@ export default function CreatorCollaborationsScreen() {
                 locations={[0, 0.45, 1]}
                 style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
               />
-              {collab.isSample || collab.isDemo || !collab.isActive || collab.pinned ? (
+              {collab.isSample || collab.isDemo || !collab.isActive || collab.pinned || contractChip ? (
                 <View style={{ position: "absolute", top: 10, left: 12, flexDirection: "row", gap: 6 }}>
                   {(collab.isSample || collab.isDemo) && process.env.EXPO_PUBLIC_SCREENSHOT_MODE !== "1" ? <HeroBadge label={collab.isDemo ? "Demo" : "Sample"} bg="rgba(184,146,42,0.9)" /> : null}
                   {!collab.isActive ? <HeroBadge label="Archived" bg="rgba(25,37,36,0.6)" /> : null}
                   {collab.pinned ? <HeroBadge label="Pinned" bg="rgba(25,37,36,0.6)" icon={Pin} /> : null}
+                  {contractChip ? <HeroBadge label={contractChip.label} bg={contractChip.bg} /> : null}
                 </View>
               ) : null}
               <View style={{ position: "absolute", left: 14, right: 14, bottom: 12 }}>

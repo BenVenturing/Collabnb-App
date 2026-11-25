@@ -1012,9 +1012,10 @@ function RedactedListingDetail({ listing, onBack, onSubscribe }) {
           />
 
           {listing.location && (
-            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.slate, marginBottom: 20 }}>
-              📍 {listing.location}
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 20 }}>
+              <MapPin color={colors.slate} size={16} strokeWidth={2.2} />
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.slate }}>{listing.location}</Text>
+            </View>
           )}
 
           {/* Offer stats — visible */}
