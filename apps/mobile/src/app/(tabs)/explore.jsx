@@ -27,6 +27,8 @@ import { useSavedCollections } from "@/hooks/useSavedCollections";
 import { useAccessGate } from "@/hooks/useAccessGate";
 import useMapViewStore from "@/utils/MapViewStore";
 import { normalizeListing } from "@/utils/listingHelpers";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { WELCOME_PREFS_KEY } from "@/app/welcome";
 import { colors, radii, shadows } from "@/config/theme";
 import ExploreMap from "@/components/ExploreMap";
 import CategoryBar from "@/components/explore/CategoryBar";
@@ -44,6 +46,18 @@ import {
   SectionHeading,
   Skeleton,
 } from "@/components/ui";
+
+// Welcome-screen vibe picks matched against listing text (listings have no vibe field).
+const VIBE_WORDS = {
+  Beach: ["beach", "ocean", "sea", "surf", "coast", "shore", "bay"],
+  Jungle: ["jungle", "rainforest", "tropical", "rice field", "palm"],
+  Mountains: ["mountain", "alpine", "peak", "volcano", "hill", "ski"],
+  City: ["city", "urban", "downtown", "loft"],
+  Desert: ["desert", "dune", "oasis", "canyon"],
+  Lake: ["lake", "lagoon", "river"],
+  Island: ["island", "isle", "atoll", "gili"],
+  Countryside: ["countryside", "farm", "vineyard", "rural", "village", "meadow"],
+};
 
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
 
@@ -147,6 +161,29 @@ export default function ExploreScreen() {
   }, [convexRaw, samplesRaw, filter, collabTypeFilter, whereQuery, isLimited]);
 
   const trending = useMemo(() => listings.filter((l) => l.is_featured).slice(0, 8), [listings]);
+
+  const [vibePicks, setVibePicks] = useState([]);
+  useEffect(() => {
+    AsyncStorage.getItem(WELCOME_PREFS_KEY)
+      .then((raw) => {
+        const prefs = raw ? JSON.parse(raw) : null;
+        if (prefs?.role !== "host" && Array.isArray(prefs?.picks)) setVibePicks(prefs.picks.filter((p) => VIBE_WORDS[p]));
+      })
+      .catch(() => {});
+  }, []);
+  const pickedForYou = useMemo(() => {
+    if (!vibePicks.length) return [];
+    const words = vibePicks.flatMap((p) => VIBE_WORDS[p]);
+    return listings
+      .map((l) => {
+        const text = `${l.title || ""} ${l.location || ""} ${l.description || ""}`.toLowerCase();
+        return { l, score: words.reduce((n, w) => n + (text.includes(w) ? 1 : 0), 0) };
+      })
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8)
+      .map((x) => x.l);
+  }, [listings, vibePicks]);
 
   // ── Map view ──────────────────────────────────────────────────────────────
   const mapRef = useRef(null);
@@ -345,6 +382,25 @@ export default function ExploreScreen() {
 
       <CategoryBar value={filter} onChange={setFilter} />
       </Animated.View>
+
+      {pickedForYou.length > 0 && (
+        <View>
+          <View style={{ paddingHorizontal: 20 }}>
+            <SectionHeading size={19} title={`Picked for you · ${vibePicks.slice(0, 2).join(", ")}`} />
+          </View>
+          <FlatList
+            data={pickedForYou}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => `picked-${item.id}`}
+            snapToInterval={TRENDING_TILE_W + GRID_GAP}
+            snapToAlignment="start"
+            decelerationRate="fast"
+            contentContainerStyle={{ gap: GRID_GAP, paddingHorizontal: 20 }}
+            renderItem={({ item }) => renderCard(item, TRENDING_TILE_W)}
+          />
+        </View>
+      )}
 
       {trending.length > 0 && (
         <View>
