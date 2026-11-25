@@ -41,6 +41,11 @@ const ART = [
 const CREATOR_VIBES = ["Beach", "Jungle", "Mountains", "City", "Desert", "Lake", "Island", "Countryside"];
 const HOST_TYPES = ["Boutique hotel", "Villa", "Cabin", "Glamping", "Resort", "Guesthouse", "Apartment", "Retreat"];
 
+const SHOTS = {
+  creator: [require("../../assets/images/welcome-shot-03.jpg"), require("../../assets/images/welcome-shot-04.jpg")],
+  host: [require("../../assets/images/welcome-shot-02.jpg"), require("../../assets/images/welcome-shot-05.jpg")],
+};
+
 const firstImage = (l) => {
   const img = l?.images?.[0];
   return typeof img === "string" ? img : img?.url ?? null;
@@ -547,7 +552,7 @@ function PicksStep({ title, sub, options, picks, onToggle }) {
 
 /* ── Step 4: the gift ──────────────────────────────────────────────────── */
 
-function Phone({ uri, art, rotate, x, y, delay, label }) {
+function Phone({ uri, art, shot, rotate, x, y, delay, label }) {
   const w = Math.min(W * 0.42, 180);
   const f = useSharedValue(0);
   useEffect(() => {
@@ -577,10 +582,13 @@ function Phone({ uri, art, rotate, x, y, delay, label }) {
         ]}
       >
         <View style={{ flex: 1, borderRadius: 25, overflow: "hidden", backgroundColor: colors.bone }}>
+          {shot ? (
+            <Image source={shot} style={{ flex: 1 }} contentFit="cover" contentPosition="top" />
+          ) : (
+          <>
           <View style={{ height: "62%" }}>
             <Photo uri={uri} fallback={art} />
           </View>
-          <View style={{ position: "absolute", top: 8, alignSelf: "center", width: 46, height: 14, borderRadius: 7, backgroundColor: "#1C1C1E" }} />
           <View style={{ padding: 10, gap: 5 }}>
             <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemibold, fontSize: 11, color: colors.ink }}>{label}</Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
@@ -592,6 +600,9 @@ function Phone({ uri, art, rotate, x, y, delay, label }) {
               <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 9, color: colors.bone }}>View stay</Text>
             </View>
           </View>
+          </>
+          )}
+          <View style={{ position: "absolute", top: 8, alignSelf: "center", width: 46, height: 14, borderRadius: 7, backgroundColor: "#1C1C1E" }} />
         </View>
       </Animated.View>
      </Animated.View>
@@ -611,8 +622,8 @@ function GiftStep({ photos, role }) {
         sub={role === "host" ? "List your stay and start meeting creators." : "Browse every stay and apply to as many as you like."}
       />
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <Phone uri={photos[3] ?? photos[0]} art={ART[1]} rotate={-9} x={-W * 0.16} y={-6} delay={300} label="Cliffside Villa" />
-        <Phone uri={photos[4] ?? photos[1]} art={ART[0]} rotate={7} x={W * 0.16} y={22} delay={450} label="Jungle Treehouse" />
+        <Phone uri={photos[3] ?? photos[0]} art={ART[1]} shot={SHOTS[role === "host" ? "host" : "creator"][0]} rotate={-9} x={-W * 0.16} y={-6} delay={300} label="Cliffside Villa" />
+        <Phone uri={photos[4] ?? photos[1]} art={ART[0]} shot={SHOTS[role === "host" ? "host" : "creator"][1]} rotate={7} x={W * 0.16} y={22} delay={450} label="Jungle Treehouse" />
       </View>
     </View>
   );
