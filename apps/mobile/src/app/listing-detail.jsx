@@ -34,6 +34,7 @@ import { Share2, Heart, Quote, Star, Check, Plus, ArrowRight, ChevronLeft, Penci
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
+import { useAccessGate } from "@/hooks/useAccessGate";
 import ListingDraftStore from "@/utils/ListingDraftStore";
 import useRoleStore from "@/utils/RoleStore";
 import { AmenityIcon } from "@/lib/amenityIcons";
@@ -1070,7 +1071,7 @@ function RedactedListingDetail({ listing, onBack, onSubscribe }) {
             }}
           >
             <Text style={{ fontFamily: fonts.bodySemibold, color: colors.surface, fontSize: 15 }}>
-              Subscribe to unlock
+              See full details
             </Text>
           </TouchableOpacity>
         </View>
@@ -1270,6 +1271,7 @@ export default function ListingDetailScreen() {
   const email = user?.primaryEmailAddress?.emailAddress;
   const { isAuthenticated: convexAuthed } = useConvexAuth();
   const profile = useQuery(api.profiles.getByEmail, email && convexAuthed ? { email } : "skip");
+  const access = useAccessGate(profile);
 
   const convexListing = useQuery(api.listings.getById, {
     id: listingId,
@@ -1378,7 +1380,9 @@ export default function ListingDetailScreen() {
       <RedactedListingDetail
         listing={listing}
         onBack={() => router.back()}
-        onSubscribe={() => router.push("/(tabs)/profile")}
+        onSubscribe={() =>
+          router.push(!user ? "/signup" : access.state === "limited" ? "/subscribe" : "/application-status")
+        }
       />
     );
   }
