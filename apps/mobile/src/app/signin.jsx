@@ -16,7 +16,9 @@ import { useSignIn } from "@clerk/clerk-expo";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import useRoleStore from "@/utils/RoleStore";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react-native";
+import { Eye, EyeOff, ArrowLeft, UserRound } from "lucide-react-native";
+import { Image } from "expo-image";
+import { useLastUser } from "@/hooks/useLastUser";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { useAppleAuth } from "@/hooks/useAppleAuth";
 import AppleButton from "@/components/AppleButton";
@@ -263,6 +265,12 @@ export default function SigninScreen() {
     }
   };
 
+  const lastUser = useLastUser();
+  const lastFirst = lastUser?.name?.split(" ")[0];
+  const trialDays =
+    lastUser?.state === "trial" && lastUser.trialEndsAt
+      ? Math.max(0, Math.ceil((lastUser.trialEndsAt - Date.now()) / 86400000))
+      : null;
   const heading =
     mode === "role"
       ? "Welcome to Collabnb"
@@ -272,7 +280,7 @@ export default function SigninScreen() {
         ? "Check your email"
         : mode === "2fa"
           ? "Two-factor authentication"
-          : "Welcome back";
+          : lastFirst ? `Welcome back, ${lastFirst}` : "Welcome back";
   const subheading =
     mode === "role"
       ? "How will you use Collabnb?"
@@ -323,6 +331,25 @@ export default function SigninScreen() {
           }}
           showsVerticalScrollIndicator={false}
         >
+          {mode === "signin" && lastUser ? (
+            <View style={{ alignItems: "center", marginBottom: 16 }}>
+              <View style={{ width: 84, height: 84, borderRadius: 42, borderWidth: 3, borderColor: colors.surface, backgroundColor: colors.bone, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
+                {lastUser.avatar ? (
+                  <Image source={{ uri: lastUser.avatar }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
+                ) : (
+                  <UserRound color={colors.slate} size={44} strokeWidth={1.6} />
+                )}
+              </View>
+              {trialDays !== null ? (
+                <View style={{ marginTop: -12, flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.surface, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }}>
+                  <Text style={{ fontSize: 13 }}>🔥</Text>
+                  <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.ink }}>
+                    {trialDays} day{trialDays === 1 ? "" : "s"} left in your trial
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
           <Text style={{ fontFamily: fonts.display, fontSize: 28, color: colors.ink, textAlign: "center", marginBottom: 8 }}>
             {heading}
           </Text>

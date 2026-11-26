@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, TouchableOpacity, Dimensions } from "react-native";
+import { View, Text, TouchableOpacity, Dimensions, Pressable } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,6 +21,7 @@ import Animated, {
   withSequence,
   withTiming,
   Easing,
+  runOnJS,
 } from "react-native-reanimated";
 import { ArrowLeft, Check, MapPin, Camera, Home, Sparkles } from "lucide-react-native";
 import { api } from "@/convex/_generated/api";
@@ -41,6 +42,9 @@ const ART = [
 const CREATOR_VIBES = ["Beach", "Jungle", "Mountains", "City", "Desert", "Lake", "Island", "Countryside"];
 const HOST_TYPES = ["Boutique hotel", "Villa", "Cabin", "Glamping", "Resort", "Guesthouse", "Apartment", "Retreat"];
 
+const LOGO = require("../../assets/images/collabnb-logo.png");
+const CLOUDS = require("../../assets/images/bg-clouds-hazy.png");
+
 const SHOTS = {
   creator: [require("../../assets/images/welcome-shot-03.jpg"), require("../../assets/images/welcome-shot-04.jpg")],
   host: [require("../../assets/images/welcome-shot-02.jpg"), require("../../assets/images/welcome-shot-05.jpg")],
@@ -60,10 +64,12 @@ export default function Welcome() {
   const [role, setRole] = useState(null);
   const [picks, setPicks] = useState([]);
 
+  const [intro, setIntro] = useState("logo");
   const listings = useQuery(api.listings.getAll, {});
+  const samples = useQuery(api.listings.getSamples);
   const photos = useMemo(
-    () => (listings ?? []).map(firstImage).filter(Boolean).slice(0, 6),
-    [listings],
+    () => [...new Set([...(samples ?? []), ...(listings ?? [])].map(firstImage).filter(Boolean))].slice(0, 6),
+    [listings, samples],
   );
 
   const markSeen = () => AsyncStorage.setItem(WELCOME_SEEN_KEY, "1").catch(() => {});
@@ -103,6 +109,11 @@ export default function Welcome() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bone }}>
       <StatusBar style="dark" />
+      {intro !== "done" ? (
+        <LogoIntro onZoom={() => setIntro("zoom")} onDone={() => setIntro("done")} />
+      ) : null}
+      {intro === "logo" ? null : (
+      <>
 
       <View
         style={{
@@ -158,12 +169,6 @@ export default function Welcome() {
       </View>
 
       <View style={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 16, gap: 14 }}>
-        {step === 4 ? (
-          <Animated.View entering={FadeIn.delay(500)} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <Check color={colors.ink} size={18} strokeWidth={2.5} />
-            <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 16, color: colors.ink }}>No card needed</Text>
-          </Animated.View>
-        ) : null}
         <TouchableOpacity
           onPress={step === 4 ? start : next}
           disabled={!canContinue}
@@ -178,6 +183,12 @@ export default function Welcome() {
         >
           <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 17, color: colors.bone }}>{cta}</Text>
         </TouchableOpacity>
+        {step === 4 ? (
+          <Animated.View entering={FadeIn.delay(400)} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <Check color={colors.sage} size={16} strokeWidth={2.5} />
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.sage }}>No credit card needed</Text>
+          </Animated.View>
+        ) : null}
         {step === 0 ? (
           <TouchableOpacity onPress={async () => { await markSeen(); router.push("/signin"); }} hitSlop={8}>
             <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.ink, textAlign: "center" }}>
@@ -186,7 +197,58 @@ export default function Welcome() {
           </TouchableOpacity>
         ) : null}
       </View>
+      </>
+      )}
     </View>
+  );
+}
+
+/* ── Opening: watercolor logo, then zoom through it ───────────────────── */
+
+function LogoIntro({ onZoom, onDone }) {
+  const drift = useSharedValue(0);
+  const logo = useSharedValue(0);
+  const zoom = useSharedValue(0);
+  const finished = useSharedValue(false);
+
+  const go = () => {
+    "worklet";
+    if (finished.value) return;
+    finished.value = true;
+    runOnJS(onZoom)();
+    zoom.value = withTiming(1, { duration: 750, easing: Easing.in(Easing.cubic) }, (ok) => {
+      if (ok) runOnJS(onDone)();
+    });
+  };
+
+  useEffect(() => {
+    drift.value = withTiming(1, { duration: 6000, easing: Easing.inOut(Easing.sin) });
+    logo.value = withTiming(1, { duration: 700, easing: Easing.out(Easing.cubic) });
+    const t = setTimeout(() => go(), 1900);
+    return () => clearTimeout(t);
+  }, []);
+
+  const bg = useAnimatedStyle(() => ({
+    transform: [{ scale: 1.15 + drift.value * 0.06 }, { translateX: -14 * drift.value }, { translateY: -8 * drift.value }],
+  }));
+  const wrap = useAnimatedStyle(() => ({ opacity: 1 - Math.max(0, zoom.value - 0.35) / 0.65 }));
+  const mark = useAnimatedStyle(() => ({
+    opacity: logo.value,
+    transform: [{ scale: (0.92 + 0.08 * logo.value) * (1 + zoom.value * zoom.value * 14) }],
+  }));
+
+  return (
+    <Animated.View style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 50, backgroundColor: colors.bone, overflow: "hidden" }, wrap]}>
+      <Pressable style={{ flex: 1, alignItems: "center", justifyContent: "center" }} onPress={() => go()}>
+        <Animated.View style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }, bg]}>
+          <Image source={CLOUDS} style={{ flex: 1 }} contentFit="cover" />
+          <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(239,236,233,0.35)" }} />
+        </Animated.View>
+        <Animated.View style={[{ alignItems: "center" }, mark]}>
+          <Image source={LOGO} style={{ width: W * 0.42, height: W * 0.42 * (256 / 229) }} contentFit="contain" />
+        </Animated.View>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -194,7 +256,7 @@ function Headline({ title, sub, delay = 0 }) {
   return (
     <View style={{ paddingHorizontal: 28 }}>
       <Animated.Text
-        entering={FadeInDown.delay(delay).duration(500)}
+        entering={FadeInDown.delay(delay).springify().damping(14)}
         style={{ fontFamily: fonts.display, fontSize: 34, lineHeight: 38, color: colors.ink, textAlign: "center", letterSpacing: -0.8 }}
       >
         {title}
@@ -225,22 +287,14 @@ function Photo({ uri, fallback, style }) {
 
 function Postcard({ uri, art, index, rotate, x, y }) {
   const p = useSharedValue(0);
-  const float = useSharedValue(0);
   useEffect(() => {
-    p.value = withDelay(200 + index * 160, withSpring(1, { damping: 13, stiffness: 90 }));
-    float.value = withDelay(
-      1200 + index * 300,
-      withRepeat(withSequence(
-        withTiming(-6, { duration: 2400, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 2400, easing: Easing.inOut(Easing.sin) }),
-      ), -1),
-    );
+    p.value = withDelay(200 + index * 140, withSpring(1, { damping: 13, stiffness: 90 }));
   }, []);
   const style = useAnimatedStyle(() => ({
     opacity: Math.min(p.value * 1.6, 1),
     transform: [
       { translateX: x * p.value },
-      { translateY: y * p.value + (1 - p.value) * 80 + float.value },
+      { translateY: y * p.value + (1 - p.value) * 80 },
       { rotate: `${rotate * p.value}deg` },
       { scale: 0.85 + 0.15 * p.value },
     ],
@@ -336,7 +390,7 @@ function RoleCard({ active, dimmed, icon: Icon, title, sub, onPress, delay }) {
           </Text>
         </View>
         {active ? (
-          <Animated.View entering={ZoomIn.springify()}>
+          <Animated.View entering={ZoomIn.springify().damping(12)}>
             <Check color={colors.bone} size={22} strokeWidth={2.5} />
           </Animated.View>
         ) : null}
@@ -377,16 +431,15 @@ function RoleStep({ role, onPick }) {
 /* ── Step 2: payoff ────────────────────────────────────────────────────── */
 
 const PINS = [
-  { x: 0.18, y: 0.3 },
-  { x: 0.62, y: 0.18 },
-  { x: 0.42, y: 0.55 },
-  { x: 0.78, y: 0.6 },
-  { x: 0.25, y: 0.75 },
+  { x: 0.24, y: 0.3, price: "$600" },
+  { x: 0.7, y: 0.22, price: "$1.1k" },
+  { x: 0.5, y: 0.6, price: "$850" },
 ];
 
 function CreatorPayoff({ photos }) {
   const mapW = W - 48;
   const mapH = mapW * 0.95;
+  const cardW = 96;
   return (
     <View style={{ flex: 1, justifyContent: "center", gap: 32 }}>
       <Animated.View
@@ -406,17 +459,33 @@ function CreatorPayoff({ photos }) {
         {PINS.map((pin, i) => (
           <Animated.View
             key={i}
-            entering={FadeInUp.delay(250 + i * 220).springify().damping(9)}
-            style={{ position: "absolute", left: pin.x * mapW - 22, top: pin.y * mapH - 44, alignItems: "center" }}
+            entering={FadeInUp.delay(250 + i * 200).springify().damping(11)}
+            style={{ position: "absolute", left: pin.x * mapW - cardW / 2, top: pin.y * mapH - 90, alignItems: "center" }}
           >
-            <View style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 3, borderColor: colors.surface, overflow: "hidden", backgroundColor: colors.stone }}>
-              <Photo uri={photos[i % Math.max(photos.length, 1)]} fallback={ART[i % 3]} />
+            <View
+              style={{
+                width: cardW,
+                backgroundColor: colors.surface,
+                borderRadius: 14,
+                padding: 4,
+                shadowColor: "#000",
+                shadowOpacity: 0.12,
+                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 5 },
+              }}
+            >
+              <View style={{ height: 58, borderRadius: 10, overflow: "hidden", backgroundColor: colors.stone }}>
+                {photos[i] ? <Photo uri={photos[i]} /> : null}
+              </View>
+              <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 12, color: colors.ink, paddingHorizontal: 4, paddingTop: 4, paddingBottom: 2 }}>
+                {pin.price} <Text style={{ fontFamily: fonts.body, color: colors.sage }}>collab</Text>
+              </Text>
             </View>
-            <View style={{ width: 0, height: 0, borderLeftWidth: 6, borderRightWidth: 6, borderTopWidth: 8, borderLeftColor: "transparent", borderRightColor: "transparent", borderTopColor: colors.surface, marginTop: -1 }} />
+            <View style={{ width: 0, height: 0, borderLeftWidth: 7, borderRightWidth: 7, borderTopWidth: 9, borderLeftColor: "transparent", borderRightColor: "transparent", borderTopColor: colors.surface, marginTop: -1 }} />
           </Animated.View>
         ))}
         <Animated.View
-          entering={SlideInRight.delay(1500).springify().damping(14)}
+          entering={SlideInRight.delay(1100).springify().damping(14)}
           style={{
             position: "absolute",
             left: 14,
@@ -430,8 +499,8 @@ function CreatorPayoff({ photos }) {
             gap: 12,
           }}
         >
-          <View style={{ width: 48, height: 48, borderRadius: 12, overflow: "hidden" }}>
-            <Photo uri={photos[0]} fallback={ART[0]} />
+          <View style={{ width: 48, height: 48, borderRadius: 12, overflow: "hidden", backgroundColor: colors.stone }}>
+            {photos[3] ?? photos[0] ? <Photo uri={photos[3] ?? photos[0]} /> : null}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.ink }}>3 nights · free stay</Text>
@@ -512,7 +581,7 @@ function Chip({ label, active, onPress, delay }) {
   const s = useSharedValue(1);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
   const press = () => {
-    s.value = withSequence(withTiming(0.9, { duration: 70 }), withSpring(1, { damping: 6, stiffness: 260 }));
+    s.value = withSequence(withTiming(0.9, { duration: 70 }), withSpring(1, { damping: 10, stiffness: 260 }));
     onPress();
   };
   return (
@@ -554,17 +623,9 @@ function PicksStep({ title, sub, options, picks, onToggle }) {
 
 function Phone({ uri, art, shot, rotate, x, y, delay, label }) {
   const w = Math.min(W * 0.42, 180);
-  const f = useSharedValue(0);
-  useEffect(() => {
-    f.value = withDelay(delay + 600, withRepeat(withSequence(
-      withTiming(-7, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
-      withTiming(0, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
-    ), -1));
-  }, []);
-  const style = useAnimatedStyle(() => ({ transform: [{ translateY: f.value }] }));
   return (
     <View style={{ position: "absolute", transform: [{ translateX: x }, { translateY: y }, { rotate: `${rotate}deg` }] }}>
-     <Animated.View entering={FadeInDown.delay(delay).springify().damping(14)}>
+     <Animated.View entering={FadeInDown.delay(delay).duration(500)}>
       <Animated.View
         style={[
           {
@@ -578,7 +639,6 @@ function Phone({ uri, art, shot, rotate, x, y, delay, label }) {
             shadowRadius: 20,
             shadowOffset: { width: 0, height: 14 },
           },
-          style,
         ]}
       >
         <View style={{ flex: 1, borderRadius: 25, overflow: "hidden", backgroundColor: colors.bone }}>
@@ -613,17 +673,14 @@ function Phone({ uri, art, shot, rotate, x, y, delay, label }) {
 function GiftStep({ photos, role }) {
   return (
     <View style={{ flex: 1, paddingTop: 8 }}>
-      <Animated.View entering={FadeIn.duration(400)} style={{ alignSelf: "center", backgroundColor: "#E4DED3", borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8, marginBottom: 18 }}>
-        <Text style={{ fontFamily: fonts.bodySemibold, fontSize: 15, color: colors.ink }}>Collabnb Founding Access</Text>
-      </Animated.View>
       <Headline
         delay={100}
         title={"Your first 30 days\nare on us"}
         sub={role === "host" ? "List your stay and start meeting creators." : "Browse every stay and apply to as many as you like."}
       />
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <Phone uri={photos[3] ?? photos[0]} art={ART[1]} shot={SHOTS[role === "host" ? "host" : "creator"][0]} rotate={-9} x={-W * 0.16} y={-6} delay={300} label="Cliffside Villa" />
-        <Phone uri={photos[4] ?? photos[1]} art={ART[0]} shot={SHOTS[role === "host" ? "host" : "creator"][1]} rotate={7} x={W * 0.16} y={22} delay={450} label="Jungle Treehouse" />
+        <Phone uri={photos[3] ?? photos[0]} art={ART[1]} shot={SHOTS[role === "host" ? "host" : "creator"][0]} rotate={-5} x={-W * 0.2} y={0} delay={300} label="Cliffside Villa" />
+        <Phone uri={photos[4] ?? photos[1]} art={ART[0]} shot={SHOTS[role === "host" ? "host" : "creator"][1]} rotate={5} x={W * 0.2} y={16} delay={450} label="Jungle Treehouse" />
       </View>
     </View>
   );

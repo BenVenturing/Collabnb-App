@@ -17,7 +17,7 @@ import { Image } from "expo-image";
 import Animated, { FadeIn, FadeInDown, ZoomIn } from "react-native-reanimated";
 import { useSignUp } from "@clerk/clerk-expo";
 import { useMutation } from "convex/react";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react-native";
+import { Eye, EyeOff, ArrowLeft, UserRound } from "lucide-react-native";
 import { api } from "@/convex/_generated/api";
 import useRoleStore from "@/utils/RoleStore";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
@@ -523,11 +523,9 @@ function SaveAccount({ role, insets, error, appleLoading, googleLoading, onApple
             }}
           >
             <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-              <Image
-                source={role === "host" ? require("../../assets/images/empty-collabs.png") : require("../../assets/images/empty-explore.png")}
-                style={{ width: 150, height: 150 }}
-                contentFit="contain"
-              />
+              <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: colors.bone, borderWidth: 4, borderColor: colors.surface, alignItems: "center", justifyContent: "center" }}>
+                <UserRound color={colors.slate} size={64} strokeWidth={1.6} />
+              </View>
             </View>
             <View style={{ backgroundColor: colors.slate, paddingHorizontal: 20, paddingVertical: 16 }}>
               <Text style={{ fontFamily: fonts.display, fontSize: 20, color: colors.bone }}>You</Text>

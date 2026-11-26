@@ -25,6 +25,7 @@ import { useUser } from "@clerk/clerk-expo";
 import { api } from "@/convex/_generated/api";
 import { useSavedCollections } from "@/hooks/useSavedCollections";
 import { useAccessGate } from "@/hooks/useAccessGate";
+import { useRememberLastUser } from "@/hooks/useLastUser";
 import useMapViewStore from "@/utils/MapViewStore";
 import { normalizeListing } from "@/utils/listingHelpers";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -129,6 +130,7 @@ export default function ExploreScreen() {
   // Same gate the website checks (api.gates.getMyAccess) — a trial-ended
   // creator still browses, but every listing (card + map dock) is redacted.
   const access = useAccessGate(profile);
+  useRememberLastUser(profile, access);
   const myCollabs = useQuery(
     api.collaborations.getByCreator,
     profile?._id && profile.role !== "host" ? { creatorId: String(profile._id) } : "skip",
