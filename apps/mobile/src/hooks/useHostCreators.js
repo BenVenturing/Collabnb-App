@@ -46,6 +46,14 @@ async function isRealPhoto(uri) {
   }
 }
 
+// Google OAuth avatars come through Clerk at ~96px, which blurs on the
+// full-screen swipe card. Google serves any size via the =sNNN suffix.
+function hiResAvatar(uri) {
+  const src = clerkAvatarPayload(uri)?.src;
+  if (!src?.includes("googleusercontent.com")) return uri;
+  return /=s\d+(-c)?$/.test(src) ? src.replace(/=s\d+(-c)?$/, "=s1000-c") : `${src}=s1000-c`;
+}
+
 function checkAvatar(uri) {
   if (!avatarChecks.has(uri)) avatarChecks.set(uri, isRealPhoto(uri));
   return avatarChecks.get(uri);
@@ -62,7 +70,7 @@ function toCardShape(creator, realPhotos) {
     id: creator.id,
     name: creator.name,
     username: creator.username,
-    avatarUri,
+    avatarUri: avatarUri ? hiResAvatar(avatarUri) : null,
     tier: creator.tier,
     followers: formatFollowers(creator.followers ?? 0),
     followerCount: creator.followers ?? 0,

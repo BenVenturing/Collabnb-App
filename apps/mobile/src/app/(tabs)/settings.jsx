@@ -476,7 +476,6 @@ export default function CreatorSettingsScreen() {
             },
             ...(__DEV__
               ? [
-                  { label: "App Store Prep", onPress: () => router.push("/settings/app-store-prep") },
                   { label: "Replay welcome", onPress: () => router.push("/welcome") },
                 ]
               : []),
