@@ -19,6 +19,7 @@ import { colors } from "@/config/theme";
 import { isDark } from "@/utils/ColorModeStore";
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import StatusBarBlur from "@/components/StatusBarBlur";
+import { onTabScroll } from "@/utils/tabBarScroll";
 
 const FILTERS = ["All", "Unread", "Applications", "Collabs", "Pitches"];
 const PINNED_KEY = "inbox_pinned_threads";
@@ -530,6 +531,8 @@ export default function SharedInboxScreen({ viewAs = "creator" }) {
           data={visible}
           renderItem={renderThread}
           keyExtractor={(item) => item.thread_key || item.id}
+          onScroll={onTabScroll}
+          scrollEventThrottle={16}
           contentContainerStyle={{ paddingBottom: insets.bottom + 64 }}
           ListFooterComponent={
             showSearch ? (

@@ -47,6 +47,7 @@ import { BottomSheet } from "@/components/ui";
 import { colors, fonts, tracking, track } from "@/config/theme";
 import { api } from "@/convex/_generated/api";
 import UserSafetySheet from "@/components/UserSafetySheet";
+import { onTabScroll } from "@/utils/tabBarScroll";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const FEED_CARD_GAP = 12;
@@ -491,6 +492,8 @@ export default function HostCreatorsScreen() {
         ) : (
           <ScrollView
             style={{ marginHorizontal: -20 }}
+            onScroll={onTabScroll}
+            scrollEventThrottle={16}
             contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 110 }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"

@@ -27,6 +27,7 @@ import ShareProfileSheet from "@/components/Profile/ShareProfileSheet";
 import StatusBarBlur from "@/components/StatusBarBlur";
 import CommunityGlobe from "@/components/CommunityGlobe";
 import { useBottomPull, PulledSection, usePullToast, PullToast } from "@/components/PullReveal";
+import { onTabScroll } from "@/utils/tabBarScroll";
 
 const BIO_LIMIT = 155;
 
@@ -136,7 +137,10 @@ export default function HostProfileScreen() {
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           {
             useNativeDriver: true,
-            listener: bottomPull.onScroll,
+            listener: (e) => {
+              bottomPull.onScroll(e);
+              onTabScroll(e);
+            },
           },
         )}
       >

@@ -53,6 +53,7 @@ import { parseContract, waitingOn } from "@/utils/contract";
 import { threadKeyFor } from "@/utils/threads";
 import { loadSubmissions, progress as deliverableProgress } from "@/utils/deliverables";
 import { colors, fonts, radii, shadows, tracking, track, lineHeights } from "@/config/theme";
+import { onTabScroll } from "@/utils/tabBarScroll";
 
 const IMG_FALLBACK = "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=400";
 
@@ -342,7 +343,10 @@ export default function CreatorCollaborationsScreen() {
   const onScroll = useMemo(
     () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
       useNativeDriver: false,
-      listener: bottomPull.onScroll,
+      listener: (e) => {
+        bottomPull.onScroll(e);
+        onTabScroll(e);
+      },
     }),
     [scrollY, bottomPull.onScroll],
   );

@@ -1,7 +1,8 @@
 import { Tabs, useSegments } from "expo-router";
 import { View, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { useAnimatedStyle, withSpring } from "react-native-reanimated";
+import { useEffect, useState } from "react";
+import Animated, { Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import {
   Search,
   Briefcase,
@@ -17,11 +18,20 @@ import Glass from "@/components/Glass";
 import { Body } from "@/components/ui";
 import { colors, shadows } from "@/config/theme";
 import useMapViewStore from "@/utils/MapViewStore";
+import { tabBarCollapse } from "@/utils/tabBarScroll";
 import { useConversations } from "@/hooks/useConversations";
 
 // GlassTabBar's own height: 64pt pill + 6pt top pad + bottom inset.
 const BAR_H = 70;
 const SPRING = { damping: 18, stiffness: 180 };
+// How far GlassTabBar's top edge drops when it collapses (64pt → 52pt).
+const COLLAPSE_DROP = 12;
+// Map pill: full is icon + "Map"; collapsed (while scrolling) is an icon circle.
+const PILL_H = 42;
+const PILL_ICON = 17;
+const PILL_GAP = 7;
+const PILL_PAD = 18;
+const PILL_MINI_PAD = (PILL_H - PILL_ICON) / 2;
 
 // Floating Liquid Glass tab bar (same as host mode). On Explore a glass
 // Map/List pill floats above it; opening the map tucks the bar away so the
@@ -41,9 +51,28 @@ export default function TabLayout() {
   const barStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: withSpring(hidden ? barH + 20 : 0, SPRING) }],
   }));
+  const pillTarget = hidden ? Math.max(insets.bottom, 8) + 12 : barH + 12;
+  const pillBase = useSharedValue(pillTarget);
+  useEffect(() => {
+    pillBase.value = withSpring(pillTarget, SPRING);
+  }, [pillTarget]); // eslint-disable-line react-hooks/exhaustive-deps
   const pillStyle = useAnimatedStyle(() => ({
-    bottom: withSpring(hidden ? Math.max(insets.bottom, 8) + 12 : barH + 12, SPRING),
+    bottom: pillBase.value - (hidden ? 0 : COLLAPSE_DROP * tabBarCollapse.value),
+    transform: [{ scale: 1 - 0.05 * tabBarCollapse.value }],
   }));
+  // Only width/padding change on the pill's glass, never its radius.
+  const [labelW, setLabelW] = useState(0);
+  const pillPadStyle = useAnimatedStyle(() => ({
+    paddingHorizontal: PILL_PAD - (PILL_PAD - PILL_MINI_PAD) * tabBarCollapse.value,
+  }));
+  const pillLabelStyle = useAnimatedStyle(() => {
+    const c = tabBarCollapse.value;
+    return {
+      width: labelW ? labelW * (1 - c) : undefined,
+      marginLeft: PILL_GAP * (1 - c),
+      opacity: interpolate(c, [0, 0.5], [1, 0], Extrapolation.CLAMP),
+    };
+  });
 
   return (
     <ThemedBackground style={{ flex: 1 }}>
@@ -128,9 +157,22 @@ export default function TabLayout() {
             accessibilityLabel={mapOpen ? "Show list" : "Show map"}
             style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.96 : 1 }] })}
           >
-            <Glass variant="small" style={{ borderRadius: 999 }} contentStyle={{ flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 18, paddingVertical: 11 }}>
-              {mapOpen ? <List color={colors.ink} size={17} /> : <MapIcon color={colors.ink} size={17} />}
-              <Body size={14} weight="semibold">{mapOpen ? "List" : "Map"}</Body>
+            <Glass variant="small" style={{ borderRadius: 999 }}>
+              <Animated.View style={[{ height: PILL_H, flexDirection: "row", alignItems: "center", justifyContent: "center" }, pillPadStyle]}>
+                {mapOpen ? <List color={colors.ink} size={PILL_ICON} /> : <MapIcon color={colors.ink} size={PILL_ICON} />}
+                <Animated.View style={[{ overflow: "hidden" }, pillLabelStyle]}>
+                  <Body
+                    size={14}
+                    weight="semibold"
+                    numberOfLines={1}
+                    ellipsizeMode="clip"
+                    style={labelW ? { width: labelW } : undefined}
+                    onLayout={(e) => !labelW && setLabelW(Math.ceil(e.nativeEvent.layout.width))}
+                  >
+                    {mapOpen ? "List" : "Map"}
+                  </Body>
+                </Animated.View>
+              </Animated.View>
             </Glass>
           </Pressable>
         </Animated.View>

@@ -51,6 +51,7 @@ import SignedOutState from "@/components/SignedOutState";
 import ProfileChecklist from "@/components/ProfileChecklist";
 import CommunityGlobe from "@/components/CommunityGlobe";
 import { useBottomPull, PulledSection, usePullToast, PullToast } from "@/components/PullReveal";
+import { onTabScroll } from "@/utils/tabBarScroll";
 
 const LOCATION_PREF_KEY = "@collabnb_creator_location_prefs_v1";
 const BIO_LIMIT = 155;
@@ -270,7 +271,10 @@ export default function CreatorProfileScreen() {
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           {
             useNativeDriver: true,
-            listener: bottomPull.onScroll,
+            listener: (e) => {
+              bottomPull.onScroll(e);
+              onTabScroll(e);
+            },
           },
         )}
       >

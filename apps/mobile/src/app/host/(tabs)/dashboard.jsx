@@ -36,6 +36,7 @@ import Glass from "@/components/Glass";
 import StatusBarBlur from "@/components/StatusBarBlur";
 import { Body } from "@/components/ui";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
+import { onTabScroll } from "@/utils/tabBarScroll";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_WIDTH - 40; // 20px horizontal padding each side
@@ -614,6 +615,8 @@ export default function DashboardScreen() {
       <View style={styles.safe}>
         <ScrollView
           showsVerticalScrollIndicator={false}
+          onScroll={onTabScroll}
+          scrollEventThrottle={16}
           contentContainerStyle={[
             styles.scrollContent,
             { paddingTop: insets.top + 12, paddingBottom: browseBottom + 60 },

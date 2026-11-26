@@ -8,11 +8,19 @@
 //    that follows your finger, icons under it swell, and the tab changes as
 //    the lens crosses each one (with a light haptic). Lift to settle.
 //  * Reduced-motion users get short fades instead of springs, and no lens.
+//  * Scrolling a tab's content down shrinks the bar to icons only (Revolut);
+//    scrolling back up restores the labels. Driven by utils/tabBarScroll.
+//    The bar's layout shrinks; glass corner radii stay fixed (animating them
+//    makes expo-glass-effect rebuild corners and the glass drops out) and no
+//    transform sits above the glass (a scaled ancestor kills the native lens).
+//
+// Bubble geometry (left/right/center) is in tab units, so the bar can change
+// width without re-measuring.
 //
 // The lens is a scale-up of the bubble and the icons beneath it, not a true
 // optical magnifier — RN has no backdrop distortion.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -21,6 +29,7 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  useDerivedValue,
   withSequence,
   withSpring,
   withTiming,
@@ -32,9 +41,20 @@ import * as haptic from "@/utils/haptics";
 import Glass from "@/components/Glass";
 import { colors, fonts, shadows } from "@/config/theme";
 import { isDark } from "@/utils/ColorModeStore";
+import { tabBarCollapse, resetTabBar } from "@/utils/tabBarScroll";
 
 const PAD = 6;
 const BAR_H = 64;
+const SIDE = 16;
+const MINI_H = 52;
+const SHRINK = 34; // extra side inset per edge when collapsed
+const LABEL_H = 13;
+const LABEL_GAP = 3;
+// Collapsed, the icon slides down by this much to sit in the bar's centre.
+// Radii sized for the full bar; iOS clamps them to a capsule when it's shorter.
+const BAR_R = BAR_H / 2;
+const BUBBLE_R = (BAR_H - 4) / 2;
+const ICON_SHIFT = (LABEL_H + LABEL_GAP) / 2;
 // The bubble is WhatsApp-sized: nearly the bar's full height and a little
 // wider than its slot.
 const BUBBLE_INSET = 2;
@@ -44,19 +64,26 @@ const SLOW = { damping: 20, stiffness: 110, mass: 1 };
 // 0 / undefined hides the badge; large counts read "9+".
 const formatBadge = (n) => (n == null || n === 0 || n === "" ? null : typeof n === "number" ? (n > 9 ? "9+" : String(n)) : String(n));
 
+const AnimatedText = Animated.createAnimatedComponent(Text);
 const AnimatedGlass = Animated.createAnimatedComponent(GlassView);
 const clamp = (v, lo, hi) => {
   "worklet";
   return Math.min(Math.max(v, lo), hi);
 };
 
-function TabItem({ index, label, icon, active, badge, tabW, center, lens, onPress }) {
+function TabItem({ index, label, icon, active, badge, center, lens, collapse, onPress }) {
   // Icons swell as the lens centre passes over them.
   const style = useAnimatedStyle(() => {
-    const dist = Math.abs(center.value - (index + 0.5) * tabW.value);
-    const swell = interpolate(dist, [0, tabW.value], [0.3, 0], Extrapolation.CLAMP);
+    const dist = Math.abs(center.value - (index + 0.5));
+    const swell = interpolate(dist, [0, 1], [0.3, 0], Extrapolation.CLAMP);
     return { transform: [{ scale: 1 + swell * lens.value }] };
   });
+  const groupStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: ICON_SHIFT * collapse.value }],
+  }));
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(collapse.value, [0, 0.5], [1, 0], Extrapolation.CLAMP),
+  }));
   return (
     <Pressable
       onPress={onPress}
@@ -65,7 +92,8 @@ function TabItem({ index, label, icon, active, badge, tabW, center, lens, onPres
       accessibilityState={{ selected: active }}
       style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
     >
-      <Animated.View style={[{ alignItems: "center", gap: 3 }, style]}>
+      <Animated.View style={groupStyle}>
+      <Animated.View style={[{ alignItems: "center", gap: LABEL_GAP }, style]}>
         <View>
           {icon(active ? colors.ink : isDark() ? colors.ink + "B3" : colors.sage)}
           {!!badge && (
@@ -80,9 +108,13 @@ function TabItem({ index, label, icon, active, badge, tabW, center, lens, onPres
             </View>
           )}
         </View>
-        <Text style={{ fontFamily: active ? fonts.bodySemibold : fonts.bodyMedium, fontSize: 10.5, color: active ? colors.ink : isDark() ? colors.ink + "B3" : colors.sage }}>
+        <AnimatedText
+          numberOfLines={1}
+          style={[{ fontFamily: active ? fonts.bodySemibold : fonts.bodyMedium, fontSize: 10.5, lineHeight: LABEL_H, color: active ? colors.ink : isDark() ? colors.ink + "B3" : colors.sage }, labelStyle]}
+        >
           {label}
-        </Text>
+        </AnimatedText>
+      </Animated.View>
       </Animated.View>
     </Pressable>
   );
@@ -102,8 +134,11 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
   const n = routes.length;
   const activeIdx = Math.max(routes.findIndex((r) => r.key === state.routes[state.index]?.key), 0);
 
-  const [width, setWidth] = useState(0);
-  const tabW = useSharedValue(0);
+  const fullW = useSharedValue(0);
+  const collapse = tabBarCollapse;
+  const tabW = useDerivedValue(() =>
+    fullW.value > 0 ? (fullW.value - SHRINK * 2 * collapse.value - PAD * 2) / n : 0,
+  );
   const left = useSharedValue(0);
   const right = useSharedValue(0);
   const lens = useSharedValue(0);
@@ -113,11 +148,13 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
   const placed = useRef(false);
 
   useEffect(() => {
-    const tw = width > 0 ? (width - PAD * 2) / n : 0;
-    tabW.value = tw;
-    if (!tw || dragging.value) return;
-    const L = activeIdx * tw;
-    const R = L + tw;
+    resetTabBar();
+  }, [activeIdx]);
+
+  useEffect(() => {
+    if (dragging.value) return;
+    const L = activeIdx;
+    const R = L + 1;
     lastIdx.value = activeIdx;
     center.value = (L + R) / 2;
     if (!placed.current || reduced) {
@@ -136,7 +173,7 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
       withTiming(0.6, { duration: 140 }),
       withSpring(0, { damping: 15, stiffness: 170 }),
     );
-  }, [activeIdx, width, n, reduced]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeIdx, n, reduced]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const go = useCallback(
     (i, withHaptic) => {
@@ -164,11 +201,11 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
     .onUpdate((e) => {
       const tw = tabW.value;
       if (!tw) return;
-      const c = clamp(e.x - PAD, tw / 2, n * tw - tw / 2);
+      const c = clamp((e.x - PAD) / tw, 0.5, n - 0.5);
       center.value = c;
-      left.value = c - tw / 2;
-      right.value = c + tw / 2;
-      const idx = clamp(Math.floor(c / tw), 0, n - 1);
+      left.value = c - 0.5;
+      right.value = c + 0.5;
+      const idx = clamp(Math.floor(c), 0, n - 1);
       if (idx !== lastIdx.value) {
         lastIdx.value = idx;
         runOnJS(haptic.select)();
@@ -180,29 +217,41 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
       runOnJS(haptic.settle)();
       runOnJS(go)(lastIdx.value, false);
       lens.value = withSpring(0, { damping: 16, stiffness: 200 });
-      const L = lastIdx.value * tabW.value;
+      const L = lastIdx.value;
       left.value = withSpring(L, FAST);
-      right.value = withSpring(L + tabW.value, FAST);
-      center.value = withSpring(L + tabW.value / 2, FAST);
+      right.value = withSpring(L + 1, FAST);
+      center.value = withSpring(L + 0.5, FAST);
     });
 
-  const bubble = useAnimatedStyle(() => ({
-    left: PAD + left.value - BUBBLE_FLARE,
-    width: Math.max(right.value - left.value + BUBBLE_FLARE * 2, 0),
-    transform: [{ scale: 1 + 0.22 * lens.value }],
-    opacity: tabW.value ? 1 : 0,
+  const barH = useDerivedValue(() => BAR_H - (BAR_H - MINI_H) * collapse.value);
+
+  const bubble = useAnimatedStyle(() => {
+    const tw = tabW.value;
+    return {
+      left: PAD + left.value * tw - BUBBLE_FLARE,
+      width: Math.max((right.value - left.value) * tw + BUBBLE_FLARE * 2, 0),
+      height: barH.value - BUBBLE_INSET * 2,
+      transform: [{ scale: 1 + 0.22 * lens.value }],
+      opacity: tw ? 1 : 0,
+    };
+  });
+
+  // Bottom edge stays put; the bar shrinks up and in from it.
+  const barStyle = useAnimatedStyle(() => ({
+    height: barH.value,
+    marginHorizontal: SHRINK * collapse.value,
   }));
 
   return (
     <View
       pointerEvents="box-none"
-      style={{ paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 8), paddingTop: 6, backgroundColor: "transparent" }}
+      onLayout={(e) => {
+        fullW.value = e.nativeEvent.layout.width - SIDE * 2;
+      }}
+      style={{ paddingHorizontal: SIDE, paddingBottom: Math.max(insets.bottom, 8), paddingTop: 6, backgroundColor: "transparent" }}
     >
       <GestureDetector gesture={pan}>
-        <View
-          onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-          style={{ height: BAR_H, borderRadius: BAR_H / 2, ...shadows.lg }}
-        >
+        <Animated.View style={[{ borderRadius: BAR_R, ...shadows.lg }, barStyle]}>
           {native ? (
             // iOS 26+: real Liquid Glass. GlassContainer lets the bubble and the
             // bar merge/morph like the system tab bar; isInteractive gives the
@@ -212,21 +261,21 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
                 glassEffectStyle="regular"
                 colorScheme={isDark() ? "dark" : "light"}
                 tintColor={isDark() ? "rgba(8,14,26,0.72)" : undefined}
-                style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, borderRadius: BAR_H / 2 }}
+                style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, borderRadius: BAR_R }}
               />
               <AnimatedGlass
                 glassEffectStyle="clear"
                 isInteractive
                 colorScheme={isDark() ? "dark" : "light"}
                 tintColor={isDark() ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.35)"}
-                style={[{ position: "absolute", top: BUBBLE_INSET, height: BAR_H - BUBBLE_INSET * 2, borderRadius: (BAR_H - BUBBLE_INSET * 2) / 2 }, bubble]}
+                style={[{ position: "absolute", top: BUBBLE_INSET, borderRadius: BUBBLE_R }, bubble]}
               />
             </GlassContainer>
           ) : (
             <>
           {/* Frosted pill. Separate layer so the bubble can overflow it when it becomes a lens. */}
             <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}>
-              <Glass variant="regular" style={{ borderRadius: BAR_H / 2 }} contentStyle={{ height: BAR_H }} />
+              <Glass variant="regular" style={{ flex: 1, borderRadius: BAR_R }} contentStyle={{ flex: 1 }} />
             </View>
 
             <Animated.View
@@ -235,8 +284,7 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
                 {
                   position: "absolute",
                   top: BUBBLE_INSET,
-                  height: BAR_H - BUBBLE_INSET * 2,
-                  borderRadius: (BAR_H - BUBBLE_INSET * 2) / 2,
+                  borderRadius: BUBBLE_R,
                   backgroundColor: isDark() ? "rgba(255,255,255,0.12)" : "rgba(25,37,36,0.07)",
                   borderWidth: 1,
                   borderColor: isDark() ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.95)",
@@ -260,15 +308,15 @@ export default function GlassTabBar({ state, descriptors, navigation }) {
                   active={i === activeIdx}
                   badge={formatBadge(options.tabBarBadge)}
                   icon={(color) => options.tabBarIcon?.({ color, size: 22, focused: i === activeIdx })}
-                  tabW={tabW}
                   center={center}
                   lens={lens}
+                  collapse={collapse}
                   onPress={() => go(i, true)}
                 />
               );
             })}
           </View>
-        </View>
+        </Animated.View>
       </GestureDetector>
     </View>
   );

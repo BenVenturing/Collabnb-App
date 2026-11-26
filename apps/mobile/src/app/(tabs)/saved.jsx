@@ -23,6 +23,7 @@ import AtmosphericBackground from "@/components/AtmosphericBackground";
 import FloatingArt from "@/components/FloatingArt";
 import SavedInspirationCard from "@/components/SavedInspirationCard";
 import { colors, fonts, tracking, track, lineHeights } from "@/config/theme";
+import { onTabScroll } from "@/utils/tabBarScroll";
 
 const TYPE_MS = 28;
 const HOLD_MS = 1800;
@@ -222,6 +223,8 @@ export default function CreatorSavedScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
+        onScroll={onTabScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
         showsVerticalScrollIndicator={false}
       >

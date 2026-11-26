@@ -33,6 +33,7 @@ import DemoCollabWalkthrough, { useDemoCollabDismissed } from "@/components/coll
 import AtmosphericBackground from "@/components/AtmosphericBackground";
 import Glass from "@/components/Glass";
 import { colors, fonts, radii, shadows, tracking, track } from "@/config/theme";
+import { onTabScroll } from "@/utils/tabBarScroll";
 
 // ─── Contract negotiation ──────────────────────────────────────
 const CONTRACT_FIELDS = [
@@ -987,6 +988,8 @@ export default function ProposalsScreen() {
         ) : (
         <ScrollView
           style={{ flex: 1 }}
+          onScroll={onTabScroll}
+          scrollEventThrottle={16}
           contentContainerStyle={styles.scrollBody}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"

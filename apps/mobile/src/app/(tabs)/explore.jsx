@@ -47,6 +47,7 @@ import {
   SectionHeading,
   Skeleton,
 } from "@/components/ui";
+import { onTabScroll } from "@/utils/tabBarScroll";
 
 // Welcome-screen vibe picks matched against listing text (listings have no vibe field).
 const VIBE_WORDS = {
@@ -517,6 +518,7 @@ export default function ExploreScreen() {
           ListHeaderComponent={header}
           onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
             useNativeDriver: true,
+            listener: onTabScroll,
           })}
           scrollEventThrottle={16}
           contentContainerStyle={{
