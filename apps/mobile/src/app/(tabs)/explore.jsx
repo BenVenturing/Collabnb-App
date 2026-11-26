@@ -149,7 +149,18 @@ export default function ExploreScreen() {
       .filter((l) => l.status === "published" || l.status === "active")
       .map(normalizeListing);
     const samples = (samplesRaw || []).map(normalizeListing);
-    let all = [...real, ...samples].map((l) => (isLimited ? { ...l, _redacted: true } : l));
+    // The same stay can arrive twice (a published listing that is also a
+    // sample, or a sample copied to another host), so keep the first of each
+    // id and each title + location.
+    const seen = new Set();
+    let all = [...real, ...samples]
+      .filter((l) => {
+        const keys = [`id:${l.id}`, `t:${(l.title || "").trim().toLowerCase()}|${(l.location || "").trim().toLowerCase()}`];
+        if (keys.some((k) => seen.has(k))) return false;
+        keys.forEach((k) => seen.add(k));
+        return true;
+      })
+      .map((l) => (isLimited ? { ...l, _redacted: true } : l));
     if (filter !== "All") {
       all = all.filter((l) => l.property_type?.toLowerCase() === filter.toLowerCase());
     }
@@ -165,7 +176,6 @@ export default function ExploreScreen() {
     return all;
   }, [convexRaw, samplesRaw, filter, collabTypeFilter, whereQuery, isLimited]);
 
-  const trending = useMemo(() => listings.filter((l) => l.is_featured).slice(0, 8), [listings]);
 
   const [vibePicks, setVibePicks] = useState([]);
   useEffect(() => {
@@ -189,6 +199,12 @@ export default function ExploreScreen() {
       .slice(0, 8)
       .map((x) => x.l);
   }, [listings, vibePicks]);
+
+  // A stay shows in at most one carousel; All stays still lists everything.
+  const trending = useMemo(() => {
+    const picked = new Set(pickedForYou.map((l) => l.id));
+    return listings.filter((l) => l.is_featured && !picked.has(l.id)).slice(0, 8);
+  }, [listings, pickedForYou]);
 
   // ── Map view ──────────────────────────────────────────────────────────────
   const mapRef = useRef(null);
