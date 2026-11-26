@@ -1494,6 +1494,13 @@ export default function ListingDetailScreen() {
   };
 
   const handleApply = () => {
+    if (listing.isSample || (convexListing && convexListing.status !== "published")) {
+      Alert.alert(
+        "Sample stay",
+        "This is a sample listing that shows how Collabnb works. You can apply to any live stay in Explore.",
+      );
+      return;
+    }
     setApplyVisible(true);
   };
 
@@ -2022,7 +2029,7 @@ export default function ListingDetailScreen() {
               ? `${listing.deliverablesLoad} deliverable${listing.deliverablesLoad === 1 ? "" : "s"}`
               : listing.compensation
         }
-        actionLabel={isHost ? "Edit Listing" : hasApplied ? "Applied ✓" : "Apply Now"}
+        actionLabel={isHost ? "Edit Listing" : hasApplied ? "Applied ✓" : listing.isSample ? "Sample stay" : "Apply Now"}
         actionIcon={
           !isHost && !hasApplied ? (
             <ArrowRight size={16} color={colors.surface} />

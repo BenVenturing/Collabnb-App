@@ -167,6 +167,7 @@ export function ListingTile({
   featured = false,
   badge,
   saved = false,
+  applied = false,
   redacted = false,
   onPress,
   onLongPress,
@@ -239,13 +240,24 @@ export function ListingTile({
             {deliverables}
           </Body>
         ) : null}
-        {price ? (
-          <Body size={13} weight="semibold" style={{ marginTop: 2 }}>
-            {price}{" "}
-            <Body size={13} color={colors.sage}>
-              collab
-            </Body>
-          </Body>
+        {price || applied ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+            {price ? (
+              <Body size={13} weight="semibold" numberOfLines={1} style={{ flexShrink: 1 }}>
+                {price}{" "}
+                <Body size={13} color={colors.sage}>
+                  collab
+                </Body>
+              </Body>
+            ) : null}
+            {applied ? (
+              <View style={{ paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6, backgroundColor: "rgba(47,111,84,0.12)" }}>
+                <Body size={11} weight="semibold" color="#2F6F54">
+                  Applied
+                </Body>
+              </View>
+            ) : null}
+          </View>
         ) : null}
       </View>
     </Pressable>

@@ -129,6 +129,11 @@ export default function ExploreScreen() {
   // Same gate the website checks (api.gates.getMyAccess) — a trial-ended
   // creator still browses, but every listing (card + map dock) is redacted.
   const access = useAccessGate(profile);
+  const myCollabs = useQuery(
+    api.collaborations.getByCreator,
+    profile?._id && profile.role !== "host" ? { creatorId: String(profile._id) } : "skip",
+  );
+  const appliedIds = useMemo(() => new Set((myCollabs || []).map((c) => c.listing_id)), [myCollabs]);
   const isTrialEnded =
     access.state === "limited" && access.role === "creator" && !access.isAdmin && !access.isFounder;
   // Unapproved sign-ups (is_verified false) browse redacted, like the web's /welcome preview.
@@ -313,6 +318,7 @@ export default function ExploreScreen() {
       featured={item.is_featured}
       badge={item.isSample && process.env.EXPO_PUBLIC_SCREENSHOT_MODE !== "1" ? "Sample" : undefined}
       saved={savedIds.has(item.id)}
+      applied={appliedIds.has(item.id)}
       redacted={item._redacted === true}
       onToggleSave={() => toggleSave(item)}
       onPress={() => openListing(item)}
